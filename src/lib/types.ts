@@ -1,4 +1,5 @@
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -98,4 +99,12 @@ export interface WebsiteProduct {
     id: string; // This will be the admin_graphql_api_id
     handle: string;
     shopify_data: ShopifyProduct;
+}
+
+export interface ShopifyProductCreation {
+  title: string;
+  body_html: string;
+  vendor: string;
+  product_type: string;
+  price: number;
 }

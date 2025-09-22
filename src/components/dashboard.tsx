@@ -132,6 +132,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onRefresh={fetchData}
+        dataSource={dataSource}
       />
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <h2 className="text-2xl font-bold tracking-tight text-foreground/80 mb-6">

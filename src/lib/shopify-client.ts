@@ -1,6 +1,6 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 
@@ -70,7 +70,8 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
     const metricData = staticMetrics[index % staticMetrics.length];
 
     return {
-      ...product, // Pass through all raw data
+      // Start with all raw data for flexibility, though we primarily use the mapped fields below
+      ...product, 
       id: product.admin_graphql_api_id,
       description: product.body_html || 'No description available.',
       price: parseFloat(variant.price || '0'),
@@ -155,4 +156,42 @@ export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'ra
     logs.push('Unknown error while fetching products from Shopify.');
     throw new Error('Unknown error while fetching products from Shopify.');
   }
+}
+
+export async function createShopifyProduct(productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct }> {
+  const logs: string[] = [];
+  const credentials = await getShopifyCredentialsFromSupabase(logs);
+  const { storeName, accessToken } = credentials;
+  const storeUrl = `https://${storeName}`;
+  const endpoint = `${storeUrl}/admin/api/2025-01/products.json`;
+
+  const payload = {
+    product: {
+      ...productData,
+      status: 'active',
+      variants: [{
+        price: productData.price,
+        inventory_quantity: 0
+      }]
+    }
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'X-Shopify-Access-Token': accessToken,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error('Shopify API Error:', errorData);
+    throw new Error(`Failed to create Shopify product: ${JSON.stringify(errorData.errors)}`);
+  }
+
+  const { product } = await response.json();
+  return { product };
 }

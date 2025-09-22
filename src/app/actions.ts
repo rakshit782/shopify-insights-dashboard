@@ -5,8 +5,10 @@ import {
   generateProductSummary,
   type GenerateProductSummaryInput,
 } from '@/ai/flows/generate-product-summary';
-import { getShopifyProducts } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
+import type { ShopifyProductCreation, ShopifyProduct } from '@/lib/types';
+
 
 export async function handleGenerateSummary(input: GenerateProductSummaryInput) {
   try {
@@ -34,5 +36,21 @@ export async function handleSyncProducts() {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
      console.error('Sync failed:', errorMessage);
     return { success: false, error: `Failed to sync products: ${errorMessage}` };
+  }
+}
+
+export async function handleCreateProduct(productData: ShopifyProductCreation) {
+  try {
+    // Create product in Shopify
+    const { product: newShopifyProduct } = await createShopifyProduct(productData);
+    
+    // Sync the newly created product to our website's Supabase
+    await syncProductsToWebsite([newShopifyProduct]);
+
+    return { success: true, error: null, product: newShopifyProduct };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    console.error('Product creation failed:', errorMessage);
+    return { success: false, error: `Failed to create product: ${errorMessage}` };
   }
 }
