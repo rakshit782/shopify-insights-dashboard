@@ -84,6 +84,7 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
 
 export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'rawProducts' | 'logs'>> {
   const logs: string[] = [];
+  let allProducts: ShopifyProduct[] = [];
 
   let storeName: string;
   let accessToken: string;
@@ -102,32 +103,50 @@ export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'ra
   }
 
   const storeUrl = `https://${storeName}`;
-  const endpoint = `${storeUrl}/admin/api/2025-01/products.json`;
+  let endpoint = `${storeUrl}/admin/api/2025-01/products.json?limit=250`;
 
-  logs.push(`Calling Shopify API endpoint: ${endpoint}`);
+  logs.push('Starting Shopify product fetch...');
 
   try {
-    const response = await fetch(endpoint, {
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
+    while (endpoint) {
+      logs.push(`Calling Shopify API endpoint: ${endpoint}`);
+      const response = await fetch(endpoint, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      logs.push(`Shopify API Error: ${response.status} ${response.statusText}. Details: ${errorData}`);
-      throw new Error(`Failed to fetch Shopify products: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        logs.push(`Shopify API Error: ${response.status} ${response.statusText}. Details: ${errorData}`);
+        throw new Error(`Failed to fetch Shopify products: ${response.status} ${response.statusText}`);
+      }
+
+      const { products: rawProducts } = (await response.json()) as {
+        products: ShopifyProduct[];
+      };
+      allProducts = allProducts.concat(rawProducts);
+      logs.push(`Received ${rawProducts.length} raw products. Total fetched: ${allProducts.length}`);
+
+      // Handle pagination
+      const linkHeader = response.headers.get('Link');
+      if (linkHeader) {
+        const nextLink = linkHeader.split(',').find(s => s.includes('rel="next"'));
+        if (nextLink) {
+          const match = nextLink.match(/<(.*?)>/);
+          endpoint = match ? match[1] : '';
+        } else {
+          endpoint = ''; // No more pages
+        }
+      } else {
+        endpoint = ''; // No more pages
+      }
     }
 
-    const { products: rawProducts } = (await response.json()) as {
-      products: ShopifyProduct[];
-    };
-
-    logs.push(`Received ${rawProducts.length} raw products from Shopify.`);
-
-    return { rawProducts, logs };
+    logs.push(`Finished fetching. Total products received: ${allProducts.length}`);
+    return { rawProducts: allProducts, logs };
   } catch (error) {
     if (error instanceof Error) {
       logs.push(`Fetch Error: ${error.message}`);
