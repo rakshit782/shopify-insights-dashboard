@@ -1,4 +1,4 @@
-import { LayoutGrid, List } from 'lucide-react';
+import { LayoutGrid, List, RefreshCw } from 'lucide-react';
 import type { MappedShopifyProduct } from '@/lib/types';
 import { ExportButton } from './export-button';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,20 @@ export function DashboardHeader({ products, viewMode, onViewModeChange, onRefres
           </Tooltip>
         </TooltipProvider>
 
+        {dataSource === 'shopify' && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={onRefresh}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh Products</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         {dataSource === 'shopify' && <SyncButton />}
         {dataSource === 'shopify' && <CreateProductDialog onProductCreated={onRefresh} />}
         <ExportButton products={products} />
