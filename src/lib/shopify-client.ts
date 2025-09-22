@@ -118,6 +118,19 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
       const placeholder = PlaceHolderImages[index % PlaceHolderImages.length];
       const variant = product.variants[0] || {};
       
+      // Consistent placeholder data to avoid hydration issues
+      const staticMetrics = [
+        { unitsSold: 1502, totalRevenue: 120144, averageRating: 4.8, numberOfReviews: 312 },
+        { unitsSold: 421, totalRevenue: 147139, averageRating: 4.6, numberOfReviews: 129 },
+        { unitsSold: 2340, totalRevenue: 699660, averageRating: 4.9, numberOfReviews: 1805 },
+        { unitsSold: 855, totalRevenue: 111107, averageRating: 4.5, numberOfReviews: 240 },
+        { unitsSold: 5430, totalRevenue: 135695, averageRating: 4.7, numberOfReviews: 890 },
+        { unitsSold: 1120, totalRevenue: 111988, averageRating: 4.6, numberOfReviews: 455 },
+        { unitsSold: 3105, totalRevenue: 108519, averageRating: 4.9, numberOfReviews: 1023 },
+        { unitsSold: 980, totalRevenue: 87220, averageRating: 4.8, numberOfReviews: 350 },
+      ];
+      const metricData = staticMetrics[index % staticMetrics.length];
+
       return {
         id: `gid://shopify/Product/${product.id}`,
         title: product.title,
@@ -128,10 +141,10 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
         inventory: variant.inventory_quantity || 0,
         imageUrl: product.image?.src || placeholder.imageUrl,
         imageHint: placeholder.imageHint,
-        unitsSold: Math.floor(Math.random() * 2000),
-        totalRevenue: Math.floor(Math.random() * 100000),
-        averageRating: +(Math.random() * (5 - 3.5) + 3.5).toFixed(1),
-        numberOfReviews: Math.floor(Math.random() * 500),
+        unitsSold: metricData.unitsSold,
+        totalRevenue: metricData.totalRevenue,
+        averageRating: metricData.averageRating,
+        numberOfReviews: metricData.numberOfReviews,
       };
     });
     return { products, logs };
