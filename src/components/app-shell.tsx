@@ -30,15 +30,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
+             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/'}
-                tooltip={{ children: 'Shopify Dashboard' }}
+                tooltip={{ children: 'Analytics' }}
               >
                 <Link href="/">
-                  <Home />
-                  <span>Shopify Dashboard</span>
+                  <BarChartHorizontal />
+                  <span>Analytics</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/shopify-products'}
+                tooltip={{ children: 'Shopify Products' }}
+              >
+                <Link href="/shopify-products">
+                  <ShoppingCart />
+                  <span>Shopify Products</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -51,18 +63,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link href="/website-products">
                   <Globe />
                   <span>Website Products</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/analytics'}
-                tooltip={{ children: 'Analytics' }}
-              >
-                <Link href="/analytics">
-                  <BarChartHorizontal />
-                  <span>Analytics</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -136,7 +136,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
       />
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <h2 className="text-2xl font-bold tracking-tight text-foreground/80 mb-6">
-          {dataSource === 'shopify' ? 'Shopify Product Overview' : 'Website Product Overview'}
+          {dataSource === 'shopify' ? 'Shopify Products' : 'Website Products'}
         </h2>
         {renderContent()}
       </main>

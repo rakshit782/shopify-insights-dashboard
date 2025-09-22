@@ -4,14 +4,23 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, ShoppingCart, Database, Box, Store, ShoppingBag, Truck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ProductCount {
     platform: string;
     count: number;
 }
+
+const platformIcons: { [key: string]: React.ElementType } = {
+    'Shopify': ShoppingCart,
+    'Website DB': Database,
+    'Amazon': Box,
+    'Walmart': Store,
+    'eBay': ShoppingBag,
+    'Etsy': ShoppingBag,
+    'Wayfair': Truck,
+};
 
 export function AnalyticsDashboard() {
     const [productCounts, setProductCounts] = useState<ProductCount[]>([]);
@@ -31,7 +40,15 @@ export function AnalyticsDashboard() {
                 }
 
                 const data = await res.json();
-                setProductCounts(data.counts);
+                
+                // Ensure a specific order
+                const platformOrder = ['Shopify', 'Website DB', 'Amazon', 'Walmart', 'eBay', 'Etsy', 'Wayfair'];
+                const sortedCounts = platformOrder.map(platform => {
+                    const found = data.counts.find((c: ProductCount) => c.platform === platform);
+                    return found || { platform, count: 0 };
+                });
+
+                setProductCounts(sortedCounts);
 
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -44,45 +61,57 @@ export function AnalyticsDashboard() {
         fetchData();
     }, []);
 
-    const renderProductCountChart = () => {
+    const renderProductCountCards = () => {
         if (isLoading) {
-             return <Skeleton className="h-80 w-full" />;
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <Card key={i} className="animate-pulse">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                                <Skeleton className="h-6 w-1/2" />
+                                <Skeleton className="h-6 w-6 rounded-sm" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-10 w-1/3" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            );
         }
         if (error) {
             return null; // Error is handled globally below
         }
 
         return (
-             <Card>
-                <CardHeader>
-                    <CardTitle>Product Count by Platform</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={productCounts} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="platform" />
-                            <YAxis allowDecimals={false} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--background))',
-                                    borderColor: 'hsl(var(--border))'
-                                }}
-                            />
-                            <Legend />
-                            <Bar dataKey="count" fill="hsl(var(--primary))" name="Number of Products" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {productCounts.map(({ platform, count }) => {
+                    const Icon = platformIcons[platform] || Box;
+                    return (
+                        <Card key={platform} className="transition-all hover:shadow-md hover:-translate-y-1">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                                <CardTitle className="text-sm font-medium">{platform}</CardTitle>
+                                <Icon className="h-5 w-5 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">
+                                    {count.toLocaleString()}
+                                </div>
+                                <p className="text-xs text-muted-foreground">Total Products</p>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
         )
     }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground/80 mb-6">
-                Analytics Overview
+            <h2 className="text-3xl font-bold tracking-tight text-foreground mb-1">
+                Analytics Dashboard
             </h2>
+            <p className="text-muted-foreground mb-8">An overview of your e-commerce ecosystem.</p>
 
             {error && (
                 <Alert variant="destructive" className="mb-6">
@@ -93,24 +122,29 @@ export function AnalyticsDashboard() {
             )}
 
             <div className="space-y-8">
-                {renderProductCountChart()}
+                <div>
+                    <h3 className="text-xl font-semibold tracking-tight text-foreground/90 mb-4">Product Inventory</h3>
+                    {renderProductCountCards()}
+                </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Sales Analytics</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-center h-64 text-muted-foreground">
-                        <p>Sales data from external platforms will be shown here.</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Marketing Analytics</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-center h-64 text-muted-foreground">
-                        <p>Data from Google Analytics (GA4) will be shown here.</p>
-                    </CardContent>
-                </Card>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Sales Analytics</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-center h-80 text-muted-foreground">
+                            <p>Sales data from external platforms will be shown here.</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Marketing Analytics</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-center h-80 text-muted-foreground">
+                            <p>Data from Google Analytics (GA4) will be shown here.</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     );
