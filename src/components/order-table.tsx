@@ -83,6 +83,19 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
     return 'N/A';
   }
 
+  const getProductTitles = (order: ShopifyOrder) => {
+    return order.line_items.map(item => item.title).join(', ');
+  }
+
+   const getFullAddress = (address: ShopifyOrder['shipping_address']) => {
+    if (!address) return '';
+    return [
+      address.address1,
+      address.address2,
+      `${address.city}, ${address.province} ${address.zip}`,
+    ].filter(Boolean).join(', ');
+  };
+
   return (
     <>
     <Card>
@@ -90,9 +103,11 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Order ID</TableHead>
-            <TableHead>Customer</TableHead>
             <TableHead>Order Date</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Product(s)</TableHead>
+            <TableHead>Address</TableHead>
+            <TableHead>Country</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
@@ -101,23 +116,19 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
           {orders.map(order => (
             <TableRow key={order.id}>
               <TableCell>
-                <Button variant="link" className="p-0 h-auto" onClick={() => handleRowClick(order)}>
+                <Button variant="link" className="p-0 h-auto font-medium" onClick={() => handleRowClick(order)}>
                   {order.name}
                 </Button>
               </TableCell>
+              <TableCell>{format(new Date(order.created_at), 'PP')}</TableCell>
               <TableCell>
                 <div className="font-medium">{getCustomerName(order)}</div>
                 <div className="text-sm text-muted-foreground">{order.customer?.email || 'N/A'}</div>
+                <div className="text-sm text-muted-foreground">{order.customer?.phone || order.shipping_address?.phone || 'N/A'}</div>
               </TableCell>
-              <TableCell>
-                {format(new Date(order.created_at), 'MMM d, yyyy')}
-              </TableCell>
-              <TableCell>
-                 <div className="flex flex-col gap-1">
-                    <Badge variant={getFinancialStatusVariant(order.financial_status)} className="capitalize">{order.financial_status.replace('_', ' ')}</Badge>
-                    <Badge variant={getStatusVariant(order.fulfillment_status)} className="capitalize">{order.fulfillment_status || 'unfulfilled'}</Badge>
-                 </div>
-              </TableCell>
+              <TableCell className="max-w-[200px] truncate">{getProductTitles(order)}</TableCell>
+              <TableCell>{getFullAddress(order.shipping_address)}</TableCell>
+              <TableCell>{order.shipping_address?.country || 'N/A'}</TableCell>
               <TableCell className="text-right">
                 {parseFloat(order.total_price).toLocaleString('en-US', {
                   style: 'currency',

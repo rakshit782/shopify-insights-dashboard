@@ -1,5 +1,6 @@
 
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -153,4 +154,47 @@ export interface EtsyCredentials {
 export interface WayfairCredentials {
     client_id: string;
     client_secret: string;
+}
+
+// Corresponds to the Order object from Shopify Admin API
+export interface ShopifyOrder {
+    id: number;
+    admin_graphql_api_id: string;
+    name: string; // e.g., #1001
+    created_at: string;
+    updated_at: string;
+    processed_at: string;
+    total_price: string;
+    subtotal_price: string;
+    total_tax: string;
+    currency: string;
+    financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided';
+    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | null;
+    customer: {
+        id: number;
+        email: string;
+        first_name: string;
+        last_name: string;
+        phone: string | null;
+    } | null;
+    shipping_address: {
+        first_name: string;
+        last_name: string;
+        address1: string;
+        address2: string | null;
+        city: string;
+        province: string; // State/Province code
+        country: string;
+        zip: string;
+        phone: string | null;
+        country_code: string;
+    } | null;
+    line_items: {
+        id: number;
+        title: string;
+        quantity: number;
+        price: string;
+        sku: string | null;
+        vendor: string | null;
+    }[];
 }

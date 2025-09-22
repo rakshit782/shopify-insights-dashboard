@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { BarChartHorizontal, Globe, Settings, ShoppingCart } from 'lucide-react';
+import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -51,6 +51,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/orders'}
+                    tooltip={{ children: 'Orders' }}
+                >
+                    <Link href="/orders">
+                    <Truck />
+                    <span>Orders</span>
+                    </Link>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
