@@ -3,7 +3,6 @@
 import type { ShopifyProduct } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseCredentials } from '@/app/settings/actions';
 
 interface ShopifyAdminProduct {
   id: number;
@@ -26,16 +25,16 @@ interface ShopifyFetchResult {
 }
 
 async function getShopifyCredentialsFromSupabase(logs: string[]): Promise<{ storeName: string; accessToken: string }> {
-  const { supabaseUrl, supabaseKey } = await getSupabaseCredentials();
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
-    logs.push('Supabase URL or anon key is not configured in cookies.');
-    throw new Error('Supabase URL or anon key is not configured.');
+  if (!supabaseUrl || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
+    logs.push('Supabase URL is not configured. Please set the SUPABASE_URL environment variable in your .env file.');
+    throw new Error('The SUPABASE_URL environment variable is not configured.');
   }
-  
-  if (supabaseUrl.includes('YOUR_SUPABASE_URL') || supabaseKey.includes('YOUR_SUPABASE_ANON_KEY')) {
-     logs.push('Default Supabase credentials found. Please configure them in settings.');
-    throw new Error('Please configure your Supabase credentials in the settings page.');
+   if (!supabaseKey || supabaseKey.includes('YOUR_SUPABASE_ANON_KEY')) {
+    logs.push('Supabase key is not configured. Please set the SUPABASE_KEY environment variable in your .env file.');
+    throw new Error('The SUPABASE_KEY environment variable is not configured.');
   }
 
   logs.push('Creating Supabase client...');

@@ -9,11 +9,7 @@ import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from '@/components/product-table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Settings, ChevronDown, Server, Cookie } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { getSupabaseCredentials } from './settings/actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Terminal, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -23,7 +19,6 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasSupabaseCreds, setHasSupabaseCreds] = useState<boolean | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [isLogsOpen, setIsLogsOpen] = useState(true);
 
@@ -32,28 +27,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const checkCredentialsAndFetch = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-      setHasSupabaseCreds(null);
-      setLogs([]); // Clear logs on each fetch
+      setLogs([]); 
 
       addLog('Starting data fetch process...');
-      
-      addLog('Checking for Supabase credentials in cookies...');
-      const creds = await getSupabaseCredentials();
-      
-      const hasCreds = creds.supabaseUrl && creds.supabaseKey && !creds.supabaseUrl.includes('YOUR_SUPABASE_URL');
-      setHasSupabaseCreds(hasCreds);
-      
-      if (!hasCreds) {
-        const logMsg = 'Supabase credentials not found or incomplete in cookies.';
-        addLog(logMsg);
-        setIsLoading(false);
-        return;
-      }
-
-      addLog(`Found credentials. Supabase URL: ${creds.supabaseUrl}`);
       addLog('Attempting to fetch Shopify products...');
 
       try {
@@ -63,8 +42,13 @@ export default function Home() {
         addLog(`Successfully fetched ${products.length} products.`);
       } catch (e) {
         if (e instanceof Error) {
-          addLog(`ERROR: ${e.message}`);
-          setError(e.message);
+          const errorMessage = e.message;
+          addLog(`ERROR: ${errorMessage}`);
+          if (errorMessage.includes('environment variable')) {
+             setError(`Configuration error: ${errorMessage}. Please check your .env file.`);
+          } else {
+             setError(errorMessage);
+          }
         } else {
           const unknownError = 'An unknown error occurred while fetching products.';
           addLog(`ERROR: ${unknownError}`);
@@ -75,11 +59,11 @@ export default function Home() {
         setIsLoading(false);
       }
     };
-    checkCredentialsAndFetch();
+    fetchData();
   }, []);
 
   const renderContent = () => {
-    if (isLoading || hasSupabaseCreds === null) {
+    if (isLoading) {
       return (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -97,25 +81,6 @@ export default function Home() {
         </div>
       );
     }
-
-    if (hasSupabaseCreds === false) {
-      return (
-        <Alert>
-          <Terminal className="h-4 w-4" />
-          <AlertTitle>Configuration Required</AlertTitle>
-          <AlertDescription>
-            <div className='flex flex-col gap-4'>
-            <p>Please configure your Supabase credentials to fetch Shopify data.</p>
-            <Button asChild className='w-fit'>
-              <Link href="/settings">
-                <Settings className="mr-2 h-4 w-4" /> Go to Settings
-              </Link>
-            </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      );
-    }
     
     if (error) {
        return (
@@ -124,6 +89,7 @@ export default function Home() {
           <AlertTitle>Error Fetching Products</AlertTitle>
           <AlertDescription>
             {error}
+            <p className='mt-2'>Please ensure your Supabase and Shopify credentials are correctly set in your .env file and that your Supabase table is set up correctly.</p>
           </AlertDescription>
         </Alert>
       );
@@ -135,7 +101,7 @@ export default function Home() {
           <Terminal className="h-4 w-4" />
           <AlertTitle>No Products Found</AlertTitle>
           <AlertDescription>
-            Your Shopify store does not seem to have any products, or there was an issue fetching them. Please check your Shopify credentials in Supabase or go to the settings page to verify your Supabase connection. Review the logs below for more details.
+            Your Shopify store does not seem to have any products, or there was an issue fetching them. Please check your credentials in the .env file and review the logs below for more details.
           </AlertDescription>
         </Alert>
       )
