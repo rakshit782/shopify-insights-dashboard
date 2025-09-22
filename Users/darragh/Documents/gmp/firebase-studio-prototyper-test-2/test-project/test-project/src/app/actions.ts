@@ -5,6 +5,7 @@ import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShop
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 
+
 export async function handleSyncProducts() {
   try {
     // We now get the rawProducts array from the API response
