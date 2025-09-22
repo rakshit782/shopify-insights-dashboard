@@ -16,7 +16,7 @@ export async function GET() {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // Query the new 'brand_competitors' table
+    // Query the 'brand_competitors' table
     const { data, error } = await supabase
       .from('brand_competitors')
       .select('*')

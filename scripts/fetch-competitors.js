@@ -6,8 +6,8 @@ import { createClient } from "@supabase/supabase-js";
 import 'dotenv/config';
 
 // Make sure your .env file has these variables
-const supabaseUrl = process.env.WEBSITE_SUPABASE_URL;
-const supabaseServiceKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error("Supabase URL or Service Key is not defined in your .env file.");
@@ -47,7 +47,7 @@ async function fetchAmazonCompetitors(monitoredBrand, maxPages = 1) {
           .catch(() => null);
 
         let brand = await card
-          .$eval(".s-line-clamp-1 span", (el) => el.innerText)
+          .$eval("div[data-cy='title-recipe'] .s-line-clamp-1 > .a-size-base", (el) => el.innerText)
           .catch(() => null);
 
         if (!brand && title) {
