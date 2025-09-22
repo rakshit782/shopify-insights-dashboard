@@ -5,6 +5,7 @@ import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
+import forge from 'node-forge';
 
 export interface PlatformProductCount {
     platform: string;
@@ -443,19 +444,44 @@ async function getWalmartCredentials(logs: string[]): Promise<WalmartCredentials
     return data[0];
 }
 
+function getWalmartSignature(consumerId: string, privateKey: string, requestUrl: string, requestMethod: string, timestamp: string): string {
+    const stringToSign = `${consumerId}\n${requestUrl}\n${requestMethod.toUpperCase()}\n${timestamp}\n`;
+
+    // Decode the Base64 private key to PEM format
+    const pem = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+    
+    // Use node-forge to create the signature
+    const privateKeyFromPem = forge.pki.privateKeyFromPem(pem);
+    const md = forge.md.sha256.create();
+    md.update(stringToSign, 'utf8');
+    const signature = privateKeyFromPem.sign(md);
+    
+    return forge.util.encode64(signature);
+}
+
 async function getWalmartAccessToken(credentials: WalmartCredentials, logs: string[]): Promise<string> {
     const authUrl = 'https://marketplace.walmartapis.com/v3/token';
-    const authString = Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64');
     const correlationId = uuidv4();
+    const timestamp = Date.now().toString();
 
-    logs.push("Requesting Walmart access token...");
+    const signature = getWalmartSignature(
+        credentials.client_id,
+        credentials.client_secret, // In Walmart, the client_secret is the private key
+        authUrl,
+        'POST',
+        timestamp
+    );
+
+    logs.push("Requesting Walmart access token with signature...");
     const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
-            'Authorization': `Basic ${authString}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'WM_QOS.CORRELATION_ID': correlationId,
             'WM_SVC.NAME': 'Shopify-Insights-App',
+            'WM_QOS.CORRELATION_ID': correlationId,
+            'WM_SEC.TIMESTAMP': timestamp,
+            'WM_SEC.AUTH_SIGNATURE': signature,
+            'Authorization': `Basic ${Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64')}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
         },
         body: 'grant_type=client_credentials',
@@ -477,6 +503,7 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     const credentials = await getWalmartCredentials(logs);
     const accessToken = await getWalmartAccessToken(credentials, logs);
     const correlationId = uuidv4();
+    const timestamp = Date.now().toString();
     const apiUrl = 'https://marketplace.walmartapis.com/v3/orders';
 
     const params = new URLSearchParams({
@@ -486,19 +513,29 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     if (options.createdStartDate) {
         params.append('createdStartDate', options.createdStartDate);
     } else {
-        // Default to last 14 days if no start date is provided, as Walmart requires a date filter.
         const defaultDate = new Date();
         defaultDate.setDate(defaultDate.getDate() - 14);
         params.append('createdStartDate', defaultDate.toISOString().split('T')[0]);
     }
 
-    logs.push(`Fetching Walmart orders from: ${apiUrl}?${params.toString()}`);
+    const fullUrl = `${apiUrl}?${params.toString()}`;
+    logs.push(`Fetching Walmart orders from: ${fullUrl}`);
 
-    const response = await fetch(`${apiUrl}?${params.toString()}`, {
+    const signature = getWalmartSignature(
+        credentials.client_id,
+        credentials.client_secret,
+        fullUrl,
+        'GET',
+        timestamp
+    );
+
+    const response = await fetch(fullUrl, {
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'WM_QOS.CORRELATION_ID': correlationId,
             'WM_SVC.NAME': 'Shopify-Insights-App',
+            'WM_QOS.CORRELATION_ID': correlationId,
+            'WM_SEC.TIMESTAMP': timestamp,
+            'WM_SEC.AUTH_SIGNATURE': signature,
+            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/json'
         }
     });
@@ -529,7 +566,6 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // A single order can have lines with different statuses. We'll take the status of the first line item as representative.
     const latestStatus = walmartOrder.orderLines.orderLine[0]?.status || 'Created';
 
     return {

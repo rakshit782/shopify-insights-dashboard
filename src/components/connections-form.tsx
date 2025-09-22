@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import Image from 'next/image';
+import { Textarea } from './ui/textarea';
 
 const MarketplaceCard = ({
     logo,
@@ -293,10 +294,10 @@ export function ConnectionsForm() {
                 description="Sync with Walmart Marketplace."
                 isConnected={connections.walmart}
             >
-                 <DialogContent>
+                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Walmart Marketplace</DialogTitle>
-                        <DialogDescription>Enter your Client ID and Client Secret for Walmart API access.</DialogDescription>
+                        <DialogDescription>Enter your Client ID and Client Secret (Private Key) for Walmart API access.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
@@ -304,8 +305,9 @@ export function ConnectionsForm() {
                             <Input id="walmart-client-id" placeholder="Enter your Walmart Client ID" value={walmartClientId} onChange={e => setWalmartClientId(e.target.value)} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="walmart-client-secret">Client Secret</Label>
-                            <Input id="walmart-client-secret" type="password" placeholder="Enter your Walmart Client Secret" value={walmartClientSecret} onChange={e => setWalmartClientSecret(e.target.value)} />
+                            <Label htmlFor="walmart-client-secret">Client Secret (PKCS8 Private Key)</Label>
+                            <Textarea id="walmart-client-secret" placeholder="Paste your full private key here, including the -----BEGIN PRIVATE KEY----- and -----END PRIVATE KEY----- lines." value={walmartClientSecret} onChange={e => setWalmartClientSecret(e.target.value)} rows={8} />
+                             <p className="text-xs text-muted-foreground">This is your Base64 encoded PKCS8 private key.</p>
                         </div>
                     </div>
                     <DialogFooter>
