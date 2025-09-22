@@ -9,6 +9,7 @@ import Image from 'next/image';
 import type { DateRange } from 'react-day-picker';
 import { OrdersHeader } from './orders-header';
 import type { ShopifyOrder } from '@/lib/types';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
 
 const platforms = [
   {
@@ -37,9 +38,17 @@ const platforms = [
   },
 ];
 
+const getInitialDateRange = (): DateRange => {
+    const now = new Date();
+    return {
+        from: startOfDay(subDays(now, 13)), // 14 days ago from start of day
+        to: endOfDay(now), // to end of today
+    };
+};
+
 export function MultiPlatformOrdersDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(getInitialDateRange());
   const [activeTab, setActiveTab] = useState('Shopify');
   const [filteredOrdersByTab, setFilteredOrdersByTab] = useState<Record<string, ShopifyOrder[]>>({});
 
@@ -86,7 +95,7 @@ export function MultiPlatformOrdersDashboard() {
               platform={platform.name as any}
               searchQuery={searchQuery}
               dateRange={dateRange}
-              onFilteredOrdersChange={handleFilteredOrdersChange}
+              onFilteredOrdersChange={(orders) => handleFilteredOrdersChange(platform.name, orders)}
             />
           </TabsContent>
         ))}

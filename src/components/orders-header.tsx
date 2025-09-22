@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, Search } from "lucide-react";
 import type { DateRange } from "react-day-picker";
-import { addDays, format, subDays, startOfDay, endOfDay } from "date-fns";
+import { subDays, format, startOfDay, endOfDay } from "date-fns";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Calendar } from "./ui/calendar";
@@ -30,12 +30,12 @@ export function OrdersHeader({
     onDateRangeChange,
     filteredOrders
 }: OrdersHeaderProps) {
-    const [preset, setPreset] = useState('all');
+    const [preset, setPreset] = useState('last14');
 
     useEffect(() => {
         // If an external change clears the date range, reset the preset dropdown
         if (!dateRange) {
-            setPreset('all');
+            setPreset('custom'); // Or another appropriate default
         }
     }, [dateRange]);
     
@@ -53,10 +53,12 @@ export function OrdersHeader({
             case 'last7':
                 onDateRangeChange({ from: startOfDay(subDays(now, 6)), to: endOfDay(now) });
                 break;
+            case 'last14':
+                 onDateRangeChange({ from: startOfDay(subDays(now, 13)), to: endOfDay(now) });
+                break;
             case 'last30':
                 onDateRangeChange({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
                 break;
-            case 'all':
             default:
                 onDateRangeChange(undefined);
                 break;
@@ -83,13 +85,13 @@ export function OrdersHeader({
             <div className="flex w-full flex-col sm:flex-row items-center gap-2 md:w-auto">
                  <Select value={preset} onValueChange={handlePresetChange}>
                     <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="All Time" />
+                        <SelectValue placeholder="Select a date range" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Time</SelectItem>
                         <SelectItem value="today">Today</SelectItem>
                         <SelectItem value="yesterday">Yesterday</SelectItem>
                         <SelectItem value="last7">Last 7 Days</SelectItem>
+                        <SelectItem value="last14">Last 14 Days</SelectItem>
                         <SelectItem value="last30">Last 30 Days</SelectItem>
                         {preset === 'custom' && <SelectItem value="custom" disabled>Custom Range</SelectItem>}
                     </SelectContent>
