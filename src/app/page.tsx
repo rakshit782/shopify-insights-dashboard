@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { ProductCard } from '@/components/product-card';
 import { getShopifyProducts } from '@/lib/shopify-client';
@@ -26,41 +26,42 @@ export default function Home() {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      setLogs([]); 
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    setLogs([]); 
 
-      addLog('Starting data fetch process...');
-      addLog('Attempting to fetch Shopify products...');
+    addLog('Starting data fetch process...');
+    addLog('Attempting to fetch Shopify products...');
 
-      try {
-        const { products, logs: fetchLogs } = await getShopifyProducts();
-        fetchLogs.forEach(log => addLog(log));
-        setProductData(products);
-        addLog(`Successfully fetched ${products.length} products.`);
-      } catch (e) {
-        if (e instanceof Error) {
-          const errorMessage = e.message;
-          addLog(`ERROR: ${errorMessage}`);
-          if (errorMessage.includes('environment variable')) {
-             setError(`Configuration error: ${errorMessage}. Please check your .env file.`);
-          } else {
-             setError(errorMessage);
-          }
+    try {
+      const { products, logs: fetchLogs } = await getShopifyProducts();
+      fetchLogs.forEach(log => addLog(log));
+      setProductData(products);
+      addLog(`Successfully fetched ${products.length} products.`);
+    } catch (e) {
+      if (e instanceof Error) {
+        const errorMessage = e.message;
+        addLog(`ERROR: ${errorMessage}`);
+        if (errorMessage.includes('environment variable')) {
+           setError(`Configuration error: ${errorMessage}. Please check your .env file.`);
         } else {
-          const unknownError = 'An unknown error occurred while fetching products.';
-          addLog(`ERROR: ${unknownError}`);
-          setError(unknownError);
+           setError(errorMessage);
         }
-      } finally {
-        addLog('Data fetch process finished.');
-        setIsLoading(false);
+      } else {
+        const unknownError = 'An unknown error occurred while fetching products.';
+        addLog(`ERROR: ${unknownError}`);
+        setError(unknownError);
       }
-    };
-    fetchData();
+    } finally {
+      addLog('Data fetch process finished.');
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -127,6 +128,7 @@ export default function Home() {
         products={productData}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onRefresh={fetchData}
       />
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <h2 className="text-2xl font-bold tracking-tight text-foreground/80 mb-6">
