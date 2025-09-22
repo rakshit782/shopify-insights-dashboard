@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/tabs"
 import { ConnectionsForm } from "./connections-form";
 import { ProfileForm } from "./profile-form";
+import { BusinessProfileForm } from "./business-profile-form";
 
 export function SettingsPage() {
     return (
@@ -17,15 +18,19 @@ export function SettingsPage() {
                     Manage your account settings, connections, and preferences.
                 </p>
                 <Tabs defaultValue="profile" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="profile">Profile & Appearance</TabsTrigger>
                         <TabsTrigger value="connections">Connections</TabsTrigger>
+                        <TabsTrigger value="business">Business</TabsTrigger>
                     </TabsList>
                     <TabsContent value="profile" className="pt-6">
                         <ProfileForm />
                     </TabsContent>
                     <TabsContent value="connections" className="pt-6">
                         <ConnectionsForm />
+                    </TabsContent>
+                    <TabsContent value="business" className="pt-6">
+                        <BusinessProfileForm />
                     </TabsContent>
                 </Tabs>
             </div>

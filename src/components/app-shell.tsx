@@ -15,15 +15,23 @@ import {
 import { usePathname } from 'next/navigation';
 import { BarChartHorizontal, ClipboardList, Globe, Settings, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // In a real app, this would come from a context or a server fetch
+  const businessLogo = null; // Placeholder
+
   return (
     <>
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center gap-2 p-2">
-            <ShoppingCart className="h-6 w-6 text-primary" />
+            {businessLogo ? (
+              <Image src={businessLogo} alt="Business Logo" width={24} height={24} className="h-6 w-6 object-contain" />
+            ) : (
+              <ShoppingCart className="h-6 w-6 text-primary" />
+            )}
             <h1 className="font-headline text-xl font-bold tracking-tight text-foreground">
               Shopify Insights
             </h1>
