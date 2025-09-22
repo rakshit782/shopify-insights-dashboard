@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { MappedShopifyProduct } from '@/lib/types';
-import { MetricDisplay } from './metric-display';
 import { DollarSign, Package, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
@@ -24,46 +23,36 @@ export function ProductCard({ product }: ProductCardProps) {
   const numericId = product.id.split('/').pop();
 
   return (
-    <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+    <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="p-0">
-        <div className="relative aspect-video w-full">
+        <div className="relative aspect-square w-full">
           <Image
             src={product.imageUrl}
             alt={product.title}
             fill
-            unoptimized
             className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             data-ai-hint={product.imageHint}
+            unoptimized
           />
         </div>
-        <div className="p-4 pb-2">
-          <CardTitle className="mb-2 text-base font-semibold leading-tight tracking-tight">
+        <div className="p-3 pb-2">
+          <CardTitle className="text-sm font-medium leading-tight tracking-tight truncate" title={product.title}>
             {product.title}
           </CardTitle>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{product.vendor}</Badge>
-            <Badge variant="outline">{product.product_type}</Badge>
-          </div>
+          <p className="text-xs text-muted-foreground truncate">{product.vendor}</p>
         </div>
       </CardHeader>
-      <CardContent className="grid flex-1 grid-cols-2 gap-x-4 gap-y-4 p-4 pt-2">
-        <MetricDisplay
-          icon={DollarSign}
-          label="Price"
-          value={`$${product.price.toFixed(2)}`}
-          className="text-primary"
-        />
-        <MetricDisplay
-          icon={Package}
-          label="In Stock"
-          value={product.inventory.toString()}
-        />
+      <CardContent className="flex-1 p-3 pt-0">
+         <div className="flex justify-between items-center">
+            <span className="text-sm font-semibold text-primary">${product.price.toFixed(2)}</span>
+            <span className="text-xs text-muted-foreground">Stock: {product.inventory}</span>
+         </div>
       </CardContent>
-      <CardFooter className="mt-auto p-4 pt-0">
-        <Button asChild variant="secondary" size="sm" className="w-full">
+      <CardFooter className="mt-auto p-3 pt-0">
+        <Button asChild variant="outline" size="sm" className="w-full h-8">
           <Link href={`/products/${numericId}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" /> Edit
+            <Pencil className="mr-2 h-3 w-3" /> Edit
           </Link>
         </Button>
       </CardFooter>

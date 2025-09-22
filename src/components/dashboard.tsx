@@ -31,7 +31,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(12); // Default to a higher number for grid view
 
   const addLog = (message: string) => {
     setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev]);
@@ -131,7 +131,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
 
     if (viewMode === 'grid') {
       return (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {paginatedData.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -148,7 +148,16 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
       <DashboardHeader 
         products={productData}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={(mode) => {
+            setViewMode(mode);
+            // Adjust items per page based on view
+            if (mode === 'grid') {
+                setItemsPerPage(12);
+            } else {
+                setItemsPerPage(10);
+            }
+            setCurrentPage(1);
+        }}
         onRefresh={fetchData}
         dataSource={dataSource}
       />
