@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 import 'dotenv/config';
 
-// Make sure your .env file has these variables for your MAIN Supabase project
+// Use the main Supabase project credentials
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -99,6 +99,8 @@ async function fetchAmazonCompetitors(monitoredBrand, maxPages = 1) {
     }
   } catch(e) {
     console.error(`An error occurred during scraping: ${e.message}`);
+    // Re-throw the error so the server action can catch it
+    throw e;
   } finally {
     await browser.close();
     console.log("Browser closed.");
@@ -110,23 +112,25 @@ async function fetchAmazonCompetitors(monitoredBrand, maxPages = 1) {
 async function saveToSupabase(rows) {
   if (!rows || rows.length === 0) {
     console.log("No new competitor data to save.");
-    return;
+    return { count: 0 };
   }
   const { error } = await supabase.from("brand_competitors").insert(rows);
   if (error) {
     console.error("❌ Supabase insert error:", error.message);
+    throw error;
   } else {
     console.log(`✅ Inserted ${rows.length} rows into Supabase.`);
+    return { count: rows.length };
   }
 }
 
-(async () => {
-  const brand = process.env.MONITORED_BRAND || "Capel Rugs"; // default brand to monitor
+export async function runCompetitorScraper(brand) {
   console.log(`🔎 Fetching competitors for: ${brand}`);
 
   // Fetch 2 pages of results
   const rows = await fetchAmazonCompetitors(brand, 2);
   console.log(`📦 Scraped ${rows.length} competitor products.`);
 
-  await saveToSupabase(rows);
-})();
+  const result = await saveToSupabase(rows);
+  return { count: result.count };
+}
