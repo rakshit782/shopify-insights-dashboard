@@ -191,8 +191,10 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
     const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
 
     return {
-      ...product, 
       id: product.admin_graphql_api_id,
+      title: product.title,
+      vendor: product.vendor,
+      product_type: product.product_type,
       description: product.body_html || 'No description available.',
       price: parseFloat(variant.price || '0'),
       inventory: variant.inventory_quantity || 0,
@@ -566,6 +568,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
             country: walmartOrder.shippingInfo.postalAddress.country,
             zip: walmartOrder.shippingInfo.postalAddress.postalCode,
             phone: walmartOrder.shippingInfo.phone,
+            country_code: walmartOrder.shippingInfo.postalAddress.country,
         },
         line_items: walmartOrder.orderLines.orderLine.map(line => ({
             id: line.lineNumber,
