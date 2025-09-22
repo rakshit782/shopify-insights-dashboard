@@ -1,10 +1,13 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrdersDashboard } from './orders-dashboard';
-import { Package, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
+import type { DateRange } from 'react-day-picker';
+import { OrdersHeader } from './orders-header';
 
 const platforms = [
   {
@@ -34,14 +37,24 @@ const platforms = [
 ];
 
 export function MultiPlatformOrdersDashboard() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Orders</h1>
         <p className="text-muted-foreground">Manage your orders across all connected marketplaces.</p>
       </div>
+      
+      <OrdersHeader
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+      />
 
-      <Tabs defaultValue="Shopify" className="w-full">
+      <Tabs defaultValue="Shopify" className="w-full mt-6">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {platforms.map(platform => (
             <TabsTrigger key={platform.name} value={platform.name} className="gap-2">
@@ -53,7 +66,11 @@ export function MultiPlatformOrdersDashboard() {
 
         {platforms.map(platform => (
           <TabsContent key={platform.name} value={platform.name} className="pt-6">
-            <OrdersDashboard platform={platform.name as any} />
+            <OrdersDashboard 
+              platform={platform.name as any}
+              searchQuery={searchQuery}
+              dateRange={dateRange}
+            />
           </TabsContent>
         ))}
       </Tabs>

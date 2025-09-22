@@ -1,15 +1,19 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Terminal } from 'lucide-react';
 import type { ShopifyOrder } from '@/lib/types';
 import { OrderTable } from './order-table';
+import type { DateRange } from 'react-day-picker';
+import { isWithinInterval } from 'date-fns';
 
 interface OrdersDashboardProps {
   platform: 'Shopify' | 'Amazon' | 'Walmart' | 'eBay' | 'Etsy' | 'Wayfair';
+  searchQuery: string;
+  dateRange?: DateRange;
 }
 
 function OrdersSkeleton() {
@@ -21,7 +25,17 @@ function OrdersSkeleton() {
     )
 }
 
-export function OrdersDashboard({ platform }: OrdersDashboardProps) {
+const getCustomerName = (order: ShopifyOrder) => {
+    if (order.customer) {
+        return `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim();
+    }
+    if (order.shipping_address) {
+        return `${order.shipping_address.first_name || ''} ${order.shipping_address.last_name || ''}`.trim();
+    }
+    return 'N/A';
+};
+
+export function OrdersDashboard({ platform, searchQuery, dateRange }: OrdersDashboardProps) {
     const [orders, setOrders] = useState<ShopifyOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -56,6 +70,30 @@ export function OrdersDashboard({ platform }: OrdersDashboardProps) {
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
+    
+    const filteredOrders = useMemo(() => {
+        let filtered = orders;
+
+        // Apply date range filter
+        if (dateRange?.from) {
+            const toDate = dateRange.to || dateRange.from; // If 'to' is not set, use 'from' for single-day selection
+            filtered = filtered.filter(order => {
+                const orderDate = new Date(order.created_at);
+                return isWithinInterval(orderDate, { start: dateRange.from!, end: toDate });
+            });
+        }
+        
+        // Apply search query filter
+        if (searchQuery) {
+            const lowercasedQuery = searchQuery.toLowerCase();
+            filtered = filtered.filter(order =>
+                order.name.toLowerCase().includes(lowercasedQuery) ||
+                getCustomerName(order).toLowerCase().includes(lowercasedQuery)
+            );
+        }
+
+        return filtered;
+    }, [orders, searchQuery, dateRange]);
 
 
     if (isLoading) {
@@ -72,6 +110,18 @@ export function OrdersDashboard({ platform }: OrdersDashboardProps) {
         );
     }
     
+    if (orders.length > 0 && filteredOrders.length === 0) {
+       return (
+             <Alert variant="secondary">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>No Orders Match Your Filters</AlertTitle>
+                <AlertDescription>
+                    Try adjusting your search query or date range.
+                </AlertDescription>
+            </Alert>
+       )
+    }
+    
     if (orders.length === 0) {
         return (
              <Alert>
@@ -84,5 +134,5 @@ export function OrdersDashboard({ platform }: OrdersDashboardProps) {
         )
     }
 
-    return <OrderTable orders={orders} platform={platform} />;
+    return <OrderTable orders={filteredOrders} platform={platform} />;
 }
