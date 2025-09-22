@@ -27,3 +27,38 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
         throw new Error(`Failed to sync products to website: ${error.message}`);
     }
 }
+
+
+export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
+    const logs: string[] = [];
+    const supabaseUrl = process.env.WEBSITE_SUPABASE_URL;
+    const supabaseKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+        logs.push('Website Supabase URL or key is not configured.');
+        throw new Error('Website Supabase credentials are not configured.');
+    }
+
+    logs.push('Creating website Supabase client...');
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    logs.push("Fetching products from 'products' table...");
+    const { data, error } = await supabase
+        .from('products')
+        .select('shopify_data');
+
+    if (error) {
+        logs.push(`Supabase error: ${error.message}`);
+        throw new Error(`Failed to fetch products from website DB: ${error.message}`);
+    }
+
+    if (!data) {
+        logs.push('No products found in website database.');
+        return { rawProducts: [], logs };
+    }
+
+    const products = data.map(item => item.shopify_data);
+    logs.push(`Successfully fetched ${products.length} products from website database.`);
+
+    return { rawProducts: products as ShopifyProduct[], logs };
+}

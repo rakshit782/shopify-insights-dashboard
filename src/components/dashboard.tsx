@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { ProductCard } from '@/components/product-card';
 import { getShopifyProducts, mapShopifyProducts } from '@/lib/shopify-client';
-import type { MappedShopifyProduct, ShopifyProduct } from '@/lib/types';
+import type { MappedShopifyProduct } from '@/lib/types';
 import { ProductTable } from '@/components/product-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, ChevronDown } from 'lucide-react';
@@ -13,14 +13,16 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { DashboardSkeleton } from './dashboard-skeleton';
+import { getWebsiteProducts } from '@/lib/website-supabase-client';
 
 interface DashboardProps {
   initialProducts: MappedShopifyProduct[];
   initialLogs: string[];
   error?: string | null;
+  dataSource?: 'shopify' | 'website';
 }
 
-export function Dashboard({ initialProducts, initialLogs, error: initialError }: DashboardProps) {
+export function Dashboard({ initialProducts, initialLogs, error: initialError, dataSource = 'shopify' }: DashboardProps) {
   const [productData, setProductData] = useState<MappedShopifyProduct[]>(initialProducts);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,10 +39,13 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError }:
     setError(null);
     setLogs([]); 
 
-    addLog('Starting data fetch process...');
+    addLog(`Starting data fetch from ${dataSource}...`);
     
     try {
-      const { rawProducts, logs: fetchLogs } = await getShopifyProducts();
+      const { rawProducts, logs: fetchLogs } = dataSource === 'shopify' 
+        ? await getShopifyProducts() 
+        : await getWebsiteProducts();
+
       fetchLogs.forEach(log => addLog(log));
       const mappedProducts = mapShopifyProducts(rawProducts);
       setProductData(mappedProducts);
@@ -59,7 +64,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError }:
       addLog('Data fetch process finished.');
       setIsLoading(false);
     }
-  }, []);
+  }, [dataSource]);
 
   useEffect(() => {
     if (initialError) {
@@ -92,7 +97,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError }:
           <Terminal className="h-4 w-4" />
           <AlertTitle>No Products Found</AlertTitle>
           <AlertDescription>
-            Your Shopify store does not seem to have any products, or there was an issue fetching them. Please check your credentials and review the logs below for more details.
+            No products were found in the {dataSource} data source. Please check your configuration and review the logs below.
           </AlertDescription>
         </Alert>
       )
@@ -122,7 +127,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError }:
       />
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <h2 className="text-2xl font-bold tracking-tight text-foreground/80 mb-6">
-          Product Overview
+          {dataSource === 'shopify' ? 'Shopify Product Overview' : 'Website Product Overview'}
         </h2>
         {renderContent()}
       </main>

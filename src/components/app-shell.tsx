@@ -12,7 +12,7 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingCart } from 'lucide-react';
+import { Home, ShoppingCart, Globe } from 'lucide-react';
 import Link from 'next/link';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -34,11 +34,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/'}
-                tooltip={{ children: 'Dashboard' }}
+                tooltip={{ children: 'Shopify Dashboard' }}
               >
                 <Link href="/">
                   <Home />
-                  <span>Dashboard</span>
+                  <span>Shopify Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/website-products'}
+                tooltip={{ children: 'Website Products' }}
+              >
+                <Link href="/website-products">
+                  <Globe />
+                  <span>Website Products</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
