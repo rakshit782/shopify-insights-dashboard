@@ -1,3 +1,4 @@
+
 import 'dotenv/config';
 import type { ShopifyProduct } from './types';
 import { createClient } from '@supabase/supabase-js';
@@ -16,8 +17,22 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
 
     const productsToUpsert = products.map(p => ({
         id: p.admin_graphql_api_id, // Use the GraphQL API ID as the primary key
+        shopify_product_id: p.id,
         handle: p.handle,
-        shopify_data: p, // Store the entire raw product object
+        title: p.title,
+        body_html: p.body_html,
+        vendor: p.vendor,
+        product_type: p.product_type,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        published_at: p.published_at,
+        status: p.status,
+        tags: p.tags,
+        // Store complex objects as JSON in their own columns
+        variants: p.variants,
+        options: p.options,
+        images: p.images,
+        image: p.image,
     }));
 
     for (let i = 0; i < productsToUpsert.length; i += BATCH_SIZE) {
@@ -28,6 +43,7 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
             .upsert(batch, { onConflict: 'id' });
 
         if (error) {
+            console.error('Supabase upsert error:', error);
             throw new Error(`Failed to sync batch starting at index ${i}: ${error.message}`);
         }
     }
@@ -48,9 +64,10 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     logs.push("Fetching products from 'products' table...");
+    // Select all the individual columns
     const { data, error } = await supabase
         .from('products')
-        .select('shopify_data');
+        .select('*');
 
     if (error) {
         logs.push(`Supabase error: ${error.message}`);
@@ -62,8 +79,29 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
         return { rawProducts: [], logs };
     }
 
-    const products = data.map(item => item.shopify_data);
+    // Reconstruct the ShopifyProduct object from the individual columns
+    const products: ShopifyProduct[] = data.map(item => ({
+        id: item.shopify_product_id,
+        admin_graphql_api_id: item.id,
+        title: item.title,
+        body_html: item.body_html,
+        vendor: item.vendor,
+        product_type: item.product_type,
+        created_at: item.created_at,
+        handle: item.handle,
+        updated_at: item.updated_at,
+        published_at: item.published_at,
+        template_suffix: item.template_suffix, // Note: this field might be null if not synced
+        published_scope: item.published_scope, // Note: this field might be null if not synced
+        tags: item.tags,
+        status: item.status,
+        variants: item.variants,
+        options: item.options,
+        images: item.images,
+        image: item.image,
+    }));
+
     logs.push(`Successfully fetched ${products.length} products from website database.`);
 
-    return { rawProducts: products as ShopifyProduct[], logs };
+    return { rawProducts: products, logs };
 }
