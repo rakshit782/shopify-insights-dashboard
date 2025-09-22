@@ -1,6 +1,7 @@
 
 
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -117,4 +118,28 @@ export interface ShopifyProductUpdate {
   vendor?: string;
   product_type?: string;
   tags?: string;
+}
+
+export interface ShopifyOrder {
+    id: number;
+    admin_graphql_api_id: string;
+    name: string; // The order name, e.g., #1001
+    created_at: string;
+    total_price: string;
+    currency: string;
+    financial_status: string;
+    fulfillment_status: string | null;
+    customer: {
+        id: number;
+        first_name: string;
+        last_name: string;
+        email: string;
+    } | null;
+    line_items: {
+        id: number;
+        title: string;
+        quantity: number;
+        price: string;
+        sku: string | null;
+    }[];
 }

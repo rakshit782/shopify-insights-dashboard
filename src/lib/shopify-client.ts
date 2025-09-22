@@ -1,6 +1,6 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, ShopifyOrder } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 
@@ -282,4 +282,60 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
 
   const { product } = await response.json();
   return { product };
+}
+
+
+export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
+  const logs: string[] = [];
+  let allOrders: ShopifyOrder[] = [];
+
+  const { storeName, accessToken } = await getShopifyCredentialsFromSupabase(logs);
+  const storeUrl = `https://${storeName}`;
+  let endpoint = `${storeUrl}/admin/api/2025-01/orders.json?status=any&limit=250`;
+
+  logs.push('Starting Shopify order fetch...');
+
+  try {
+    while (endpoint) {
+      logs.push(`Calling Shopify API endpoint: ${endpoint}`);
+      const response = await fetch(endpoint, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        logs.push(`Shopify API Error: ${response.status} ${response.statusText}. Details: ${errorData}`);
+        throw new Error(`Failed to fetch Shopify orders: ${response.status} ${response.statusText}`);
+      }
+
+      const { orders } = (await response.json()) as { orders: ShopifyOrder[] };
+      allOrders = allOrders.concat(orders);
+      logs.push(`Received ${orders.length} orders. Total fetched: ${allOrders.length}`);
+
+      // Handle pagination
+      const linkHeader = response.headers.get('Link');
+      if (linkHeader) {
+        const nextLink = linkHeader.split(',').find(s => s.includes('rel="next"'));
+        if (nextLink) {
+          const match = nextLink.match(/<(.*?)>/);
+          endpoint = match ? match[1] : '';
+        } else {
+          endpoint = ''; // No more pages
+        }
+      } else {
+        endpoint = ''; // No more pages
+      }
+    }
+
+    logs.push(`Finished fetching. Total orders received: ${allOrders.length}`);
+    return { orders: allOrders, logs };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    logs.push(`Fetch Error: ${errorMessage}`);
+    throw new Error(`Failed to fetch orders from Shopify: ${errorMessage}`);
+  }
 }
