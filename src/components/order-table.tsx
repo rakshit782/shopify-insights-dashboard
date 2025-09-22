@@ -170,19 +170,3 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
     </>
   );
 }
-
-// Augmenting shipping_address to potentially have first_name and last_name which it often does
-declare module '@/lib/types' {
-    interface ShopifyOrder {
-        shipping_address: {
-            first_name?: string;
-            last_name?: string;
-            address1: string;
-            address2: string | null;
-            city: string;
-            province: string;
-            zip: string;
-            phone: string | null;
-        } | null;
-    }
-}
