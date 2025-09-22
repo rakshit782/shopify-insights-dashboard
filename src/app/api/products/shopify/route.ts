@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getShopifyProducts, mapShopifyProducts } from '@/lib/shopify-client';
 
-export const dynamic = 'force-dynamic'; // defaults to auto
+export const revalidate = 3600; // Cache for 1 hour
 
 export async function GET() {
   try {
@@ -15,3 +15,4 @@ export async function GET() {
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+
