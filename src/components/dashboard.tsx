@@ -14,12 +14,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { DashboardSkeleton } from './dashboard-skeleton';
 
-export function Dashboard() {
-  const [productData, setProductData] = useState<ShopifyProduct[]>([]);
+interface DashboardProps {
+  initialProducts: ShopifyProduct[];
+  initialLogs: string[];
+  error?: string | null;
+}
+
+export function Dashboard({ initialProducts, initialLogs, error: initialError }: DashboardProps) {
+  const [productData, setProductData] = useState<ShopifyProduct[]>(initialProducts);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(initialError || null);
+  const [logs, setLogs] = useState<string[]>(initialLogs);
   const [isLogsOpen, setIsLogsOpen] = useState(true);
 
   const addLog = (message: string) => {
@@ -55,8 +61,11 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (initialError) {
+      setIsLogsOpen(true);
+    }
+  }, [initialError]);
+
 
   const renderContent = () => {
     if (isLoading) {
