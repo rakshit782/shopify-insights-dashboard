@@ -54,7 +54,7 @@ export function MultiPlatformOrdersDashboard() {
 
   const handleFilteredOrdersChange = useCallback((platform: string, orders: ShopifyOrder[]) => {
     setFilteredOrdersByTab(prev => ({ ...prev, [platform]: orders }));
-  }, []);
+  }, [setFilteredOrdersByTab]);
 
   const handleDateRangeChange = useCallback((range?: DateRange) => {
     setDateRange(range);
