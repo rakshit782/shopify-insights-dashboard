@@ -28,7 +28,6 @@ interface OrdersDashboardProps {
 function OrdersSkeleton() {
     return (
         <div className="space-y-4">
-            <Skeleton className="h-8 w-1/4" />
             <Skeleton className="h-[400px] w-full" />
         </div>
     )
@@ -216,3 +215,5 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         </>
     );
 }
+
+    

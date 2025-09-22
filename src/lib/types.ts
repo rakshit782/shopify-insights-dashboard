@@ -1,5 +1,4 @@
 
-
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -150,6 +149,9 @@ export interface WayfairCredentials {
     client_secret: string;
 }
 
+// Represents the possible fulfillment statuses from Walmart
+export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
+
 // Corresponds to the Order object from Shopify Admin API, adapted for multiple platforms
 export interface ShopifyOrder {
     id: number | string; // Made flexible for other platforms
@@ -162,8 +164,8 @@ export interface ShopifyOrder {
     subtotal_price?: string | null; // Optional for other platforms
     total_tax?: string | null; // Optional for other platforms
     currency: string;
-    financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided' | 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
-    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled' | null;
+    financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided';
+    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | WalmartFulfillmentStatus | null;
     customer: {
         id?: number | string | null;
         email?: string | null;
@@ -239,7 +241,9 @@ export interface WalmartOrder {
         unitOfMeasurement: string;
         amount: string;
       };
-      status: 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
+      status: WalmartFulfillmentStatus;
     }[];
   };
 }
+
+    

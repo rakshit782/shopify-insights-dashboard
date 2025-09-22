@@ -485,6 +485,11 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
 
     if (options.createdStartDate) {
         params.append('createdStartDate', options.createdStartDate);
+    } else {
+        // Default to last 14 days if no start date is provided, as Walmart requires a date filter.
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() - 14);
+        params.append('createdStartDate', defaultDate.toISOString().split('T')[0]);
     }
 
     logs.push(`Fetching Walmart orders from: ${apiUrl}?${params.toString()}`);
@@ -524,6 +529,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    // A single order can have lines with different statuses. We'll take the status of the first line item as representative.
     const latestStatus = walmartOrder.orderLines.orderLine[0]?.status || 'Created';
 
     return {
@@ -534,7 +540,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
         updated_at: new Date(walmartOrder.orderDate).toISOString(),
         total_price: orderTotal.toFixed(2),
         currency: walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency || 'USD',
-        financial_status: (latestStatus === 'Created' || latestStatus === 'Acknowledged') ? 'pending' : 'paid',
+        financial_status: 'paid', // Walmart orders are generally considered paid upon acknowledgement
         fulfillment_status: latestStatus,
         customer: {
             id: walmartOrder.customerOrderId,
@@ -563,6 +569,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
             sku: line.item.sku,
             vendor: 'Walmart'
         })),
+        processed_at: new Date(walmartOrder.orderDate).toISOString(),
     };
 }
 

@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import {
   Table,
   TableBody,
@@ -11,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import type { ShopifyOrder } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { MoreHorizontal } from 'lucide-react';
@@ -43,42 +41,6 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
     setIsDialogOpen(true);
   };
 
-  const getStatusVariant = (status: string | null) => {
-    switch (status) {
-      case 'fulfilled':
-      case 'Shipped':
-      case 'Delivered':
-        return 'default';
-      case 'unfulfilled':
-      case 'Created':
-      case 'Acknowledged':
-      case null:
-        return 'secondary';
-      case 'partial':
-        return 'outline';
-      case 'Cancelled':
-          return 'destructive'
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getFinancialStatusVariant = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'refunded':
-      case 'partially_refunded':
-        return 'outline';
-      case 'voided':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
-  
   const getCustomerName = (order: ShopifyOrder) => {
     if (order.customer) {
         return `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim();
