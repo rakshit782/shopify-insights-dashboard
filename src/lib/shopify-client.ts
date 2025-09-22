@@ -88,6 +88,7 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
 export async function saveAmazonCredentials(credentials: AmazonCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+    // Upsert based on a unique identifier for amazon, like profile_id
     const { error } = await supabase
         .from('amazon_credentials')
         .upsert(credentials, { onConflict: 'profile_id' });
@@ -98,6 +99,7 @@ export async function saveAmazonCredentials(credentials: AmazonCredentials): Pro
 export async function saveWalmartCredentials(credentials: WalmartCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+    // Upsert based on client_id, assuming it's unique
     const { error } = await supabase
         .from('walmart_credentials')
         .upsert(credentials, { onConflict: 'client_id' });
@@ -108,6 +110,7 @@ export async function saveWalmartCredentials(credentials: WalmartCredentials): P
 export async function saveEbayCredentials(credentials: EbayCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+    // Upsert based on app_id, assuming it's unique
     const { error } = await supabase
         .from('ebay_credentials')
         .upsert(credentials, { onConflict: 'app_id' });
@@ -118,6 +121,7 @@ export async function saveEbayCredentials(credentials: EbayCredentials): Promise
 export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+    // Upsert based on keystring, assuming it's unique
     const { error } = await supabase
         .from('etsy_credentials')
         .upsert(credentials, { onConflict: 'keystring' });
@@ -128,12 +132,14 @@ export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise
 export async function saveWayfairCredentials(credentials: WayfairCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+    // Upsert based on client_id, assuming it's unique
     const { error } = await supabase
         .from('wayfair_credentials')
         .upsert(credentials, { onConflict: 'client_id' });
 
     if (error) throw new Error(`Failed to save Wayfair credentials: ${error.message}`);
 }
+
 
 
 export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
@@ -238,7 +244,7 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
 
   try {
     if (options?.countOnly) {
-      const endpoint = `${storeUrl}/admin/api/2025-01/products/count.json`;
+      const endpoint = `${storeUrl}/admin/api/2025-01/collects/count.json`;
       logs.push(`Calling Shopify product count API endpoint: ${endpoint}`);
       const response = await fetch(endpoint, { headers, cache: 'no-store' });
        if (!response.ok) {
@@ -441,5 +447,7 @@ export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[], logs
     throw new Error(`Failed to fetch orders from Shopify: ${errorMessage}`);
   }
 }
+
+    
 
     

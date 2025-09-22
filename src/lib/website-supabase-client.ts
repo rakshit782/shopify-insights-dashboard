@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 import type { ShopifyProduct } from './types';
 import { createClient } from '@supabase/supabase-js';
