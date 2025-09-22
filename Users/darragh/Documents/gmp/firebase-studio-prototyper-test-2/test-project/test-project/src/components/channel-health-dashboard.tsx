@@ -21,7 +21,7 @@ interface ChannelStatus {
 }
 
 const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } = {
-    'shopify': { name: 'Shopify', icon: <ShoppingCart className="h-8 w-8 text-green-500" /> },
+    'shopify': { name: 'Shopify', icon: <Image src="/shopify.svg" alt="Shopify" width={32} height={32} unoptimized /> },
     'amazon': { name: 'Amazon', icon: <Image src="/amazon.svg" alt="Amazon" width={32} height={32} unoptimized /> },
     'walmart': { name: 'Walmart', icon: <Image src="/walmart.svg" alt="Walmart" width={32} height={32} unoptimized /> },
     'ebay': { name: 'eBay', icon: <Image src="/ebay.svg" alt="eBay" width={32} height={32} unoptimized /> },
