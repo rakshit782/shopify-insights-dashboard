@@ -1,26 +1,10 @@
 
 'use server';
 
-import {
-  generateProductSummary,
-  type GenerateProductSummaryInput,
-} from '@/ai/flows/generate-product-summary';
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 
-
-export async function handleGenerateSummary(input: GenerateProductSummaryInput) {
-  try {
-    const result = await generateProductSummary(input);
-    return { summary: result.summary, error: null };
-  } catch (e) {
-    console.error(e);
-    // It's better to return a generic error message to the user
-    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-    return { summary: null, error: `Failed to generate summary: ${errorMessage}` };
-  }
-}
 
 export async function handleSyncProducts() {
   try {
