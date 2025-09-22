@@ -57,7 +57,7 @@ const getInitialDateRange = (): DateRange => {
 
 export function MultiPlatformOrdersDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(getInitialDateRange());
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [activeTab, setActiveTab] = useState('Shopify');
   const [filteredOrdersByTab, setFilteredOrdersByTab] = useState<Record<string, ShopifyOrder[]>>({});
   
@@ -66,6 +66,9 @@ export function MultiPlatformOrdersDashboard() {
   const [statusError, setStatusError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set initial date range on client-side to avoid hydration mismatch
+    setDateRange(getInitialDateRange());
+
     async function fetchStatuses() {
       setIsLoadingStatus(true);
       setStatusError(null);
@@ -151,5 +154,3 @@ export function MultiPlatformOrdersDashboard() {
     </div>
   );
 }
-
-    
