@@ -8,7 +8,7 @@ import { Terminal } from 'lucide-react';
 import type { ShopifyOrder } from '@/lib/types';
 import { OrderTable } from './order-table';
 import type { DateRange } from 'react-day-picker';
-import { isWithinInterval, startOfDay } from 'date-fns';
+import { isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 
 export interface FilteredOrdersResult {
     platform: string;
@@ -85,8 +85,8 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
             const toDate = dateRange.to || dateRange.from;
             filtered = filtered.filter(order => {
                 const orderDate = new Date(order.created_at);
-                // Use startOfDay to include the full 'from' and 'to' days in the interval
-                return isWithinInterval(orderDate, { start: startOfDay(dateRange.from!), end: startOfDay(toDate) });
+                // Use startOfDay and endOfDay to ensure the entire day is included
+                return isWithinInterval(orderDate, { start: startOfDay(dateRange.from!), end: endOfDay(toDate) });
             });
         }
         

@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, Search } from "lucide-react";
 import type { DateRange } from "react-day-picker";
-import { addDays, format, subDays, startOfDay } from "date-fns";
+import { addDays, format, subDays, startOfDay, endOfDay } from "date-fns";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Calendar } from "./ui/calendar";
@@ -44,17 +44,17 @@ export function OrdersHeader({
         const now = new Date();
         switch (value) {
             case 'today':
-                onDateRangeChange({ from: startOfDay(now), to: now });
+                onDateRangeChange({ from: startOfDay(now), to: endOfDay(now) });
                 break;
             case 'yesterday':
                 const yesterday = subDays(now, 1);
-                onDateRangeChange({ from: startOfDay(yesterday), to: yesterday });
+                onDateRangeChange({ from: startOfDay(yesterday), to: endOfDay(yesterday) });
                 break;
             case 'last7':
-                onDateRangeChange({ from: startOfDay(subDays(now, 6)), to: now });
+                onDateRangeChange({ from: startOfDay(subDays(now, 6)), to: endOfDay(now) });
                 break;
             case 'last30':
-                onDateRangeChange({ from: startOfDay(subDays(now, 29)), to: now });
+                onDateRangeChange({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
                 break;
             case 'all':
             default:
