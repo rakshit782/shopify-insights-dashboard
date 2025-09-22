@@ -1,4 +1,3 @@
-
 // fetch-competitors.js
 // Scrapes Amazon search results for your brand and saves competitor brands to Supabase
 
