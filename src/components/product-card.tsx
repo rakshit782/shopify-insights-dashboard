@@ -8,15 +8,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { ShopifyProduct } from '@/lib/types';
+import type { MappedShopifyProduct } from '@/lib/types';
 import { MetricDisplay } from './metric-display';
-import { DollarSign, Package, Hash, Star, Users, Pencil } from 'lucide-react';
-import { ProductSummaryGenerator } from './product-summary-generator';
+import { DollarSign, Package, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 
 interface ProductCardProps {
-  product: ShopifyProduct;
+  product: MappedShopifyProduct;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -38,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
             data-ai-hint={product.imageHint}
           />
         </div>
-        <div className="p-6 pb-4">
+        <div className="p-4 pb-2">
           <CardTitle className="mb-2 text-base font-semibold leading-tight tracking-tight">
             {product.title}
           </CardTitle>
@@ -48,7 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid flex-1 grid-cols-2 gap-x-4 gap-y-5 p-6 pt-0">
+      <CardContent className="grid flex-1 grid-cols-2 gap-x-4 gap-y-4 p-4 pt-2">
         <MetricDisplay
           icon={DollarSign}
           label="Price"
@@ -60,32 +59,8 @@ export function ProductCard({ product }: ProductCardProps) {
           label="In Stock"
           value={product.inventory.toString()}
         />
-        <MetricDisplay
-          icon={Hash}
-          label="Units Sold"
-          value={product.unitsSold.toLocaleString()}
-        />
-        <MetricDisplay
-          icon={Star}
-          label="Rating"
-          value={`${product.averageRating}/5`}
-        />
-        <MetricDisplay
-          icon={Users}
-          label="Reviews"
-          value={product.numberOfReviews.toLocaleString()}
-        />
-        <MetricDisplay
-          icon={DollarSign}
-          label="Revenue"
-          value={`$${product.totalRevenue.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          })}`}
-        />
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2 mt-auto pt-4">
-        <ProductSummaryGenerator product={product} />
+      <CardFooter className="mt-auto p-4 pt-0">
         <Button asChild variant="secondary" size="sm" className="w-full">
           <Link href={`/products/${numericId}/edit`}>
             <Pencil className="mr-2 h-4 w-4" /> Edit

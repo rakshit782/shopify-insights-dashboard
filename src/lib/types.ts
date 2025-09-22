@@ -1,6 +1,7 @@
 
 
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -90,10 +91,6 @@ export interface MappedShopifyProduct {
   inventory: number;
   imageUrl: string;
   imageHint: string;
-  unitsSold: number;
-  totalRevenue: number;
-  averageRating: number;
-  numberOfReviews: number;
 }
 
 export interface WebsiteProduct {

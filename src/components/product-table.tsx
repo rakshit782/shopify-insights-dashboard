@@ -8,16 +8,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import type { ShopifyProduct } from '@/lib/types';
+import type { MappedShopifyProduct } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-import { Star, Pencil } from 'lucide-react';
-import { ProductSummaryGenerator } from './product-summary-generator';
+import { Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 
 interface ProductTableProps {
-  products: ShopifyProduct[];
+  products: MappedShopifyProduct[];
 }
 
 export function ProductTable({ products }: ProductTableProps) {
@@ -29,9 +27,6 @@ export function ProductTable({ products }: ProductTableProps) {
             <TableHead className="w-[400px]">Product</TableHead>
             <TableHead>Price</TableHead>
             <TableHead>Inventory</TableHead>
-            <TableHead>Units Sold</TableHead>
-            <TableHead>Revenue</TableHead>
-            <TableHead className="text-right">Rating</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -63,25 +58,8 @@ export function ProductTable({ products }: ProductTableProps) {
                 </TableCell>
                 <TableCell>${product.price.toFixed(2)}</TableCell>
                 <TableCell>{product.inventory}</TableCell>
-                <TableCell>{product.unitsSold.toLocaleString()}</TableCell>
-                <TableCell>
-                  ${product.totalRevenue.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Star className="h-4 w-4 text-yellow-400" />
-                    <span>{product.averageRating.toFixed(1)}</span>
-                    <span className="text-muted-foreground">
-                      ({product.numberOfReviews})
-                    </span>
-                  </div>
-                </TableCell>
                 <TableCell className="text-center">
                   <div className="flex justify-center gap-2">
-                    <ProductSummaryGenerator product={product} />
                     <Button asChild variant="ghost" size="icon">
                       <Link href={`/products/${numericId}/edit`}>
                         <Pencil className="h-4 w-4" />

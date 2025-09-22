@@ -181,24 +181,11 @@ async function getShopifyCredentialsFromSupabase(
 }
 
 export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopifyProduct[] {
-  const staticMetrics = [
-    { unitsSold: 1502, totalRevenue: 120144, averageRating: 4.8, numberOfReviews: 312 },
-    { unitsSold: 421, totalRevenue: 147139, averageRating: 4.6, numberOfReviews: 129 },
-    { unitsSold: 2340, totalRevenue: 699660, averageRating: 4.9, numberOfReviews: 1805 },
-    { unitsSold: 855, totalRevenue: 111107, averageRating: 4.5, numberOfReviews: 240 },
-    { unitsSold: 5430, totalRevenue: 135695, averageRating: 4.7, numberOfReviews: 890 },
-    { unitsSold: 1120, totalRevenue: 111988, averageRating: 4.6, numberOfReviews: 455 },
-    { unitsSold: 3105, totalRevenue: 108519, averageRating: 4.9, numberOfReviews: 1023 },
-    { unitsSold: 980, totalRevenue: 87220, averageRating: 4.8, numberOfReviews: 350 },
-  ];
-
   return rawProducts.map((product, index) => {
     const placeholder = PlaceHolderImages[index % PlaceHolderImages.length];
     const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
-    const metricData = staticMetrics[index % staticMetrics.length];
 
     return {
-      // Start with all raw data for flexibility, though we primarily use the mapped fields below
       ...product, 
       id: product.admin_graphql_api_id,
       description: product.body_html || 'No description available.',
@@ -206,7 +193,6 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
       inventory: variant.inventory_quantity || 0,
       imageUrl: product.image?.src || placeholder.imageUrl,
       imageHint: placeholder.imageHint || product.product_type.toLowerCase().split(' ').slice(0,2).join(' '),
-      ...metricData,
     };
   });
 }
