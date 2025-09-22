@@ -35,15 +35,22 @@ async function getSupabaseClient(logs: string[]): Promise<any> {
 
 // ========== Credential Management ==========
 
-async function upsertCredential(supabase: any, tableName: string, data: any) {
+async function upsertCredential(supabase: any, tableName: string, data: any, uniqueColumn: string) {
+    // This generic upsert function handles both inserts and updates.
+    // It checks if a row exists and updates it, otherwise it inserts a new row.
     const { data: existing, error: selectError } = await supabase.from(tableName).select('id').limit(1);
     
-    if (selectError) throw new Error(`Failed to check for existing credentials in ${tableName}: ${selectError.message}`);
+    if (selectError) {
+        // Allow select to fail if table doesn't exist, but log it.
+        console.warn(`Could not check for existing credentials in ${tableName}: ${selectError.message}`);
+    }
 
     if (existing && existing.length > 0) {
+        // Update the existing record (we assume only one row of credentials per table)
         const { error: updateError } = await supabase.from(tableName).update(data).eq('id', existing[0].id);
         if (updateError) throw new Error(`Failed to update credentials in ${tableName}: ${updateError.message}`);
     } else {
+        // Insert a new record
         const { error: insertError } = await supabase.from(tableName).insert(data);
         if (insertError) throw new Error(`Failed to insert credentials in ${tableName}: ${insertError.message}`);
     }
@@ -77,37 +84,37 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
 export async function saveShopifyCredentials(storeName: string, accessToken: string): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    await upsertCredential(supabase, 'shopify_credentials', { store_name: storeName, access_token: accessToken });
+    await upsertCredential(supabase, 'shopify_credentials', { store_name: storeName, access_token: accessToken }, 'store_name');
 }
 
 export async function saveAmazonCredentials(credentials: AmazonCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    await upsertCredential(supabase, 'amazon_credentials', credentials);
+    await upsertCredential(supabase, 'amazon_credentials', credentials, 'profile_id');
 }
 
 export async function saveWalmartCredentials(credentials: WalmartCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    await upsertCredential(supabase, 'walmart_credentials', credentials);
+    await upsertCredential(supabase, 'walmart_credentials', credentials, 'client_id');
 }
 
 export async function saveEbayCredentials(credentials: EbayCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    await upsertCredential(supabase, 'ebay_credentials', credentials);
+    await upsertCredential(supabase, 'ebay_credentials', credentials, 'app_id');
 }
 
 export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    await upsertCredential(supabase, 'etsy_credentials', credentials);
+    await upsertCredential(supabase, 'etsy_credentials', credentials, 'keystring');
 }
 
 export async function saveWayfairCredentials(credentials: WayfairCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    await upsertCredential(supabase, 'wayfair_credentials', credentials);
+    await upsertCredential(supabase, 'wayfair_credentials', credentials, 'client_id');
 }
 
 
@@ -412,3 +419,5 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
     throw new Error(`An error occurred while fetching orders from Shopify: ${errorMessage}`);
   }
 }
+
+    
