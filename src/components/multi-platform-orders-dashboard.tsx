@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OrdersDashboard, type FilteredOrdersResult } from './orders-dashboard';
+import { OrdersDashboard } from './orders-dashboard';
 import { ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import type { DateRange } from 'react-day-picker';
@@ -43,9 +43,9 @@ export function MultiPlatformOrdersDashboard() {
   const [activeTab, setActiveTab] = useState('Shopify');
   const [filteredOrdersByTab, setFilteredOrdersByTab] = useState<Record<string, ShopifyOrder[]>>({});
 
-  const handleFilteredOrdersChange = (platform: string, orders: ShopifyOrder[]) => {
+  const handleFilteredOrdersChange = useCallback((platform: string, orders: ShopifyOrder[]) => {
     setFilteredOrdersByTab(prev => ({ ...prev, [platform]: orders }));
-  };
+  }, []);
 
   const currentFilteredOrders = useMemo(() => {
     return filteredOrdersByTab[activeTab] || [];
