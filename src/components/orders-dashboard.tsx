@@ -19,7 +19,7 @@ interface OrdersDashboardProps {
   platform: 'Shopify' | 'Amazon' | 'Walmart' | 'eBay' | 'Etsy' | 'Wayfair';
   searchQuery: string;
   dateRange?: DateRange;
-  onFilteredOrdersChange: (orders: ShopifyOrder[]) => void;
+  onFilteredOrdersChange: (platform: string, orders: ShopifyOrder[]) => void;
 }
 
 function OrdersSkeleton() {
@@ -57,7 +57,15 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
         }
 
         try {
-            const response = await fetch('/api/orders/shopify');
+            const params = new URLSearchParams();
+            if (dateRange?.from) {
+                params.append('created_at_min', dateRange.from.toISOString());
+            }
+            if (dateRange?.to) {
+                params.append('created_at_max', dateRange.to.toISOString());
+            }
+
+            const response = await fetch(`/api/orders/shopify?${params.toString()}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to fetch orders.');
@@ -70,38 +78,28 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
         } finally {
             setIsLoading(false);
         }
-    }, [platform]);
+    }, [platform, dateRange]);
 
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
     
     const filteredOrders = useMemo(() => {
-        let filtered = orders;
-
-        if (dateRange?.from) {
-            const toDate = dateRange.to || dateRange.from;
-            filtered = filtered.filter(order => {
-                const orderDate = new Date(order.created_at);
-                return isWithinInterval(orderDate, { start: startOfDay(dateRange.from!), end: endOfDay(toDate) });
-            });
-        }
-        
-        if (searchQuery) {
-            const lowercasedQuery = searchQuery.toLowerCase();
-            filtered = filtered.filter(order =>
-                order.name.toLowerCase().includes(lowercasedQuery) ||
-                getCustomerName(order).toLowerCase().includes(lowercasedQuery) ||
-                (order.customer?.email || '').toLowerCase().includes(lowercasedQuery)
-            );
+        if (!searchQuery) {
+            return orders;
         }
 
-        return filtered;
-    }, [orders, searchQuery, dateRange]);
+        const lowercasedQuery = searchQuery.toLowerCase();
+        return orders.filter(order =>
+            order.name.toLowerCase().includes(lowercasedQuery) ||
+            getCustomerName(order).toLowerCase().includes(lowercasedQuery) ||
+            (order.customer?.email || '').toLowerCase().includes(lowercasedQuery)
+        );
+    }, [orders, searchQuery]);
 
     useEffect(() => {
-        onFilteredOrdersChange(filteredOrders);
-    }, [filteredOrders, onFilteredOrdersChange]);
+        onFilteredOrdersChange(platform, filteredOrders);
+    }, [filteredOrders, onFilteredOrdersChange, platform]);
 
 
     if (isLoading) {
@@ -136,7 +134,7 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>No Orders Found</AlertTitle>
                 <AlertDescription>
-                    There are no orders to display for {platform}.
+                    There are no orders to display for {platform}. This could be because there are no orders in the selected date range or the connection is not configured.
                 </AlertDescription>
             </Alert>
         )

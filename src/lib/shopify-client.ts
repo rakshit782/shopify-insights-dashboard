@@ -392,7 +392,7 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
   return { product };
 }
 
-export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
+export async function getShopifyOrders(options?: { createdAtMin?: string, createdAtMax?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
   const { storeName, accessToken } = credentials;
@@ -403,8 +403,19 @@ export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[], logs
   };
 
   try {
+    const params = new URLSearchParams({
+        status: 'any',
+        limit: '250',
+    });
+    if (options?.createdAtMin) {
+        params.append('created_at_min', options.createdAtMin);
+    }
+    if (options?.createdAtMax) {
+        params.append('created_at_max', options.createdAtMax);
+    }
+
     let allOrders: ShopifyOrder[] = [];
-    let endpoint = `${storeUrl}/admin/api/2025-01/orders.json?status=any&limit=250`;
+    let endpoint = `${storeUrl}/admin/api/2025-01/orders.json?${params.toString()}`;
     logs.push('Starting Shopify order fetch...');
 
     while (endpoint) {
