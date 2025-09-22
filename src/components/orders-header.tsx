@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "./ui/calendar";
 import { ExportOrdersButton } from "./export-orders-button";
 import type { ShopifyOrder } from "@/lib/types";
-import { useMemo } from "react";
 
 
 interface OrdersHeaderProps {
@@ -55,7 +54,7 @@ export function OrdersHeader({
         }
     };
 
-    const selectedPreset = useMemo(() => {
+    const getSelectedPreset = () => {
         const now = new Date();
         if (!dateRange || !dateRange.from) return 'custom';
         
@@ -70,8 +69,9 @@ export function OrdersHeader({
         if (isSameDay(from, startOfDay(subDays(now, 29))) && isSameDay(to, endOfDay(now))) return 'last30';
 
         return 'custom';
-    }, [dateRange]);
+    };
 
+    const selectedPreset = getSelectedPreset();
 
     return (
         <div className="flex flex-col md:flex-row items-center gap-4">

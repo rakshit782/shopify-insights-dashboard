@@ -41,8 +41,8 @@ const platforms = [
 const getInitialDateRange = (): DateRange => {
     const now = new Date();
     return {
-        from: startOfDay(subDays(now, 13)), // 14 days ago from start of day
-        to: endOfDay(now), // to end of today
+        from: startOfDay(subDays(now, 13)),
+        to: endOfDay(now),
     };
 };
 
@@ -58,7 +58,7 @@ export function MultiPlatformOrdersDashboard() {
 
   const handleDateRangeChange = useCallback((range?: DateRange) => {
     setDateRange(range);
-  }, []);
+  }, [setDateRange]);
 
   const currentFilteredOrders = useMemo(() => {
     return filteredOrdersByTab[activeTab] || [];
