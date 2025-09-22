@@ -24,6 +24,10 @@ function EditProductSkeleton() {
                 </div>
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-40 w-full" />
+                </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-6 w-32 mb-4" />
                     <Skeleton className="h-24 w-full" />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -71,9 +75,9 @@ export default async function EditProductPage({ params }: { params: { id: string
     <div className="p-4 sm:p-6 lg:p-8">
        <div className="max-w-4xl mx-auto mb-6">
          <Button asChild variant="outline" size="sm">
-            <Link href="/">
+            <Link href="/shopify-products">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
+                Back to Products
             </Link>
          </Button>
        </div>

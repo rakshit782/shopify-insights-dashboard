@@ -26,7 +26,7 @@ export async function handleSyncProducts() {
   try {
     // We now get the rawProducts array from the API response
     const { rawProducts } = await getShopifyProducts();
-    if (rawProducts.length === 0) {
+    if (!rawProducts || rawProducts.length === 0) {
       return { success: false, error: 'No products found to sync.' };
     }
     // We pass the raw, complete product objects to the sync function

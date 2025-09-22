@@ -62,20 +62,18 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
 export async function saveShopifyCredentials(storeName: string, accessToken: string): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    const { data, error } = await supabase
-        .from('shopify_credentials')
-        .select('id')
-        .limit(1);
-
-    if(error) throw new Error(`Failed to check for existing Shopify credentials: ${error.message}`);
 
     const credentials = { store_name: storeName, access_token: accessToken };
     
-    if (data && data.length > 0) {
+    // Upsert logic: check if any row exists. If so, update it. If not, insert.
+    const { data: existing, error: selectError } = await supabase.from('shopify_credentials').select('id').limit(1);
+    if(selectError) throw new Error(`Failed to check for existing Shopify credentials: ${selectError.message}`);
+    
+    if (existing && existing.length > 0) {
         const { error: updateError } = await supabase
             .from('shopify_credentials')
             .update(credentials)
-            .eq('id', data[0].id);
+            .eq('id', existing[0].id);
         if (updateError) throw new Error(`Failed to update Shopify credentials: ${updateError.message}`);
     } else {
         const { error: insertError } = await supabase
@@ -88,7 +86,6 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
 export async function saveAmazonCredentials(credentials: AmazonCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    // Upsert based on a unique identifier for amazon, like profile_id
     const { error } = await supabase
         .from('amazon_credentials')
         .upsert(credentials, { onConflict: 'profile_id' });
@@ -99,7 +96,6 @@ export async function saveAmazonCredentials(credentials: AmazonCredentials): Pro
 export async function saveWalmartCredentials(credentials: WalmartCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    // Upsert based on client_id, assuming it's unique
     const { error } = await supabase
         .from('walmart_credentials')
         .upsert(credentials, { onConflict: 'client_id' });
@@ -110,7 +106,6 @@ export async function saveWalmartCredentials(credentials: WalmartCredentials): P
 export async function saveEbayCredentials(credentials: EbayCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    // Upsert based on app_id, assuming it's unique
     const { error } = await supabase
         .from('ebay_credentials')
         .upsert(credentials, { onConflict: 'app_id' });
@@ -121,7 +116,6 @@ export async function saveEbayCredentials(credentials: EbayCredentials): Promise
 export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    // Upsert based on keystring, assuming it's unique
     const { error } = await supabase
         .from('etsy_credentials')
         .upsert(credentials, { onConflict: 'keystring' });
@@ -132,7 +126,6 @@ export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise
 export async function saveWayfairCredentials(credentials: WayfairCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-    // Upsert based on client_id, assuming it's unique
     const { error } = await supabase
         .from('wayfair_credentials')
         .upsert(credentials, { onConflict: 'client_id' });
@@ -179,7 +172,7 @@ async function getShopifyCredentialsFromSupabase(
 
   if (!data || data.length === 0) {
     logs.push('No credentials found in Supabase.');
-    throw new Error('No Shopify credentials found in Supabase.');
+    throw new Error('No Shopify credentials found in Supabase. Please add them on the Connections page.');
   }
 
   const credentials = data[0];
@@ -245,15 +238,15 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
   try {
     if (options?.countOnly) {
       const endpoint = `${storeUrl}/admin/api/2025-01/collects/count.json`;
-      logs.push(`Calling Shopify product count API endpoint: ${endpoint}`);
+      logs.push(`Calling Shopify collects count API endpoint: ${endpoint}`);
       const response = await fetch(endpoint, { headers, cache: 'no-store' });
        if (!response.ok) {
         const errorData = await response.text();
         logs.push(`Shopify API Error: ${response.status} ${response.statusText}. Details: ${errorData}`);
-        throw new Error(`Failed to fetch Shopify product count: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch Shopify collects count: ${response.status} ${response.statusText}`);
       }
       const { count } = await response.json() as { count: number };
-      logs.push(`Successfully fetched product count: ${count}`);
+      logs.push(`Successfully fetched collects count: ${count}`);
       return { count, logs };
     }
     

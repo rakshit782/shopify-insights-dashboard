@@ -1,4 +1,5 @@
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -108,6 +109,14 @@ export interface ShopifyProductCreation {
   price: number;
 }
 
+export interface ShopifyVariantUpdate {
+  id: number;
+  price?: string;
+  sku?: string;
+  inventory_quantity?: number;
+}
+
+
 export interface ShopifyProductUpdate {
   id: number;
   title?: string;
@@ -115,6 +124,7 @@ export interface ShopifyProductUpdate {
   vendor?: string;
   product_type?: string;
   tags?: string;
+  variants?: ShopifyVariantUpdate[];
 }
 
 export interface ShopifyOrder {
