@@ -1,11 +1,9 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, ShopifyOrder, AmazonCredentials } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, ShopifyOrder, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
-
-// If running locally on Node <18, uncomment:
-// import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 
 interface ShopifyFetchResult {
   products: MappedShopifyProduct[];
@@ -35,43 +33,92 @@ async function getSupabaseClient(logs: string[]): Promise<any> {
     return createClient(supabaseUrl, supabaseKey);
 }
 
+// ========== Credential Management ==========
+
+async function checkCredentialExists(supabase: any, tableName: string, logs: string[]): Promise<boolean> {
+    const { data, error } = await supabase.from(tableName).select('id').limit(1);
+    if (error) {
+        logs.push(`Error checking ${tableName}: ${error.message}`);
+        return false;
+    }
+    return data && data.length > 0;
+}
+
+export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+    const statuses: Record<string, boolean> = {};
+
+    const platforms = ['shopify', 'amazon', 'walmart', 'ebay', 'etsy', 'wayfair'];
+
+    for (const platform of platforms) {
+        const tableName = `${platform}_credentials`;
+        statuses[platform] = await checkCredentialExists(supabase, tableName, logs);
+    }
+    
+    return statuses;
+}
+
 export async function saveShopifyCredentials(storeName: string, accessToken: string): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-
-    // It's a good practice to have a unique ID for the credentials row if you plan to support multiple users.
-    // For a single-user app, a fixed ID like 1 is fine.
     const { error } = await supabase
         .from('shopify_credentials')
         .upsert({ id: 1, store_name: storeName, access_token: accessToken }, { onConflict: 'id' });
 
-    if (error) {
-        logs.push(`Supabase error saving credentials: ${error.message}`);
-        throw new Error(`Failed to save Shopify credentials: ${error.message}`);
-    }
-    logs.push('Successfully saved Shopify credentials to Supabase.');
+    if (error) throw new Error(`Failed to save Shopify credentials: ${error.message}`);
 }
 
 export async function saveAmazonCredentials(credentials: AmazonCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
-
-    // Using a fixed ID for a single-user setup
-    const dataToUpsert = {
-        id: 1,
-        ...credentials,
-    };
-
     const { error } = await supabase
         .from('amazon_credentials')
-        .upsert(dataToUpsert, { onConflict: 'id' });
+        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
 
-    if (error) {
-        logs.push(`Supabase error saving Amazon credentials: ${error.message}`);
-        throw new Error(`Failed to save Amazon credentials: ${error.message}`);
-    }
-    logs.push('Successfully saved Amazon credentials to Supabase.');
+    if (error) throw new Error(`Failed to save Amazon credentials: ${error.message}`);
 }
+
+export async function saveWalmartCredentials(credentials: WalmartCredentials): Promise<void> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+    const { error } = await supabase
+        .from('walmart_credentials')
+        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+
+    if (error) throw new Error(`Failed to save Walmart credentials: ${error.message}`);
+}
+
+export async function saveEbayCredentials(credentials: EbayCredentials): Promise<void> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+    const { error } = await supabase
+        .from('ebay_credentials')
+        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+
+    if (error) throw new Error(`Failed to save eBay credentials: ${error.message}`);
+}
+
+export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise<void> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+    const { error } = await supabase
+        .from('etsy_credentials')
+        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+
+    if (error) throw new Error(`Failed to save Etsy credentials: ${error.message}`);
+}
+
+export async function saveWayfairCredentials(credentials: WayfairCredentials): Promise<void> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+    const { error } = await supabase
+        .from('wayfair_credentials')
+        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+
+    if (error) throw new Error(`Failed to save Wayfair credentials: ${error.message}`);
+}
+
 
 export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
     const supabase = await getSupabaseClient(logs);

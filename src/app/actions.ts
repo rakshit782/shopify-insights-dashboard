@@ -5,9 +5,9 @@ import {
   generateProductSummary,
   type GenerateProductSummaryInput,
 } from '@/ai/flows/generate-product-summary';
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 
 
 export async function handleGenerateSummary(input: GenerateProductSummaryInput) {
@@ -85,6 +85,17 @@ export async function handleGetProduct(id: number) {
   }
 }
 
+export async function handleGetCredentialStatuses() {
+    try {
+        const statuses = await getCredentialStatuses();
+        return { success: true, statuses, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to get credential statuses:', errorMessage);
+        return { success: false, statuses: {}, error: `Failed to get statuses: ${errorMessage}` };
+    }
+}
+
 export async function handleSaveShopifyCredentials(storeName: string, accessToken: string) {
     try {
         await saveShopifyCredentials(storeName, accessToken);
@@ -107,30 +118,46 @@ export async function handleSaveAmazonCredentials(credentials: AmazonCredentials
     }
 }
 
-// Placeholder for eBay
-export async function handleSaveEbayCredentials(credentials: any) {
-    console.log('Saving eBay credentials:', credentials);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, error: null };
+export async function handleSaveWalmartCredentials(credentials: WalmartCredentials) {
+    try {
+        await saveWalmartCredentials(credentials);
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to save Walmart credentials:', errorMessage);
+        return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
 }
 
-// Placeholder for Walmart
-export async function handleSaveWalmartCredentials(credentials: any) {
-    console.log('Saving Walmart credentials:', credentials);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, error: null };
+export async function handleSaveEbayCredentials(credentials: EbayCredentials) {
+    try {
+        await saveEbayCredentials(credentials);
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to save eBay credentials:', errorMessage);
+        return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
 }
 
-// Placeholder for Etsy
-export async function handleSaveEtsyCredentials(credentials: any) {
-    console.log('Saving Etsy credentials:', credentials);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, error: null };
+export async function handleSaveEtsyCredentials(credentials: EtsyCredentials) {
+    try {
+        await saveEtsyCredentials(credentials);
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to save Etsy credentials:', errorMessage);
+        return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
 }
 
-// Placeholder for Wayfair
-export async function handleSaveWayfairCredentials(credentials: any) {
-    console.log('Saving Wayfair credentials:', credentials);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true, error: null };
+export async function handleSaveWayfairCredentials(credentials: WayfairCredentials) {
+    try {
+        await saveWayfairCredentials(credentials);
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to save Wayfair credentials:', errorMessage);
+        return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
 }

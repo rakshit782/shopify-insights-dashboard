@@ -3,14 +3,22 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { handleSaveShopifyCredentials, handleSaveAmazonCredentials, handleSaveWalmartCredentials, handleSaveEbayCredentials, handleSaveEtsyCredentials, handleSaveWayfairCredentials } from '@/app/actions';
-import type { AmazonCredentials } from '@/lib/types';
+import { 
+    handleSaveShopifyCredentials, 
+    handleSaveAmazonCredentials, 
+    handleSaveWalmartCredentials, 
+    handleSaveEbayCredentials, 
+    handleSaveEtsyCredentials, 
+    handleSaveWayfairCredentials,
+    handleGetCredentialStatuses
+} from '@/app/actions';
+import type { AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, PlusCircle, RefreshCw, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import Image from 'next/image';
 
 const MarketplaceCard = ({
@@ -26,13 +34,11 @@ const MarketplaceCard = ({
     isConnected: boolean,
     children: React.ReactNode
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog>
             <Card className="flex flex-col">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                    <div className="w-12 h-12 flex items-center justify-center">
+                     <div className="w-16 h-16 flex items-center justify-center flex-shrink-0">
                         {logo}
                     </div>
                     <div className="flex-1">
@@ -56,7 +62,7 @@ const MarketplaceCard = ({
 };
 
 export function ConnectionsForm() {
-    // In a real app, you'd fetch the connection status for each platform
+    const { toast } = useToast();
     const [connections, setConnections] = useState({
         shopify: false,
         amazon: false,
@@ -65,21 +71,8 @@ export function ConnectionsForm() {
         etsy: false,
         wayfair: false,
     });
+    const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        // Mock fetching connection statuses
-        // In a real app, you would check if valid credentials exist in Supabase
-        setConnections({
-            shopify: true, // Let's assume Shopify is connected
-            amazon: false,
-            walmart: false,
-            ebay: false,
-            etsy: false,
-            wayfair: false,
-        })
-    }, []);
-
-    const { toast } = useToast();
     const [isSavingShopify, setIsSavingShopify] = useState(false);
     const [isSavingAmazon, setIsSavingAmazon] = useState(false);
     const [isSavingWalmart, setIsSavingWalmart] = useState(false);
@@ -87,6 +80,7 @@ export function ConnectionsForm() {
     const [isSavingEtsy, setIsSavingEtsy] = useState(false);
     const [isSavingWayfair, setIsSavingWayfair] = useState(false);
 
+    // Form states
     const [shopifyStoreName, setShopifyStoreName] = useState('');
     const [shopifyApiToken, setShopifyApiToken] = useState('');
 
@@ -95,6 +89,33 @@ export function ConnectionsForm() {
     const [amazonClientSecret, setAmazonClientSecret] = useState('');
     const [amazonRefreshToken, setAmazonRefreshToken] = useState('');
 
+    const [walmartClientId, setWalmartClientId] = useState('');
+    const [walmartClientSecret, setWalmartClientSecret] = useState('');
+
+    const [ebayAppId, setEbayAppId] = useState('');
+    const [ebayCertId, setEbayCertId] = useState('');
+    const [ebayDevId, setEbayDevId] = useState('');
+    const [ebayOauthToken, setEbayOauthToken] = useState('');
+
+    const [etsyKeystring, setEtsyKeystring] = useState('');
+
+    const [wayfairClientId, setWayfairClientId] = useState('');
+    const [wayfairClientSecret, setWayfairClientSecret] = useState('');
+
+    useEffect(() => {
+        async function fetchStatuses() {
+            setIsLoading(true);
+            const result = await handleGetCredentialStatuses();
+            if (result.success && result.statuses) {
+                setConnections(prev => ({ ...prev, ...result.statuses }));
+            } else {
+                 toast({ title: "Error", description: "Could not fetch connection statuses.", variant: "destructive" });
+            }
+            setIsLoading(false);
+        }
+        fetchStatuses();
+    }, [toast]);
+    
     const onSaveShopify = async () => {
         setIsSavingShopify(true);
         const result = await handleSaveShopifyCredentials(shopifyStoreName, shopifyApiToken);
@@ -125,17 +146,71 @@ export function ConnectionsForm() {
         setIsSavingAmazon(false);
     };
 
-    // Placeholder save handlers
-    const onSaveWalmart = async () => { setIsSavingWalmart(true); await new Promise(r => setTimeout(r, 1000)); setIsSavingWalmart(false); toast({title: "Placeholder", description: "Saving Walmart credentials is not implemented."}) };
-    const onSaveEbay = async () => { setIsSavingEbay(true); await new Promise(r => setTimeout(r, 1000)); setIsSavingEbay(false); toast({title: "Placeholder", description: "Saving eBay credentials is not implemented."}) };
-    const onSaveEtsy = async () => { setIsSavingEtsy(true); await new Promise(r => setTimeout(r, 1000)); setIsSavingEtsy(false); toast({title: "Placeholder", description: "Saving Etsy credentials is not implemented."}) };
-    const onSaveWayfair = async () => { setIsSavingWayfair(true); await new Promise(r => setTimeout(r, 1000)); setIsSavingWayfair(false); toast({title: "Placeholder", description: "Saving Wayfair credentials is not implemented."}) };
+    const onSaveWalmart = async () => {
+        setIsSavingWalmart(true);
+        const result = await handleSaveWalmartCredentials({ client_id: walmartClientId, client_secret: walmartClientSecret });
+        if (result.success) {
+            toast({ title: "Walmart Credentials Saved" });
+            setConnections(prev => ({...prev, walmart: true}));
+        } else {
+            toast({ title: "Save Failed", description: result.error, variant: "destructive" });
+        }
+        setIsSavingWalmart(false);
+    };
+
+    const onSaveEbay = async () => {
+        setIsSavingEbay(true);
+        const result = await handleSaveEbayCredentials({ app_id: ebayAppId, cert_id: ebayCertId, dev_id: ebayDevId, oauth_token: ebayOauthToken });
+        if (result.success) {
+            toast({ title: "eBay Credentials Saved" });
+            setConnections(prev => ({...prev, ebay: true}));
+        } else {
+            toast({ title: "Save Failed", description: result.error, variant: "destructive" });
+        }
+        setIsSavingEbay(false);
+    };
+    
+    const onSaveEtsy = async () => {
+        setIsSavingEtsy(true);
+        const result = await handleSaveEtsyCredentials({ keystring: etsyKeystring });
+        if (result.success) {
+            toast({ title: "Etsy Credentials Saved" });
+            setConnections(prev => ({...prev, etsy: true}));
+        } else {
+            toast({ title: "Save Failed", description: result.error, variant: "destructive" });
+        }
+        setIsSavingEtsy(false);
+    };
+
+    const onSaveWayfair = async () => {
+        setIsSavingWayfair(true);
+        const result = await handleSaveWayfairCredentials({ client_id: wayfairClientId, client_secret: wayfairClientSecret });
+        if (result.success) {
+            toast({ title: "Wayfair Credentials Saved" });
+            setConnections(prev => ({...prev, wayfair: true}));
+        } else {
+            toast({ title: "Save Failed", description: result.error, variant: "destructive" });
+        }
+        setIsSavingWayfair(false);
+    };
+
+    if (isLoading) {
+        return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({length: 6}).map((_, i) => (
+                <Card key={i} className="animate-pulse h-48">
+                    <CardHeader><div className="h-6 w-1/2 bg-muted rounded-md" /></CardHeader>
+                    <CardContent><div className="h-4 w-3/4 bg-muted rounded-md" /></CardContent>
+                    <CardFooter><div className="h-10 w-full bg-muted rounded-md" /></CardFooter>
+                </Card>
+            ))}
+        </div>
+    }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Shopify */}
             <MarketplaceCard
-                logo={<Image src="/shopify.svg" alt="Shopify Logo" width={40} height={40} className="h-auto w-auto" />}
+                logo={<Image src="/shopify.svg" alt="Shopify Logo" width={48} height={48} />}
                 name="Shopify"
                 description="Manage your primary e-commerce storefront."
                 isConnected={connections.shopify}
@@ -172,7 +247,7 @@ export function ConnectionsForm() {
 
             {/* Amazon */}
             <MarketplaceCard
-                logo={<Image src="/amazon.svg" alt="Amazon Logo" width={40} height={40} className="h-auto w-auto" />}
+                logo={<Image src="/amazon.svg" alt="Amazon Logo" width={48} height={48} />}
                 name="Amazon"
                 description="Connect your Seller Central account."
                 isConnected={connections.amazon}
@@ -212,7 +287,7 @@ export function ConnectionsForm() {
             
             {/* Walmart */}
             <MarketplaceCard
-                logo={<Image src="/walmart.svg" alt="Walmart Logo" width={40} height={40} className="h-auto w-auto" />}
+                logo={<Image src="/walmart.svg" alt="Walmart Logo" width={48} height={48} />}
                 name="Walmart"
                 description="Sync with Walmart Marketplace."
                 isConnected={connections.walmart}
@@ -225,11 +300,11 @@ export function ConnectionsForm() {
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="walmart-client-id">Client ID</Label>
-                            <Input id="walmart-client-id" placeholder="Enter your Walmart Client ID" />
+                            <Input id="walmart-client-id" placeholder="Enter your Walmart Client ID" value={walmartClientId} onChange={e => setWalmartClientId(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="walmart-client-secret">Client Secret</Label>
-                            <Input id="walmart-client-secret" type="password" placeholder="Enter your Walmart Client Secret" />
+                            <Input id="walmart-client-secret" type="password" placeholder="Enter your Walmart Client Secret" value={walmartClientSecret} onChange={e => setWalmartClientSecret(e.target.value)} />
                         </div>
                     </div>
                     <DialogFooter>
@@ -244,7 +319,7 @@ export function ConnectionsForm() {
 
              {/* eBay */}
             <MarketplaceCard
-                logo={<Image src="/ebay.svg" alt="eBay Logo" width={40} height={40} className="h-auto w-auto" />}
+                logo={<Image src="/ebay.svg" alt="eBay Logo" width={48} height={48} />}
                 name="eBay"
                 description="List products on the eBay platform."
                 isConnected={connections.ebay}
@@ -257,19 +332,19 @@ export function ConnectionsForm() {
                      <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="ebay-app-id">App ID (Client ID)</Label>
-                            <Input id="ebay-app-id" placeholder="Enter your eBay App ID" />
+                            <Input id="ebay-app-id" placeholder="Enter your eBay App ID" value={ebayAppId} onChange={e => setEbayAppId(e.target.value)}/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="ebay-cert-id">Cert ID (Client Secret)</Label>
-                            <Input id="ebay-cert-id" type="password" placeholder="Enter your eBay Cert ID" />
+                            <Input id="ebay-cert-id" type="password" placeholder="Enter your eBay Cert ID" value={ebayCertId} onChange={e => setEbayCertId(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="ebay-dev-id">Dev ID</Label>
-                            <Input id="ebay-dev-id" placeholder="Enter your eBay Dev ID" />
+                            <Input id="ebay-dev-id" placeholder="Enter your eBay Dev ID" value={ebayDevId} onChange={e => setEbayDevId(e.target.value)} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="ebay-oauth-token">OAuth User Token</Label>
-                            <Input id="ebay-oauth-token" type="password" placeholder="Enter your OAuth User Token" />
+                            <Input id="ebay-oauth-token" type="password" placeholder="Enter your OAuth User Token" value={ebayOauthToken} onChange={e => setEbayOauthToken(e.target.value)} />
                         </div>
                     </div>
                     <DialogFooter>
@@ -284,7 +359,7 @@ export function ConnectionsForm() {
 
             {/* Etsy */}
             <MarketplaceCard
-                logo={<Image src="/etsy.svg" alt="Etsy Logo" width={40} height={40} className="h-auto w-auto" />}
+                logo={<Image src="/etsy.svg" alt="Etsy Logo" width={48} height={48} />}
                 name="Etsy"
                 description="Connect your creative marketplace."
                 isConnected={connections.etsy}
@@ -297,7 +372,7 @@ export function ConnectionsForm() {
                      <div className="space-y-4 py-4">
                        <div className="space-y-2">
                             <Label htmlFor="etsy-keystring">API Keystring</Label>
-                            <Input id="etsy-keystring" placeholder="Enter your Etsy API Keystring" />
+                            <Input id="etsy-keystring" placeholder="Enter your Etsy API Keystring" value={etsyKeystring} onChange={e => setEtsyKeystring(e.target.value)} />
                         </div>
                          <p className="text-sm text-muted-foreground pt-2">
                             Etsy uses an API Key (Keystring) for authentication. You can generate one in your Etsy Developer account.
@@ -315,7 +390,7 @@ export function ConnectionsForm() {
 
             {/* Wayfair */}
             <MarketplaceCard
-                logo={<Image src="/wayfair.svg" alt="Wayfair Logo" width={40} height={40} className="w-auto h-auto" />}
+                logo={<Image src="/wayfair.svg" alt="Wayfair Logo" width={48} height={48} />}
                 name="Wayfair"
                 description="Manage your home goods products."
                 isConnected={connections.wayfair}
@@ -328,11 +403,11 @@ export function ConnectionsForm() {
                      <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="wayfair-client-id">Client ID</Label>
-                            <Input id="wayfair-client-id" placeholder="Enter your Wayfair Client ID" />
+                            <Input id="wayfair-client-id" placeholder="Enter your Wayfair Client ID" value={wayfairClientId} onChange={e => setWayfairClientId(e.target.value)} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="wayfair-client-secret">Client Secret</Label>
-                            <Input id="wayfair-client-secret" type="password" placeholder="Enter your Wayfair Client Secret" />
+                            <Input id="wayfair-client-secret" type="password" placeholder="Enter your Wayfair Client Secret" value={wayfairClientSecret} onChange={e => setWayfairClientSecret(e.target.value)} />
                         </div>
                     </div>
                     <DialogFooter>
@@ -348,7 +423,3 @@ export function ConnectionsForm() {
         </div>
     )
 }
-
-    
-
-    

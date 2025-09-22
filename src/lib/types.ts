@@ -1,8 +1,4 @@
 
-
-
-
-
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -150,4 +146,25 @@ export interface AmazonCredentials {
     client_id: string;
     client_secret: string;
     refresh_token: string;
+}
+
+export interface WalmartCredentials {
+    client_id: string;
+    client_secret: string;
+}
+
+export interface EbayCredentials {
+    app_id: string;
+    cert_id: string;
+    dev_id: string;
+    oauth_token: string;
+}
+
+export interface EtsyCredentials {
+    keystring: string;
+}
+
+export interface WayfairCredentials {
+    client_id: string;
+    client_secret: string;
 }
