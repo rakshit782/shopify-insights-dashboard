@@ -10,10 +10,16 @@ import { OrderTable } from './order-table';
 import type { DateRange } from 'react-day-picker';
 import { isWithinInterval } from 'date-fns';
 
+export interface FilteredOrdersResult {
+    platform: string;
+    orders: ShopifyOrder[];
+}
+
 interface OrdersDashboardProps {
   platform: 'Shopify' | 'Amazon' | 'Walmart' | 'eBay' | 'Etsy' | 'Wayfair';
   searchQuery: string;
   dateRange?: DateRange;
+  onFilteredOrdersChange: (orders: ShopifyOrder[]) => void;
 }
 
 function OrdersSkeleton() {
@@ -35,7 +41,7 @@ const getCustomerName = (order: ShopifyOrder) => {
     return 'N/A';
 };
 
-export function OrdersDashboard({ platform, searchQuery, dateRange }: OrdersDashboardProps) {
+export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOrdersChange }: OrdersDashboardProps) {
     const [orders, setOrders] = useState<ShopifyOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -88,12 +94,17 @@ export function OrdersDashboard({ platform, searchQuery, dateRange }: OrdersDash
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(order =>
                 order.name.toLowerCase().includes(lowercasedQuery) ||
-                getCustomerName(order).toLowerCase().includes(lowercasedQuery)
+                getCustomerName(order).toLowerCase().includes(lowercasedQuery) ||
+                (order.customer?.email || '').toLowerCase().includes(lowercasedQuery)
             );
         }
 
         return filtered;
     }, [orders, searchQuery, dateRange]);
+
+    useEffect(() => {
+        onFilteredOrdersChange(filteredOrders);
+    }, [filteredOrders, onFilteredOrdersChange]);
 
 
     if (isLoading) {

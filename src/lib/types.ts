@@ -150,6 +150,7 @@ export interface ShopifyOrder {
             province: string;
             country: string;
             zip: string;
+            phone: string | null;
         }
     } | null;
     line_items: {
@@ -160,12 +161,15 @@ export interface ShopifyOrder {
         sku: string | null;
     }[];
     shipping_address: {
+      first_name?: string;
+      last_name?: string;
       address1: string;
       address2: string | null;
       city: string;
       province: string;
       country: string;
       zip: string;
+      phone: string | null;
     } | null;
 }
 

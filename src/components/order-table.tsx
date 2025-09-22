@@ -92,7 +92,6 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
             <TableHead>Order ID</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Order Date</TableHead>
-            <TableHead>Shipment Date</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead className="text-center">Actions</TableHead>
@@ -108,13 +107,10 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
               </TableCell>
               <TableCell>
                 <div className="font-medium">{getCustomerName(order)}</div>
-                <div className="text-sm text-muted-foreground">{order.customer?.email}</div>
+                <div className="text-sm text-muted-foreground">{order.customer?.email || 'N/A'}</div>
               </TableCell>
               <TableCell>
                 {format(new Date(order.created_at), 'MMM d, yyyy')}
-              </TableCell>
-              <TableCell>
-                {order.processed_at ? format(new Date(order.processed_at), 'MMM d, yyyy') : 'Pending'}
               </TableCell>
               <TableCell>
                  <div className="flex flex-col gap-1">
@@ -138,6 +134,8 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => handleRowClick(order)}>View Details</DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => handleAction('Confirm Shipment', order.name)}>Confirm Shipment</DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleAction('Process Refund', order.name)}>Process Refund</DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleAction('Cancel Order', order.name)}>Cancel Order</DropdownMenuItem>
@@ -174,6 +172,7 @@ declare module '@/lib/types' {
             province: string;
             country: string;
             zip: string;
+            phone: string | null;
         } | null;
     }
 }

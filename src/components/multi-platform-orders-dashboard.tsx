@@ -1,13 +1,14 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OrdersDashboard } from './orders-dashboard';
+import { OrdersDashboard, type FilteredOrdersResult } from './orders-dashboard';
 import { ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import type { DateRange } from 'react-day-picker';
 import { OrdersHeader } from './orders-header';
+import type { ShopifyOrder } from '@/lib/types';
 
 const platforms = [
   {
@@ -39,6 +40,16 @@ const platforms = [
 export function MultiPlatformOrdersDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState('Shopify');
+  const [filteredOrdersByTab, setFilteredOrdersByTab] = useState<Record<string, ShopifyOrder[]>>({});
+
+  const handleFilteredOrdersChange = (platform: string, orders: ShopifyOrder[]) => {
+    setFilteredOrdersByTab(prev => ({ ...prev, [platform]: orders }));
+  };
+
+  const currentFilteredOrders = useMemo(() => {
+    return filteredOrdersByTab[activeTab] || [];
+  }, [activeTab, filteredOrdersByTab]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -52,9 +63,10 @@ export function MultiPlatformOrdersDashboard() {
         onSearchQueryChange={setSearchQuery}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
+        filteredOrders={currentFilteredOrders}
       />
 
-      <Tabs defaultValue="Shopify" className="w-full mt-6">
+      <Tabs defaultValue="Shopify" className="w-full mt-6" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {platforms.map(platform => (
             <TabsTrigger key={platform.name} value={platform.name} className="gap-2">
@@ -70,6 +82,7 @@ export function MultiPlatformOrdersDashboard() {
               platform={platform.name as any}
               searchQuery={searchQuery}
               dateRange={dateRange}
+              onFilteredOrdersChange={(orders) => handleFilteredOrdersChange(platform.name, orders)}
             />
           </TabsContent>
         ))}
