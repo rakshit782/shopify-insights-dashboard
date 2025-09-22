@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getWebsiteProducts } from '@/lib/website-supabase-client';
 import { mapShopifyProducts } from '@/lib/shopify-client';
 
-export const revalidate = 3600; // Cache for 1 hour
+export const revalidate = 18000; // Cache for 5 hours
 
 export async function GET() {
   try {
@@ -16,4 +16,3 @@ export async function GET() {
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
