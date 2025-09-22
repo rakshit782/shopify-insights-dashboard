@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 import 'dotenv/config';
 
-// Use the WEBSITE Supabase project credentials
+// Use the WEBSITE Supabase project credentials where competitor data is stored
 const supabaseUrl = process.env.WEBSITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
 
