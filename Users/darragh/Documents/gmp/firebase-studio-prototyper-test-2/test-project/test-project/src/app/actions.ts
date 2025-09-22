@@ -4,7 +4,6 @@
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
-import { google } from 'googleapis';
 
 export async function handleSyncProducts() {
   try {
@@ -144,43 +143,4 @@ export async function handleSaveWayfairCredentials(credentials: WayfairCredentia
         console.error('Failed to save Wayfair credentials:', errorMessage);
         return { success: false, error: `Failed to save credentials: ${errorMessage}` };
     }
-}
-
-
-export async function getCompetitorsFromSheet() {
-  try {
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-    const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
-
-    if (!sheetId || !apiKey) {
-      throw new Error('Google Sheet ID or API Key is not configured in .env file.');
-    }
-
-    const sheets = google.sheets({ version: 'v4', auth: apiKey });
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: 'Sheet1!A:D', // Assuming data is in columns A to D of 'Sheet1'
-    });
-
-    const rows = response.data.values;
-    if (!rows || rows.length < 2) {
-      return { success: true, data: [] }; // No data or only header row
-    }
-
-    const headers = rows[0];
-    const competitorData = rows.slice(1).map((row, index) => ({
-      id: index.toString(),
-      competitor_brand: row[headers.indexOf('Brand')] || '',
-      product_title: row[headers.indexOf('Product')] || '',
-      price: parseFloat(row[headers.indexOf('Price')]?.replace('$', '')) || 0,
-      url: row[headers.indexOf('URL')] || '',
-    }));
-    
-    return { success: true, data: competitorData, error: null };
-
-  } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred fetching from Google Sheets.';
-    console.error('Google Sheets API error:', errorMessage);
-    return { success: false, data: [], error: errorMessage };
-  }
 }
