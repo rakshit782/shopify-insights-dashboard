@@ -1,6 +1,6 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 
@@ -190,6 +190,66 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
     const errorData = await response.json();
     console.error('Shopify API Error:', errorData);
     throw new Error(`Failed to create Shopify product: ${JSON.stringify(errorData.errors)}`);
+  }
+
+  const { product } = await response.json();
+  return { product };
+}
+
+export async function getShopifyProduct(id: number): Promise<{ product: ShopifyProduct | null }> {
+  const logs: string[] = [];
+  const credentials = await getShopifyCredentialsFromSupabase(logs);
+  const { storeName, accessToken } = credentials;
+  const storeUrl = `https://${storeName}`;
+  const endpoint = `${storeUrl}/admin/api/2025-01/products/${id}.json`;
+
+  const response = await fetch(endpoint, {
+    headers: {
+      'X-Shopify-Access-Token': accessToken,
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    // If the product is not found, Shopify returns a 404
+    if (response.status === 404) {
+      return { product: null };
+    }
+    const errorData = await response.json();
+    console.error('Shopify API Error:', errorData);
+    throw new Error(`Failed to fetch product ${id}: ${JSON.stringify(errorData.errors)}`);
+  }
+
+  const { product } = await response.json();
+  return { product };
+}
+
+export async function updateShopifyProduct(productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct }> {
+  const logs: string[] = [];
+  const credentials = await getShopifyCredentialsFromSupabase(logs);
+  const { storeName, accessToken } = credentials;
+  const storeUrl = `https://${storeName}`;
+  const endpoint = `${storeUrl}/admin/api/2025-01/products/${productData.id}.json`;
+
+  const payload = {
+    product: productData,
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'PUT',
+    headers: {
+      'X-Shopify-Access-Token': accessToken,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error('Shopify API Error:', errorData);
+    throw new Error(`Failed to update Shopify product: ${JSON.stringify(errorData.errors)}`);
   }
 
   const { product } = await response.json();

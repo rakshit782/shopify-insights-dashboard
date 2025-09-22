@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import {
   Card,
@@ -9,14 +10,20 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { ShopifyProduct } from '@/lib/types';
 import { MetricDisplay } from './metric-display';
-import { DollarSign, Package, Hash, Star, Users } from 'lucide-react';
+import { DollarSign, Package, Hash, Star, Users, Pencil } from 'lucide-react';
 import { ProductSummaryGenerator } from './product-summary-generator';
+import Link from 'next/link';
+import { Button } from './ui/button';
 
 interface ProductCardProps {
   product: ShopifyProduct;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  
+  // Extract the numeric ID from the GraphQL GID
+  const numericId = product.id.split('/').pop();
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
       <CardHeader className="p-0">
@@ -76,8 +83,13 @@ export function ProductCard({ product }: ProductCardProps) {
           })}`}
         />
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex gap-2">
         <ProductSummaryGenerator product={product} />
+        <Button asChild variant="outline" size="sm" className="w-full">
+          <Link href={`/products/${numericId}/edit`}>
+            <Pencil className="mr-2 h-4 w-4" /> Edit
+          </Link>
+        </Button>
       </CardFooter>
     </Card>
   );

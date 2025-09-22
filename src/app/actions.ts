@@ -5,9 +5,9 @@ import {
   generateProductSummary,
   type GenerateProductSummaryInput,
 } from '@/ai/flows/generate-product-summary';
-import { getShopifyProducts, createShopifyProduct } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate } from '@/lib/types';
 
 
 export async function handleGenerateSummary(input: GenerateProductSummaryInput) {
@@ -52,5 +52,35 @@ export async function handleCreateProduct(productData: ShopifyProductCreation) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     console.error('Product creation failed:', errorMessage);
     return { success: false, error: `Failed to create product: ${errorMessage}` };
+  }
+}
+
+export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
+  try {
+    // Update product in Shopify
+    const { product: updatedShopifyProduct } = await updateShopifyProduct(productData);
+
+    // Re-sync the updated product to our website's Supabase
+    await syncProductsToWebsite([updatedShopifyProduct]);
+
+    return { success: true, error: null, product: updatedShopifyProduct };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    console.error('Product update failed:', errorMessage);
+    return { success: false, error: `Failed to update product: ${errorMessage}` };
+  }
+}
+
+export async function handleGetProduct(id: number) {
+  try {
+    const { product } = await getShopifyProduct(id);
+    if (!product) {
+      return { product: null, error: `Product with ID ${id} not found.`};
+    }
+    return { product, error: null };
+  } catch (e) {
+     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    console.error('Get product failed:', errorMessage);
+    return { product: null, error: `Failed to retrieve product: ${errorMessage}` };
   }
 }
