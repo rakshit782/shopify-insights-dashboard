@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck } from 'lucide-react';
+import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
