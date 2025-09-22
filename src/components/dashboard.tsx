@@ -47,7 +47,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
     
     try {
       const endpoint = dataSource === 'shopify' ? '/api/products/shopify' : '/api/products/website';
-      const response = await fetch(endpoint);
+      const response = await fetch(endpoint, { cache: 'no-store' });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -153,7 +153,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
         dataSource={dataSource}
       />
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground/80 mb-6">
+        <h2 className="text-xl font-bold tracking-tight text-foreground/80 mb-6">
           {dataSource === 'shopify' ? 'Shopify Products' : 'Website Products'}
         </h2>
         {renderContent()}

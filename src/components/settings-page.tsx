@@ -13,7 +13,7 @@ export function SettingsPage() {
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Settings</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Settings</h1>
                 <p className="text-muted-foreground mb-8">
                     Manage your account settings, connections, and preferences.
                 </p>

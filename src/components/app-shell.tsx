@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck } from 'lucide-react';
+import { BarChartHorizontal, Globe, Settings, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -28,11 +28,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
            <div className="flex items-center gap-2 p-2">
             {businessLogo ? (
-              <Image src={businessLogo} alt="Business Logo" width={24} height={24} className="h-6 w-6 object-contain" />
+              <Image src={businessLogo} alt="Business Logo" width={20} height={20} className="h-5 w-5 object-contain" />
             ) : (
-              <ShoppingCart className="h-6 w-6 text-primary" />
+              <ShoppingCart className="h-5 w-5 text-primary" />
             )}
-            <h1 className="font-headline text-xl font-bold tracking-tight text-foreground">
+            <h1 className="font-headline text-lg font-bold tracking-tight text-foreground">
               Shopify Insights
             </h1>
           </div>
@@ -51,18 +51,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/orders'}
-                    tooltip={{ children: 'Orders' }}
-                >
-                    <Link href="/orders">
-                    <Truck />
-                    <span>Orders</span>
-                    </Link>
-                </SidebarMenuButton>
-             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild

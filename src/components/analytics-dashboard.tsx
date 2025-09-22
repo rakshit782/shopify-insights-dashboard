@@ -94,7 +94,7 @@ export function AnalyticsDashboard() {
                                 <Icon className="h-5 w-5 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">
+                                <div className="text-2xl font-bold">
                                     {count.toLocaleString()}
                                 </div>
                                 <p className="text-xs text-muted-foreground">Total Products</p>
@@ -108,7 +108,7 @@ export function AnalyticsDashboard() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground mb-1">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">
                 Analytics Dashboard
             </h2>
             <p className="text-muted-foreground mb-8">An overview of your e-commerce ecosystem.</p>
@@ -123,7 +123,7 @@ export function AnalyticsDashboard() {
 
             <div className="space-y-8">
                 <div>
-                    <h3 className="text-xl font-semibold tracking-tight text-foreground/90 mb-4">Product Inventory</h3>
+                    <h3 className="text-lg font-semibold tracking-tight text-foreground/90 mb-4">Product Inventory</h3>
                     {renderProductCountCards()}
                 </div>
 

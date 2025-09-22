@@ -37,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         </div>
         <div className="p-6 pb-4">
-          <CardTitle className="mb-2 text-lg font-semibold leading-tight tracking-tight">
+          <CardTitle className="mb-2 text-base font-semibold leading-tight tracking-tight">
             {product.title}
           </CardTitle>
           <div className="flex flex-wrap gap-2">
