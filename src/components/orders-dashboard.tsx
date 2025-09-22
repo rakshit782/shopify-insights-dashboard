@@ -50,7 +50,6 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
         setIsLoading(true);
         setError(null);
         
-        // For now, we only fetch from Shopify. Others are placeholders.
         if (platform !== 'Shopify') {
             setOrders([]);
             setIsLoading(false);
@@ -80,17 +79,14 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
     const filteredOrders = useMemo(() => {
         let filtered = orders;
 
-        // Apply date range filter
         if (dateRange?.from) {
             const toDate = dateRange.to || dateRange.from;
             filtered = filtered.filter(order => {
                 const orderDate = new Date(order.created_at);
-                // Use startOfDay and endOfDay to ensure the entire day is included
                 return isWithinInterval(orderDate, { start: startOfDay(dateRange.from!), end: endOfDay(toDate) });
             });
         }
         
-        // Apply search query filter
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(order =>
