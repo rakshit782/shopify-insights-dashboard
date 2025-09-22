@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
     handleSaveShopifyCredentials, 
@@ -102,19 +102,20 @@ export function ConnectionsForm() {
     const [wayfairClientId, setWayfairClientId] = useState('');
     const [wayfairClientSecret, setWayfairClientSecret] = useState('');
 
-    useEffect(() => {
-        async function fetchStatuses() {
-            setIsLoading(true);
-            const result = await handleGetCredentialStatuses();
-            if (result.success && result.statuses) {
-                setConnections(prev => ({ ...prev, ...result.statuses }));
-            } else {
-                 toast({ title: "Error", description: "Could not fetch connection statuses.", variant: "destructive" });
-            }
-            setIsLoading(false);
+    const fetchStatuses = useCallback(async () => {
+        setIsLoading(true);
+        const result = await handleGetCredentialStatuses();
+        if (result.success && result.statuses) {
+            setConnections(prev => ({ ...prev, ...result.statuses }));
+        } else {
+             toast({ title: "Error", description: "Could not fetch connection statuses.", variant: "destructive" });
         }
-        fetchStatuses();
+        setIsLoading(false);
     }, [toast]);
+
+    useEffect(() => {
+        fetchStatuses();
+    }, [fetchStatuses]);
     
     const onSaveShopify = async () => {
         setIsSavingShopify(true);
