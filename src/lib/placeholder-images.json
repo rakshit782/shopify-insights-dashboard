@@ -47,6 +47,12 @@
       "description": "A person rolling out a yoga mat.",
       "imageUrl": "https://picsum.photos/seed/108/600/400",
       "imageHint": "yoga mat"
+    },
+    {
+      "id": "login-background",
+      "description": "Abstract background with data visualizations.",
+      "imageUrl": "https://picsum.photos/seed/login/1200/800",
+      "imageHint": "data visualization"
     }
   ]
 }
