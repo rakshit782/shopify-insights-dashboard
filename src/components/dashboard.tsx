@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { ProductCard } from '@/components/product-card';
-import { getShopifyProducts, mapShopifyProducts } from '@/lib/shopify-client';
 import type { MappedShopifyProduct } from '@/lib/types';
 import { ProductTable } from '@/components/product-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -13,7 +12,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { DashboardSkeleton } from './dashboard-skeleton';
-import { getWebsiteProducts } from '@/lib/website-supabase-client';
 
 interface DashboardProps {
   initialProducts: MappedShopifyProduct[];
@@ -42,12 +40,17 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
     addLog(`Starting data fetch from ${dataSource}...`);
     
     try {
-      const { rawProducts, logs: fetchLogs } = dataSource === 'shopify' 
-        ? await getShopifyProducts() 
-        : await getWebsiteProducts();
+      const endpoint = dataSource === 'shopify' ? '/api/products/shopify' : '/api/products/website';
+      const response = await fetch(endpoint);
 
-      fetchLogs.forEach(log => addLog(log));
-      const mappedProducts = mapShopifyProducts(rawProducts);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch data');
+      }
+
+      const { products: mappedProducts, logs: fetchLogs } = await response.json();
+
+      fetchLogs.forEach((log: string) => addLog(log));
       setProductData(mappedProducts);
       addLog(`Successfully fetched and mapped ${mappedProducts.length} products.`);
     } catch (e) {
