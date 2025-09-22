@@ -18,8 +18,8 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { saveSupabaseCredentials } from "../actions"
 import { useRouter } from "next/navigation"
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Edit, Check } from "lucide-react";
 
 const formSchema = z.object({
   supabaseUrl: z.string().url({ message: "Please enter a valid URL." }),
@@ -37,6 +37,7 @@ export function SettingsForm({ defaultValues }: SettingsFormProps) {
   const { toast } = useToast()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(!defaultValues.supabaseUrl || !defaultValues.supabaseKey);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,6 +47,13 @@ export function SettingsForm({ defaultValues }: SettingsFormProps) {
     },
   })
  
+  useEffect(() => {
+    // If credentials are provided, disable editing by default
+    if (defaultValues.supabaseUrl && defaultValues.supabaseKey) {
+      setIsEditing(false);
+    }
+  }, [defaultValues]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     const formData = new FormData()
@@ -59,6 +67,7 @@ export function SettingsForm({ defaultValues }: SettingsFormProps) {
         title: "Credentials Saved",
         description: "Your Supabase credentials have been saved successfully.",
       })
+      setIsEditing(false); // Go back to read-only mode
       router.push('/')
       router.refresh();
     } else {
@@ -81,7 +90,7 @@ export function SettingsForm({ defaultValues }: SettingsFormProps) {
             <FormItem>
               <FormLabel>Supabase Project URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://<project-id>.supabase.co" {...field} />
+                <Input placeholder="https://<project-id>.supabase.co" {...field} disabled={!isEditing} />
               </FormControl>
               <FormDescription>
                 This is your Supabase project URL.
@@ -97,7 +106,7 @@ export function SettingsForm({ defaultValues }: SettingsFormProps) {
             <FormItem>
               <FormLabel>Supabase Anon Key</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="your-anon-key" {...field} />
+                <Input type="password" placeholder="your-anon-key" {...field} disabled={!isEditing} />
               </FormControl>
               <FormDescription>
                 This is your public-facing Supabase anon key.
@@ -106,10 +115,19 @@ export function SettingsForm({ defaultValues }: SettingsFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Credentials
-        </Button>
+
+        {isEditing ? (
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Check className="mr-2 h-4 w-4" />
+                Save Credentials
+            </Button>
+        ) : (
+            <Button type="button" variant="outline" onClick={() => setIsEditing(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Credentials
+            </Button>
+        )}
       </form>
     </Form>
   )
