@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { SyncButton } from './sync-button';
 
 interface DashboardHeaderProps {
   products: ShopifyProduct[];
@@ -70,6 +71,7 @@ export function DashboardHeader({ products, viewMode, onViewModeChange, onRefres
           </Tooltip>
         </TooltipProvider>
 
+        <SyncButton />
         <ExportButton products={products} />
       </div>
     </header>
