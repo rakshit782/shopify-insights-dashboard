@@ -95,7 +95,7 @@ export function MultiPlatformOrdersDashboard() {
               platform={platform.name as any}
               searchQuery={searchQuery}
               dateRange={dateRange}
-              onFilteredOrdersChange={(orders) => handleFilteredOrdersChange(platform.name, orders)}
+              onFilteredOrdersChange={handleFilteredOrdersChange}
             />
           </TabsContent>
         ))}
