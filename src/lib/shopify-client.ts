@@ -44,34 +44,33 @@ async function getShopifyCredentialsFromSupabase(logs: string[]): Promise<{ stor
   const { data, error } = await supabase
     .from('shopify_credentials')
     .select('store_name, access_token')
-    .limit(1)
-    .single();
+    .limit(1);
 
   if (error) {
     logs.push(`Supabase error: ${error.message}`);
     throw new Error(`Failed to fetch Shopify credentials from Supabase: ${error.message}. Please check your table and column names (expected 'shopify_credentials' table with 'store_name' and 'access_token' columns).`);
   }
 
-  if (!data) {
+  if (!data || data.length === 0) {
     logs.push('No credentials returned from Supabase.');
     throw new Error('No Shopify credentials found in Supabase. Please ensure the \'shopify_credentials\' table has at least one entry.');
   }
   
+  const credentials = data[0];
   logs.push('Successfully fetched Shopify credentials from Supabase.');
-  return { storeName: data.store_name, accessToken: data.access_token };
+  return { storeName: credentials.store_name, accessToken: credentials.access_token };
 }
 
 export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
   const logs: string[] = [];
-  let storeUrl;
+  let storeName;
   let accessToken;
 
   try {
     const credentials = await getShopifyCredentialsFromSupabase(logs);
     if(credentials.storeName && credentials.accessToken){
-      storeUrl = `https://${credentials.storeName}.myshopify.com`;
+      storeName = credentials.storeName;
       accessToken = credentials.accessToken;
-      logs.push(`Constructed Shopify Store URL: ${storeUrl}`);
     } else {
        logs.push('Invalid Shopify credentials from Supabase (storeName or accessToken is missing).');
        throw new Error('Invalid Shopify credentials from Supabase.');
@@ -84,12 +83,15 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
       throw new Error("An unknown error occurred while fetching credentials from Supabase.");
   }
   
-  if (!storeUrl || !accessToken) {
-    logs.push('Shopify store URL or access token is not defined after fetching from Supabase.');
-    throw new Error('Shopify store URL or access token is not defined after fetching from Supabase.');
+  if (!storeName || !accessToken) {
+    logs.push('Shopify store name or access token is not defined after fetching from Supabase.');
+    throw new Error('Shopify store name or access token is not defined after fetching from Supabase.');
   }
 
-  const endpoint = `${storeUrl}/admin/api/2023-10/products.json`;
+  const storeUrl = `https://${storeName}.myshopify.com`;
+  logs.push(`Constructed Shopify Store URL: ${storeUrl}`);
+
+  const endpoint = `${storeUrl}/admin/api/2025-01/products.json`;
   logs.push(`Calling Shopify API endpoint: ${endpoint}`);
 
   try {
