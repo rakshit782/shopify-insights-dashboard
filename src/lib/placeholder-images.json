@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "classic-leather-wallet",
+      "description": "A man holding a leather wallet.",
+      "imageUrl": "https://picsum.photos/seed/101/600/400",
+      "imageHint": "leather wallet"
+    },
+    {
+      "id": "ergonomic-office-chair",
+      "description": "A modern ergonomic office chair in a bright office.",
+      "imageUrl": "https://picsum.photos/seed/102/600/400",
+      "imageHint": "office chair"
+    },
+    {
+      "id": "wireless-noise-cancelling-headphones",
+      "description": "A pair of sleek wireless headphones on a wooden table.",
+      "imageUrl": "https://picsum.photos/seed/103/600/400",
+      "imageHint": "wireless headphones"
+    },
+    {
+      "id": "smart-coffee-maker",
+      "description": "A smart coffee maker brewing coffee on a kitchen counter.",
+      "imageUrl": "https://picsum.photos/seed/104/600/400",
+      "imageHint": "coffee maker"
+    },
+    {
+      "id": "organic-cotton-t-shirt",
+      "description": "A stack of folded organic cotton t-shirts.",
+      "imageUrl": "https://picsum.photos/seed/105/600/400",
+      "imageHint": "cotton t-shirt"
+    },
+    {
+      "id": "portable-bluetooth-speaker",
+      "description": "A person carrying a portable bluetooth speaker outdoors.",
+      "imageUrl": "https://picsum.photos/seed/106/600/400",
+      "imageHint": "bluetooth speaker"
+    },
+    {
+      "id": "stainless-steel-water-bottle",
+      "description": "A stainless steel water bottle next to a backpack.",
+      "imageUrl": "https://picsum.photos/seed/107/600/400",
+      "imageHint": "water bottle"
+    },
+    {
+      "id": "yoga-mat-pro",
+      "description": "A person rolling out a yoga mat.",
+      "imageUrl": "https://picsum.photos/seed/108/600/400",
+      "imageHint": "yoga mat"
+    }
+  ]
 }
