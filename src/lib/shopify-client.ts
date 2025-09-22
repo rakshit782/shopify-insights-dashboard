@@ -53,7 +53,39 @@ async function getShopifyCredentialsFromSupabase(
   return { storeName: credentials.store_name, accessToken: credentials.access_token };
 }
 
-export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
+export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopifyProduct[] {
+  const staticMetrics = [
+    { unitsSold: 1502, totalRevenue: 120144, averageRating: 4.8, numberOfReviews: 312 },
+    { unitsSold: 421, totalRevenue: 147139, averageRating: 4.6, numberOfReviews: 129 },
+    { unitsSold: 2340, totalRevenue: 699660, averageRating: 4.9, numberOfReviews: 1805 },
+    { unitsSold: 855, totalRevenue: 111107, averageRating: 4.5, numberOfReviews: 240 },
+    { unitsSold: 5430, totalRevenue: 135695, averageRating: 4.7, numberOfReviews: 890 },
+    { unitsSold: 1120, totalRevenue: 111988, averageRating: 4.6, numberOfReviews: 455 },
+    { unitsSold: 3105, totalRevenue: 108519, averageRating: 4.9, numberOfReviews: 1023 },
+    { unitsSold: 980, totalRevenue: 87220, averageRating: 4.8, numberOfReviews: 350 },
+  ];
+
+  return rawProducts.map((product, index) => {
+    const placeholder = PlaceHolderImages[index % PlaceHolderImages.length];
+    const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
+    const metricData = staticMetrics[index % staticMetrics.length];
+
+    return {
+      id: product.admin_graphql_api_id,
+      title: product.title,
+      description: product.body_html || 'No description available.',
+      vendor: product.vendor,
+      product_type: product.product_type,
+      price: parseFloat(variant.price || '0'),
+      inventory: variant.inventory_quantity || 0,
+      imageUrl: product.image?.src || placeholder.imageUrl,
+      imageHint: placeholder.imageHint || product.product_type.toLowerCase().split(' ').slice(0,2).join(' '),
+      ...metricData,
+    };
+  });
+}
+
+export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'rawProducts' | 'logs'>> {
   const logs: string[] = [];
 
   let storeName: string;
@@ -96,39 +128,9 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
       products: ShopifyProduct[];
     };
 
-    logs.push(`Processing ${rawProducts.length} products from Shopify for dashboard view.`);
+    logs.push(`Received ${rawProducts.length} raw products from Shopify.`);
 
-    const staticMetrics = [
-      { unitsSold: 1502, totalRevenue: 120144, averageRating: 4.8, numberOfReviews: 312 },
-      { unitsSold: 421, totalRevenue: 147139, averageRating: 4.6, numberOfReviews: 129 },
-      { unitsSold: 2340, totalRevenue: 699660, averageRating: 4.9, numberOfReviews: 1805 },
-      { unitsSold: 855, totalRevenue: 111107, averageRating: 4.5, numberOfReviews: 240 },
-      { unitsSold: 5430, totalRevenue: 135695, averageRating: 4.7, numberOfReviews: 890 },
-      { unitsSold: 1120, totalRevenue: 111988, averageRating: 4.6, numberOfReviews: 455 },
-      { unitsSold: 3105, totalRevenue: 108519, averageRating: 4.9, numberOfReviews: 1023 },
-      { unitsSold: 980, totalRevenue: 87220, averageRating: 4.8, numberOfReviews: 350 },
-    ];
-
-    const products: MappedShopifyProduct[] = rawProducts.map((product, index) => {
-      const placeholder = PlaceHolderImages[index % PlaceHolderImages.length];
-      const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
-      const metricData = staticMetrics[index % staticMetrics.length];
-
-      return {
-        id: product.admin_graphql_api_id,
-        title: product.title,
-        description: product.body_html || 'No description available.',
-        vendor: product.vendor,
-        product_type: product.product_type,
-        price: parseFloat(variant.price || '0'),
-        inventory: variant.inventory_quantity || 0,
-        imageUrl: product.image?.src || placeholder.imageUrl,
-        imageHint: placeholder.imageHint,
-        ...metricData,
-      };
-    });
-
-    return { products, rawProducts, logs };
+    return { rawProducts, logs };
   } catch (error) {
     if (error instanceof Error) {
       logs.push(`Fetch Error: ${error.message}`);

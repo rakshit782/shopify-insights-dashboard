@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { ProductCard } from '@/components/product-card';
-import { getShopifyProducts } from '@/lib/shopify-client';
-import type { ShopifyProduct } from '@/lib/types';
+import { getShopifyProducts, mapShopifyProducts } from '@/lib/shopify-client';
+import type { MappedShopifyProduct, ShopifyProduct } from '@/lib/types';
 import { ProductTable } from '@/components/product-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, ChevronDown } from 'lucide-react';
@@ -15,13 +15,13 @@ import { Separator } from '@/components/ui/separator';
 import { DashboardSkeleton } from './dashboard-skeleton';
 
 interface DashboardProps {
-  initialProducts: ShopifyProduct[];
+  initialProducts: MappedShopifyProduct[];
   initialLogs: string[];
   error?: string | null;
 }
 
 export function Dashboard({ initialProducts, initialLogs, error: initialError }: DashboardProps) {
-  const [productData, setProductData] = useState<ShopifyProduct[]>(initialProducts);
+  const [productData, setProductData] = useState<MappedShopifyProduct[]>(initialProducts);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialError || null);
@@ -40,10 +40,11 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError }:
     addLog('Starting data fetch process...');
     
     try {
-      const { products, logs: fetchLogs } = await getShopifyProducts();
+      const { rawProducts, logs: fetchLogs } = await getShopifyProducts();
       fetchLogs.forEach(log => addLog(log));
-      setProductData(products);
-      addLog(`Successfully fetched ${products.length} products.`);
+      const mappedProducts = mapShopifyProducts(rawProducts);
+      setProductData(mappedProducts);
+      addLog(`Successfully fetched and mapped ${mappedProducts.length} products.`);
     } catch (e) {
       if (e instanceof Error) {
         const errorMessage = e.message;
