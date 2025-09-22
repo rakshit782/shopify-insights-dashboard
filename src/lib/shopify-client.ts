@@ -447,16 +447,9 @@ async function getWalmartCredentials(logs: string[]): Promise<WalmartCredentials
 function getWalmartSignature(consumerId: string, privateKey: string, requestUrl: string, requestMethod: string, timestamp: string): string {
     const stringToSign = `${consumerId}\n${requestUrl}\n${requestMethod.toUpperCase()}\n${timestamp}\n`;
     
-    // Robustly re-format the private key to the standard PEM format
-    const keyContent = privateKey
-      .replace('-----BEGIN PRIVATE KEY-----', '')
-      .replace('-----END PRIVATE KEY-----', '')
-      .replace(/\s/g, ''); // Remove all whitespace/newlines
-      
-    // Re-wrap the key content into 64-character lines
-    const pemBody = keyContent.match(/.{1,64}/g)?.join('\n') || '';
-
-    const formattedPrivateKey = `-----BEGIN PRIVATE KEY-----\n${pemBody}\n-----END PRIVATE KEY-----`;
+    // This is the most critical part. The private key from the database often has its newlines
+    // stored as literal '\n' strings. This replaces them with actual newline characters.
+    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
     try {
         const pkiKey = forge.pki.privateKeyFromPem(formattedPrivateKey);
@@ -475,23 +468,17 @@ async function getWalmartAccessToken(credentials: WalmartCredentials, logs: stri
     const correlationId = uuidv4();
     const timestamp = Date.now().toString();
 
-    const signature = getWalmartSignature(
-        credentials.client_id,
-        credentials.client_secret, // The secret is the private key for signing
-        authUrl,
-        'POST',
-        timestamp
-    );
+    // Use Basic Auth for the token endpoint, as per Walmart's documentation
+    const encodedCredentials = Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64');
 
-    logs.push("Requesting Walmart access token with signature...");
+    logs.push("Requesting Walmart access token...");
 
     const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
             'WM_SVC.NAME': 'Shopify-Insights-App',
             'WM_QOS.CORRELATION_ID': correlationId,
-            'WM_SEC.TIMESTAMP': timestamp,
-            'WM_SEC.AUTH_SIGNATURE': signature,
+            'Authorization': `Basic ${encodedCredentials}`,
             'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -534,6 +521,7 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     const fullUrl = `${apiUrl}?${params.toString()}`;
     logs.push(`Fetching Walmart orders from: ${fullUrl}`);
 
+    // Signature is needed for order requests, but not for the token request.
     const signature = getWalmartSignature(
         credentials.client_id,
         credentials.client_secret,
