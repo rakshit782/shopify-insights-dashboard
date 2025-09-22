@@ -6,7 +6,7 @@ import { handleGetCredentialStatuses } from '@/app/actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, XCircle, Clock, ShoppingCart, Box, Store, ShoppingBag, Truck, Terminal } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShoppingCart, Terminal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import { Button } from './ui/button';
