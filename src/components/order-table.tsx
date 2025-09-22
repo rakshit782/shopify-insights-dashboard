@@ -138,5 +138,3 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
     </>
   );
 }
-
-    

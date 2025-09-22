@@ -169,7 +169,7 @@ async function getShopifyCredentialsFromSupabase(
 
   const credentials = data[0];
   logs.push('Successfully fetched Shopify credentials from Supabase.');
-  return { storeName: credentials.store_name, accessToken: credentials.access_token };
+  return { store_name: credentials.store_name, access_token: credentials.access_token };
 }
 
 export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopifyProduct[] {
@@ -205,8 +205,8 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
 
   try {
     const credentials = await getShopifyCredentialsFromSupabase(logs);
-    storeName = credentials.storeName;
-    accessToken = credentials.accessToken;
+    storeName = credentials.store_name;
+    accessToken = credentials.access_token;
   } catch (e) {
     if (e instanceof Error) {
       logs.push(`Error fetching credentials: ${e.message}`);
@@ -277,8 +277,8 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
 export async function createShopifyProduct(productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct }> {
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
-  const { storeName, accessToken } = credentials;
-  const storeUrl = getStoreUrl(storeName);
+  const { store_name, access_token } = credentials;
+  const storeUrl = getStoreUrl(store_name);
   const endpoint = `${storeUrl}/admin/api/2025-01/products.json`;
 
   const payload = {
@@ -295,7 +295,7 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'X-Shopify-Access-Token': accessToken,
+      'X-Shopify-Access-Token': access_token,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -315,13 +315,13 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
 export async function getShopifyProduct(id: number): Promise<{ product: ShopifyProduct | null }> {
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
-  const { storeName, accessToken } = credentials;
-  const storeUrl = getStoreUrl(storeName);
+  const { store_name, access_token } = credentials;
+  const storeUrl = getStoreUrl(store_name);
   const endpoint = `${storeUrl}/admin/api/2025-01/products/${id}.json`;
 
   const response = await fetch(endpoint, {
     headers: {
-      'X-Shopify-Access-Token': accessToken,
+      'X-Shopify-Access-Token': access_token,
       'Content-Type': 'application/json',
     },
     cache: 'no-store',
@@ -343,8 +343,8 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
 export async function updateShopifyProduct(productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct }> {
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
-  const { storeName, accessToken } = credentials;
-  const storeUrl = getStoreUrl(storeName);
+  const { store_name, access_token } = credentials;
+  const storeUrl = getStoreUrl(store_name);
   const endpoint = `${storeUrl}/admin/api/2025-01/products/${productData.id}.json`;
 
   const payload = {
@@ -354,7 +354,7 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
   const response = await fetch(endpoint, {
     method: 'PUT',
     headers: {
-      'X-Shopify-Access-Token': accessToken,
+      'X-Shopify-Access-Token': access_token,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -374,10 +374,10 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
 export async function getShopifyOrders(options?: { createdAtMin?: string, createdAtMax?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
-  const { storeName, accessToken } = credentials;
-  const storeUrl = getStoreUrl(storeName);
+  const { store_name, access_token } = credentials;
+  const storeUrl = getStoreUrl(store_name);
   const headers = {
-    'X-Shopify-Access-Token': accessToken,
+    'X-Shopify-Access-Token': access_token,
     'Content-Type': 'application/json',
   };
 
@@ -446,41 +446,37 @@ async function getWalmartCredentials(logs: string[]): Promise<WalmartCredentials
 
 function getWalmartSignature(consumerId: string, privateKey: string, requestUrl: string, requestMethod: string, timestamp: string): string {
     const stringToSign = `${consumerId}\n${requestUrl}\n${requestMethod.toUpperCase()}\n${timestamp}\n`;
+    
+    // The private key from Walmart is already in the correct format, but might have escaped newlines
+    const formattedPrivateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey.replace(/\\n/g, '\n')}\n-----END PRIVATE KEY-----`;
 
-    // Decode the Base64 private key to PEM format
-    const pem = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
-    
-    // Use node-forge to create the signature
-    const privateKeyFromPem = forge.pki.privateKeyFromPem(pem);
-    const md = forge.md.sha256.create();
-    md.update(stringToSign, 'utf8');
-    const signature = privateKeyFromPem.sign(md);
-    
-    return forge.util.encode64(signature);
+    try {
+        const pkiKey = forge.pki.privateKeyFromPem(formattedPrivateKey);
+        const md = forge.md.sha256.create();
+        md.update(stringToSign, 'utf8');
+        const signature = pkiKey.sign(md);
+        return forge.util.encode64(signature);
+    } catch (e) {
+        console.error("Error creating Walmart signature:", e);
+        throw new Error("Failed to create Walmart signature. Please ensure the private key is correct.");
+    }
 }
 
 async function getWalmartAccessToken(credentials: WalmartCredentials, logs: string[]): Promise<string> {
     const authUrl = 'https://marketplace.walmartapis.com/v3/token';
     const correlationId = uuidv4();
-    const timestamp = Date.now().toString();
+    
+    // As per the error message, the token endpoint uses Basic auth
+    const authHeader = `Basic ${Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64')}`;
 
-    const signature = getWalmartSignature(
-        credentials.client_id,
-        credentials.client_secret, // In Walmart, the client_secret is the private key
-        authUrl,
-        'POST',
-        timestamp
-    );
+    logs.push("Requesting Walmart access token with Basic Auth...");
 
-    logs.push("Requesting Walmart access token with signature...");
     const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
             'WM_SVC.NAME': 'Shopify-Insights-App',
             'WM_QOS.CORRELATION_ID': correlationId,
-            'WM_SEC.TIMESTAMP': timestamp,
-            'WM_SEC.AUTH_SIGNATURE': signature,
-            'Authorization': `Basic ${Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64')}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
         },
@@ -502,8 +498,10 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     const logs: string[] = [];
     const credentials = await getWalmartCredentials(logs);
     const accessToken = await getWalmartAccessToken(credentials, logs);
+    
     const correlationId = uuidv4();
     const timestamp = Date.now().toString();
+    
     const apiUrl = 'https://marketplace.walmartapis.com/v3/orders';
 
     const params = new URLSearchParams({
@@ -521,22 +519,25 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     const fullUrl = `${apiUrl}?${params.toString()}`;
     logs.push(`Fetching Walmart orders from: ${fullUrl}`);
 
+    // The signature is required for the orders endpoint itself, not the token endpoint.
     const signature = getWalmartSignature(
         credentials.client_id,
-        credentials.client_secret,
+        credentials.client_secret, // For Walmart, the secret is the private key for signing
         fullUrl,
         'GET',
         timestamp
     );
 
     const response = await fetch(fullUrl, {
+        method: 'GET',
         headers: {
             'WM_SVC.NAME': 'Shopify-Insights-App',
             'WM_QOS.CORRELATION_ID': correlationId,
             'WM_SEC.TIMESTAMP': timestamp,
             'WM_SEC.AUTH_SIGNATURE': signature,
-            'Authorization': `Bearer ${accessToken}`,
-            'Accept': 'application/json'
+            'WM_SEC.ACCESS_TOKEN': accessToken, // The token is passed as a separate header
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
         }
     });
 
@@ -608,5 +609,3 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
         processed_at: new Date(walmartOrder.orderDate).toISOString(),
     };
 }
-
-    
