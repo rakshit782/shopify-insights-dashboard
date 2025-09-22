@@ -2,6 +2,7 @@
 
 
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -142,4 +143,11 @@ export interface ShopifyOrder {
         price: string;
         sku: string | null;
     }[];
+}
+
+export interface AmazonCredentials {
+    profile_id: string;
+    client_id: string;
+    client_secret: string;
+    refresh_token: string;
 }

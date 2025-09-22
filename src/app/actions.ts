@@ -5,9 +5,9 @@ import {
   generateProductSummary,
   type GenerateProductSummaryInput,
 } from '@/ai/flows/generate-product-summary';
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials } from '@/lib/types';
 
 
 export async function handleGenerateSummary(input: GenerateProductSummaryInput) {
@@ -94,4 +94,43 @@ export async function handleSaveShopifyCredentials(storeName: string, accessToke
         console.error('Failed to save Shopify credentials:', errorMessage);
         return { success: false, error: `Failed to save credentials: ${errorMessage}` };
     }
+}
+
+export async function handleSaveAmazonCredentials(credentials: AmazonCredentials) {
+    try {
+        await saveAmazonCredentials(credentials);
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to save Amazon credentials:', errorMessage);
+        return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
+}
+
+// Placeholder for eBay
+export async function handleSaveEbayCredentials(credentials: any) {
+    console.log('Saving eBay credentials:', credentials);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { success: true, error: null };
+}
+
+// Placeholder for Walmart
+export async function handleSaveWalmartCredentials(credentials: any) {
+    console.log('Saving Walmart credentials:', credentials);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { success: true, error: null };
+}
+
+// Placeholder for Etsy
+export async function handleSaveEtsyCredentials(credentials: any) {
+    console.log('Saving Etsy credentials:', credentials);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { success: true, error: null };
+}
+
+// Placeholder for Wayfair
+export async function handleSaveWayfairCredentials(credentials: any) {
+    console.log('Saving Wayfair credentials:', credentials);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { success: true, error: null };
 }

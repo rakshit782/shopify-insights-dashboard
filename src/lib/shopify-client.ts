@@ -1,6 +1,6 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, ShopifyOrder } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, ShopifyOrder, AmazonCredentials } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 
@@ -50,6 +50,27 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
         throw new Error(`Failed to save Shopify credentials: ${error.message}`);
     }
     logs.push('Successfully saved Shopify credentials to Supabase.');
+}
+
+export async function saveAmazonCredentials(credentials: AmazonCredentials): Promise<void> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+
+    // Using a fixed ID for a single-user setup
+    const dataToUpsert = {
+        id: 1,
+        ...credentials,
+    };
+
+    const { error } = await supabase
+        .from('amazon_credentials')
+        .upsert(dataToUpsert, { onConflict: 'id' });
+
+    if (error) {
+        logs.push(`Supabase error saving Amazon credentials: ${error.message}`);
+        throw new Error(`Failed to save Amazon credentials: ${error.message}`);
+    }
+    logs.push('Successfully saved Amazon credentials to Supabase.');
 }
 
 export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {

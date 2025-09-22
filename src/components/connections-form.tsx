@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { handleSaveShopifyCredentials } from '@/app/actions';
+import { handleSaveShopifyCredentials, handleSaveAmazonCredentials } from '@/app/actions';
+import type { AmazonCredentials } from '@/lib/types';
 import {
     Accordion,
     AccordionContent,
@@ -20,9 +21,19 @@ import { PlusCircle, RefreshCw, Trash2, Loader2 } from "lucide-react";
 
 export function ConnectionsForm() {
     const { toast } = useToast();
+    const [isSavingShopify, setIsSavingShopify] = useState(false);
+    const [isSavingAmazon, setIsSavingAmazon] = useState(false);
+
+    // Shopify state
     const [shopifyStoreName, setShopifyStoreName] = useState('');
     const [shopifyApiToken, setShopifyApiToken] = useState('');
-    const [isSavingShopify, setIsSavingShopify] = useState(false);
+    
+    // Amazon State
+    const [amazonProfileId, setAmazonProfileId] = useState('');
+    const [amazonClientId, setAmazonClientId] = useState('');
+    const [amazonClientSecret, setAmazonClientSecret] = useState('');
+    const [amazonRefreshToken, setAmazonRefreshToken] = useState('');
+
 
     const onSaveShopify = async () => {
         setIsSavingShopify(true);
@@ -52,6 +63,44 @@ export function ConnectionsForm() {
             });
         }
         setIsSavingShopify(false);
+    };
+
+    const onSaveAmazon = async () => {
+        setIsSavingAmazon(true);
+
+        const creds: AmazonCredentials = {
+            profile_id: amazonProfileId,
+            client_id: amazonClientId,
+            client_secret: amazonClientSecret,
+            refresh_token: amazonRefreshToken,
+        };
+
+        if (Object.values(creds).some(v => !v)) {
+             toast({
+                title: "Missing Information",
+                description: "Please fill out all fields for Amazon credentials.",
+                variant: "destructive",
+            });
+            setIsSavingAmazon(false);
+            return;
+        }
+
+        const result = await handleSaveAmazonCredentials(creds);
+
+         if (result.success) {
+            toast({
+                title: "Credentials Saved",
+                description: "Your Amazon credentials have been saved successfully.",
+                variant: "default",
+            });
+        } else {
+             toast({
+                title: "Save Failed",
+                description: result.error,
+                variant: "destructive",
+            });
+        }
+        setIsSavingAmazon(false);
     };
 
     const renderShopifyForm = () => (
@@ -88,9 +137,7 @@ export function ConnectionsForm() {
             </CardContent>
             <CardFooter>
                 <Button onClick={onSaveShopify} disabled={isSavingShopify}>
-                    {isSavingShopify ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
+                    {isSavingShopify ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Save Shopify Credentials
                 </Button>
             </CardFooter>
@@ -106,7 +153,7 @@ export function ConnectionsForm() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Example of one region, this would be dynamic */}
+                {/* Example of one region, this would be dynamic in a real multi-region setup */}
                 <div className="p-4 border rounded-lg space-y-4">
                      <div className="flex justify-between items-center">
                         <h4 className="font-semibold">North America (NA)</h4>
@@ -115,21 +162,21 @@ export function ConnectionsForm() {
                         </Button>
                      </div>
                      <div className="space-y-2">
-                        <Label htmlFor="amazon-na-seller-id">Seller ID</Label>
-                        <Input id="amazon-na-seller-id" placeholder="A1B2C3D4E5F6G7" />
+                        <Label htmlFor="amazon-profile-id">Profile ID</Label>
+                        <Input id="amazon-profile-id" placeholder="eg. 1234567890" value={amazonProfileId} onChange={e => setAmazonProfileId(e.target.value)} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="amazon-na-access-key">AWS Access Key ID</Label>
-                        <Input id="amazon-na-access-key" placeholder="AKIA..." />
+                        <Label htmlFor="amazon-client-id">Client ID</Label>
+                        <Input id="amazon-client-id" placeholder="amzn1.application-oa2-client.123..." value={amazonClientId} onChange={e => setAmazonClientId(e.target.value)} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="amazon-na-secret-key">AWS Secret Access Key</Label>
-                        <Input id="amazon-na-secret-key" type="password" />
+                        <Label htmlFor="amazon-client-secret">Client Secret</Label>
+                        <Input id="amazon-client-secret" type="password" value={amazonClientSecret} onChange={e => setAmazonClientSecret(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                         <Label htmlFor="amazon-na-secret-key">Client Secret</Label>
+                         <Label htmlFor="amazon-refresh-token">Refresh Token</Label>
                         <div className="flex items-center gap-2">
-                            <Input id="amazon-na-secret-key" type="password" />
+                            <Input id="amazon-refresh-token" type="password" value={amazonRefreshToken} onChange={e => setAmazonRefreshToken(e.target.value)} />
                             <Button variant="outline">
                                 <RefreshCw className="mr-2 h-4 w-4" />
                                 Rotate Secret
@@ -146,7 +193,10 @@ export function ConnectionsForm() {
                 </Button>
             </CardContent>
             <CardFooter>
-                <Button>Save Amazon Credentials</Button>
+                <Button onClick={onSaveAmazon} disabled={isSavingAmazon}>
+                    {isSavingAmazon ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Save Amazon Credentials
+                </Button>
             </CardFooter>
         </Card>
     );
