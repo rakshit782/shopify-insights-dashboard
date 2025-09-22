@@ -1,7 +1,4 @@
 
-
-
-
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -194,4 +191,14 @@ export interface ShopifyOrder {
         sku: string | null;
         vendor: string | null;
     }[];
+}
+
+export interface Competitor {
+  id: number;
+  name: string;
+  website: string;
+  category: string;
+  strengths: string | null;
+  weaknesses: string | null;
+  last_scraped_at: string;
 }
