@@ -25,13 +25,13 @@ interface DashboardProps {
 export function Dashboard({ initialProducts, initialLogs, error: initialError, dataSource = 'shopify' }: DashboardProps) {
   const [productData, setProductData] = useState<MappedShopifyProduct[]>(initialProducts);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [error, setError] = useState<string | null>(initialError || null);
   const [logs, setLogs] = useState<string[]>(initialLogs);
   const [isLogsOpen, setIsLogsOpen] = useState(true);
 
   const addLog = (message: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
+    setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev]);
   };
 
   const fetchData = useCallback(async () => {
@@ -67,10 +67,15 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
   }, [dataSource]);
 
   useEffect(() => {
-    if (initialError) {
+    // Fetch data when the component mounts
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    if (error || logs.length > 0) {
       setIsLogsOpen(true);
     }
-  }, [initialError]);
+  }, [error, logs]);
 
 
   const renderContent = () => {
@@ -85,7 +90,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
           <AlertTitle>Error Fetching Products</AlertTitle>
           <AlertDescription>
             {error}
-            <p className='mt-2'>Please ensure your Supabase and Shopify credentials are correctly set and that your Supabase table is set up correctly.</p>
+            <p className='mt-2'>Please check your configuration and review the logs below.</p>
           </AlertDescription>
         </Alert>
       );
