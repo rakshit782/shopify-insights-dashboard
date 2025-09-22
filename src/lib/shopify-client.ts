@@ -1,5 +1,5 @@
 
-
+import 'dotenv/config';
 import type { ShopifyProduct } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
