@@ -2,6 +2,7 @@
 import type { ShopifyProduct } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseCredentials } from '@/app/settings/actions';
 
 interface ShopifyAdminProduct {
   id: number;
@@ -18,60 +19,59 @@ interface ShopifyAdminProduct {
   } | null;
 }
 
-async function getShopifyCredentialsFromSupabase(): Promise<{ storeUrl: string; accessToken: string }> {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+async function getShopifyCredentialsFromSupabase(): Promise<{ storeName: string; accessToken: string }> {
+  const { supabaseUrl, supabaseKey } = await getSupabaseCredentials();
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase URL or anon key is not defined in environment variables.');
+    throw new Error('Supabase URL or anon key is not configured.');
   }
   
   if (supabaseUrl.includes('YOUR_SUPABASE_URL') || supabaseKey.includes('YOUR_SUPABASE_ANON_KEY')) {
-     console.warn('Using placeholder Supabase credentials. Please update your .env file.');
-    return { storeUrl: '', accessToken: '' };
+     console.warn('Using placeholder Supabase credentials. Please update your settings.');
+    throw new Error('Please configure your Supabase credentials in the settings page.');
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { data, error } = await supabase
     .from('shopify_credentials')
-    .select('store_url, access_token')
+    .select('store_name, access_token')
     .limit(1)
     .single();
 
   if (error) {
-    throw new Error(`Failed to fetch Shopify credentials from Supabase: ${error.message}`);
+    throw new Error(`Failed to fetch Shopify credentials from Supabase: ${error.message}. Please check your table and column names.`);
   }
 
   if (!data) {
     throw new Error('No Shopify credentials found in Supabase.');
   }
 
-  return { storeUrl: data.store_url, accessToken: data.access_token };
+  return { storeName: data.store_name, accessToken: data.access_token };
 }
 
 export async function getShopifyProducts(): Promise<ShopifyProduct[]> {
-  let storeUrl = process.env.SHOPIFY_STORE_URL;
-  let accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+  let storeUrl;
+  let accessToken;
 
   try {
     const credentials = await getShopifyCredentialsFromSupabase();
-    if(credentials.storeUrl && credentials.accessToken){
-      storeUrl = credentials.storeUrl;
+    if(credentials.storeName && credentials.accessToken){
+      storeUrl = `https://${credentials.storeName}.myshopify.com`;
       accessToken = credentials.accessToken;
+    } else {
+       throw new Error('Invalid Shopify credentials from Supabase.');
     }
   } catch (e) {
-    console.warn("Could not fetch credentials from Supabase, falling back to .env.", e)
+      if (e instanceof Error) {
+        console.error(e.message);
+        throw e;
+      }
+      throw new Error("Could not fetch credentials from Supabase.");
   }
   
   if (!storeUrl || !accessToken) {
     throw new Error('Shopify store URL or access token is not defined.');
-  }
-
-  // A simple check for placeholder values
-  if (storeUrl.includes('YOUR_SHOPIFY_STORE_URL') || accessToken.includes('YOUR_SHOPIFY_ACCESS_TOKEN')) {
-    console.warn('Using placeholder Shopify credentials. Please update your .env file or Supabase.');
-    return [];
   }
 
   const endpoint = `${storeUrl}/admin/api/2023-10/products.json`;
@@ -116,7 +116,9 @@ export async function getShopifyProducts(): Promise<ShopifyProduct[]> {
     });
   } catch (error) {
     console.error('Error fetching from Shopify:', error);
-    // Return an empty array or handle the error as appropriate for your app
-    return [];
+    if (error instanceof Error) {
+        throw new Error(`An error occurred while fetching products from Shopify: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while fetching products from Shopify.');
   }
 }

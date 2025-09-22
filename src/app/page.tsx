@@ -9,21 +9,33 @@ import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from '@/components/product-table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { getSupabaseCredentials } from './settings/actions';
 
 export default function Home() {
   const [productData, setProductData] = useState<ShopifyProduct[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasSupabaseCreds, setHasSupabaseCreds] = useState(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const checkCredentialsAndFetch = async () => {
       setIsLoading(true);
       setError(null);
+      
+      const creds = await getSupabaseCredentials();
+      
+      if (!creds.supabaseUrl || !creds.supabaseKey || creds.supabaseUrl.includes('YOUR_SUPABASE_URL')) {
+        setHasSupabaseCreds(false);
+        setIsLoading(false);
+        return;
+      }
+      setHasSupabaseCreds(true);
+
       try {
-        // We are using a temporary client-side fetch here.
-        // For production, this should be a server action or API route.
         const products = await getShopifyProducts();
         setProductData(products);
       } catch (e) {
@@ -36,8 +48,7 @@ export default function Home() {
         setIsLoading(false);
       }
     };
-
-    fetchProducts();
+    checkCredentialsAndFetch();
   }, []);
 
   const renderContent = () => {
@@ -59,6 +70,25 @@ export default function Home() {
         </div>
       );
     }
+
+    if (!hasSupabaseCreds) {
+      return (
+        <Alert>
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Configuration Required</AlertTitle>
+          <AlertDescription>
+            <div className='flex flex-col gap-4'>
+            <p>Please configure your Supabase credentials to fetch Shopify data.</p>
+            <Button asChild className='w-fit'>
+              <Link href="/settings">
+                <Settings className="mr-2 h-4 w-4" /> Go to Settings
+              </Link>
+            </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      );
+    }
     
     if (error) {
        return (
@@ -66,7 +96,7 @@ export default function Home() {
           <Terminal className="h-4 w-4" />
           <AlertTitle>Error Fetching Products</AlertTitle>
           <AlertDescription>
-            Could not fetch data from Shopify. Please ensure your credentials in the `.env` file are correct and your store is accessible.
+            {error}
           </AlertDescription>
         </Alert>
       );
@@ -78,7 +108,7 @@ export default function Home() {
           <Terminal className="h-4 w-4" />
           <AlertTitle>No Products Found</AlertTitle>
           <AlertDescription>
-            Your Shopify store does not seem to have any products, or there was an issue fetching them. If you've just added credentials, please refresh the page.
+            Your Shopify store does not seem to have any products, or there was an issue fetching them. Please check your Shopify credentials in Supabase or go to the settings page to verify your Supabase connection.
           </AlertDescription>
         </Alert>
       )
@@ -99,7 +129,7 @@ export default function Home() {
 
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <>
       <DashboardHeader 
         products={productData}
         viewMode={viewMode}
@@ -111,6 +141,6 @@ export default function Home() {
         </h2>
         {renderContent()}
       </main>
-    </div>
+    </>
   );
 }
