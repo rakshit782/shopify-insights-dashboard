@@ -46,8 +46,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 tooltip={{ children: 'Analytics' }}
               >
                 <Link href="/">
-                  <BarChartHorizontal />
-                  <span>Analytics</span>
+                  <BarChartHorizontal className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Analytics</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -58,8 +58,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 tooltip={{ children: 'Orders' }}
               >
                 <Link href="/orders">
-                  <Truck />
-                  <span>Orders</span>
+                  <Truck className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Orders</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -70,8 +70,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 tooltip={{ children: 'Shopify Products' }}
               >
                 <Link href="/shopify-products">
-                  <ShoppingCart />
-                  <span>Shopify Products</span>
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Shopify Products</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -82,8 +82,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 tooltip={{ children: 'Website Products' }}
               >
                 <Link href="/website-products">
-                  <Globe />
-                  <span>Website Products</span>
+                  <Globe className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Website Products</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -98,8 +98,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 tooltip={{ children: 'Connections' }}
               >
                 <Link href="/connections">
-                  <Settings />
-                  <span>Connections</span>
+                  <Settings className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Connections</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

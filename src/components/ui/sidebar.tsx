@@ -561,23 +561,6 @@ const SidebarMenuButton = React.forwardRef<
     const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
 
-     const buttonContent = (
-      <>
-        {React.Children.map(children, (child) =>
-          React.isValidElement(child) && (child.type as any).displayName !== 'Tooltip'
-            ? React.cloneElement(child as React.ReactElement, {
-                className: cn('shrink-0 h-5 w-5', (child.props as any).className),
-              })
-            : null
-        )}
-        <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
-          {React.Children.map(children, (child) =>
-            typeof child === 'string' ? child : (child as any)?.props?.children?.find((c: any) => typeof c === 'string')
-          )}
-        </span>
-      </>
-    );
-
     const button = (
        <Comp
         ref={ref}
@@ -591,7 +574,7 @@ const SidebarMenuButton = React.forwardRef<
         )}
         {...props}
       >
-        {buttonContent}
+        {children}
       </Comp>
     )
 
