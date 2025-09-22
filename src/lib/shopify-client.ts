@@ -13,23 +13,51 @@ interface ShopifyFetchResult {
   logs: string[];
 }
 
+export interface PlatformProductCount {
+    platform: string;
+    count: number;
+}
+
+async function getSupabaseClient(logs: string[]): Promise<any> {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl) {
+        logs.push('Supabase URL is not configured. Please set SUPABASE_URL.');
+        throw new Error('Missing SUPABASE_URL in environment variables.');
+    }
+    if (!supabaseKey) {
+        logs.push('Supabase key is not configured. Please set SUPABASE_SERVICE_ROLE_KEY.');
+        throw new Error('Missing Supabase key in environment variables.');
+    }
+
+    logs.push('Creating Supabase client...');
+    return createClient(supabaseUrl, supabaseKey);
+}
+
+export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
+    const supabase = await getSupabaseClient(logs);
+    
+    logs.push("Fetching external platform product counts from 'platform_product_counts' table...");
+    const { data, error } = await supabase
+        .from('platform_product_counts')
+        .select('platform, count');
+
+    if (error) {
+        logs.push(`Supabase error fetching platform counts: ${error.message}`);
+        // Don't throw, just return empty array so other analytics can load
+        return [];
+    }
+    
+    logs.push(`Successfully fetched ${data.length} platform counts.`);
+    return data;
+}
+
+
 async function getShopifyCredentialsFromSupabase(
   logs: string[]
 ): Promise<{ storeName: string; accessToken: string }> {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl) {
-    logs.push('Supabase URL is not configured. Please set SUPABASE_URL.');
-    throw new Error('Missing SUPABASE_URL in environment variables.');
-  }
-  if (!supabaseKey) {
-    logs.push('Supabase key is not configured. Please set SUPABASE_SERVICE_ROLE_KEY.');
-    throw new Error('Missing Supabase key in environment variables.');
-  }
-
-  logs.push('Creating Supabase client...');
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = await getSupabaseClient(logs);
 
   logs.push("Fetching Shopify credentials from 'shopify_credentials' table...");
   const { data, error } = await supabase

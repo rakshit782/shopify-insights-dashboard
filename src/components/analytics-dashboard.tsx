@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ProductCount {
-    source: string;
+    platform: string;
     count: number;
 }
 
@@ -23,29 +23,15 @@ export function AnalyticsDashboard() {
             setIsLoading(true);
             setError(null);
             try {
-                const [shopifyRes, websiteRes] = await Promise.all([
-                    fetch('/api/products/shopify'),
-                    fetch('/api/products/website'),
-                ]);
+                const res = await fetch('/api/analytics/product-counts');
 
-                if (!shopifyRes.ok || !websiteRes.ok) {
-                    throw new Error('Failed to fetch product data from one or more sources.');
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Failed to fetch product counts.');
                 }
 
-                const shopifyData = await shopifyRes.json();
-                const websiteData = await websiteRes.json();
-
-                const counts: ProductCount[] = [
-                    { source: 'Shopify', count: shopifyData.products?.length || 0 },
-                    { source: 'Website DB', count: websiteData.products?.length || 0 },
-                    { source: 'Amazon', count: 0 },
-                    { source: 'Walmart', count: 0 },
-                    { source: 'eBay', count: 0 },
-                    { source: 'Etsy', count: 0 },
-                    { source: 'Wayfair', count: 0 },
-                ];
-
-                setProductCounts(counts);
+                const data = await res.json();
+                setProductCounts(data.counts);
 
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -75,7 +61,7 @@ export function AnalyticsDashboard() {
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={productCounts} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="source" />
+                            <XAxis dataKey="platform" />
                             <YAxis allowDecimals={false} />
                             <Tooltip
                                 contentStyle={{
