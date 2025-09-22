@@ -61,7 +61,7 @@ export function OrdersHeader({
         
         const from = startOfDay(dateRange.from);
         const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-    
+
         if (isSameDay(from, startOfDay(now)) && isSameDay(to, endOfDay(now))) return 'today';
         const yesterday = subDays(now, 1);
         if (isSameDay(from, startOfDay(yesterday)) && isSameDay(to, endOfDay(yesterday))) return 'yesterday';
