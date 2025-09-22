@@ -12,7 +12,7 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingCart, Globe } from 'lucide-react';
+import { Home, ShoppingCart, Globe, BarChartHorizontal } from 'lucide-react';
 import Link from 'next/link';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -51,6 +51,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link href="/website-products">
                   <Globe />
                   <span>Website Products</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/analytics'}
+                tooltip={{ children: 'Analytics' }}
+              >
+                <Link href="/analytics">
+                  <BarChartHorizontal />
+                  <span>Analytics</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
