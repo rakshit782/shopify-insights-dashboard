@@ -38,7 +38,7 @@ async function getSupabaseClient(logs: string[]): Promise<any> {
 async function upsertCredential(supabase: any, tableName: string, data: any) {
     // This function ensures that there is only one row in the credential table.
     // It first tries to select an existing row. If found, it updates it.
-    // If not found, it inserts a new row.
+    // If not found, it inserts a new one.
     const { data: existing, error: selectError } = await supabase
         .from(tableName)
         .select('id')
@@ -75,6 +75,11 @@ async function upsertCredential(supabase: any, tableName: string, data: any) {
 async function checkCredentialExists(supabase: any, tableName: string, logs: string[]): Promise<boolean> {
     const { data, error } = await supabase.from(tableName).select('id').limit(1);
     if (error) {
+        // Don't throw an error if the table doesn't exist, just return false.
+        if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            logs.push(`Table ${tableName} does not exist, considering it not connected.`);
+            return false;
+        }
         logs.push(`Error checking ${tableName}: ${error.message}`);
         return false;
     }
@@ -185,8 +190,10 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
     const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
 
     return {
-      ...product, 
       id: product.admin_graphql_api_id,
+      title: product.title,
+      vendor: product.vendor,
+      product_type: product.product_type,
       description: product.body_html || 'No description available.',
       price: parseFloat(variant.price || '0'),
       inventory: variant.inventory_quantity || 0,

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -81,11 +82,11 @@ export function MultiPlatformOrdersDashboard() {
 
   const handleFilteredOrdersChange = useCallback((platform: string, orders: ShopifyOrder[]) => {
     setFilteredOrdersByTab(prev => ({ ...prev, [platform]: orders }));
-  }, [setFilteredOrdersByTab]);
+  }, []);
 
   const handleDateRangeChange = useCallback((range?: DateRange) => {
     setDateRange(range);
-  }, [setDateRange]);
+  }, []);
 
   const currentFilteredOrders = useMemo(() => {
     return filteredOrdersByTab[activeTab] || [];
@@ -150,3 +151,5 @@ export function MultiPlatformOrdersDashboard() {
     </div>
   );
 }
+
+    

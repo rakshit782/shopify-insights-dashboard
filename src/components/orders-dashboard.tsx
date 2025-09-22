@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -54,6 +55,7 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
 
     const fetchOrders = useCallback(async () => {
         if (!isConnected) {
+            setOrders([]); // Clear orders if not connected
             setIsLoading(false);
             return;
         }
@@ -160,6 +162,7 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         );
     }
     
+    // This case covers when a search returns no results for a list that originally had orders
     if (orders.length > 0 && filteredOrders.length === 0) {
        return (
              <Alert variant="secondary">
@@ -172,6 +175,7 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
        )
     }
     
+    // This case covers when the initial fetch returns no orders
     if (orders.length === 0 && !isLoading) {
         return (
              <Alert>
@@ -200,3 +204,5 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         </>
     );
 }
+
+    
