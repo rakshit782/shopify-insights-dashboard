@@ -196,10 +196,8 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
   });
 }
 
-export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'rawProducts' | 'logs'>> {
+export async function getShopifyProducts(options?: { countOnly?: boolean }): Promise<{ rawProducts?: ShopifyProduct[], logs: string[], count?: number }> {
   const logs: string[] = [];
-  let allProducts: ShopifyProduct[] = [];
-
   let storeName: string;
   let accessToken: string;
 
@@ -217,20 +215,33 @@ export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'ra
   }
 
   const storeUrl = `https://${storeName}`;
-  let endpoint = `${storeUrl}/admin/api/2025-01/products.json?limit=250`;
-
-  logs.push('Starting Shopify product fetch...');
+  const headers = {
+    'X-Shopify-Access-Token': accessToken,
+    'Content-Type': 'application/json',
+  };
 
   try {
+    if (options?.countOnly) {
+      const endpoint = `${storeUrl}/admin/api/2025-01/products/count.json`;
+      logs.push(`Calling Shopify product count API endpoint: ${endpoint}`);
+      const response = await fetch(endpoint, { headers, cache: 'no-store' });
+       if (!response.ok) {
+        const errorData = await response.text();
+        logs.push(`Shopify API Error: ${response.status} ${response.statusText}. Details: ${errorData}`);
+        throw new Error(`Failed to fetch Shopify product count: ${response.status} ${response.statusText}`);
+      }
+      const { count } = await response.json() as { count: number };
+      logs.push(`Successfully fetched product count: ${count}`);
+      return { count, logs };
+    }
+    
+    let allProducts: ShopifyProduct[] = [];
+    let endpoint = `${storeUrl}/admin/api/2025-01/products.json?limit=250`;
+    logs.push('Starting Shopify product fetch...');
+
     while (endpoint) {
       logs.push(`Calling Shopify API endpoint: ${endpoint}`);
-      const response = await fetch(endpoint, {
-        headers: {
-          'X-Shopify-Access-Token': accessToken,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      });
+      const response = await fetch(endpoint, { headers, cache: 'no-store' });
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -238,36 +249,26 @@ export async function getShopifyProducts(): Promise<Pick<ShopifyFetchResult, 'ra
         throw new Error(`Failed to fetch Shopify products: ${response.status} ${response.statusText}`);
       }
 
-      const { products: rawProducts } = (await response.json()) as {
-        products: ShopifyProduct[];
-      };
+      const { products: rawProducts } = (await response.json()) as { products: ShopifyProduct[] };
       allProducts = allProducts.concat(rawProducts);
       logs.push(`Received ${rawProducts.length} raw products. Total fetched: ${allProducts.length}`);
 
-      // Handle pagination
       const linkHeader = response.headers.get('Link');
       if (linkHeader) {
         const nextLink = linkHeader.split(',').find(s => s.includes('rel="next"'));
-        if (nextLink) {
-          const match = nextLink.match(/<(.*?)>/);
-          endpoint = match ? match[1] : '';
-        } else {
-          endpoint = ''; // No more pages
-        }
+        endpoint = nextLink ? nextLink.match(/<(.*?)>/)?.[1] || '' : '';
       } else {
-        endpoint = ''; // No more pages
+        endpoint = '';
       }
     }
 
     logs.push(`Finished fetching. Total products received: ${allProducts.length}`);
     return { rawProducts: allProducts, logs };
+
   } catch (error) {
-    if (error instanceof Error) {
-      logs.push(`Fetch Error: ${error.message}`);
-      throw error;
-    }
-    logs.push('Unknown error while fetching products from Shopify.');
-    throw new Error('Unknown error while fetching products from Shopify.');
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    logs.push(`Fetch Error: ${errorMessage}`);
+    throw new Error(`An error occurred while fetching from Shopify: ${errorMessage}`);
   }
 }
 

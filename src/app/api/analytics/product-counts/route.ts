@@ -12,13 +12,13 @@ export async function GET() {
 
     // Fetch counts from Shopify and Website DB concurrently
     const [shopifyResult, websiteResult, externalCountsResult] = await Promise.allSettled([
-      getShopifyProducts(),
+      getShopifyProducts({ countOnly: true }),
       getWebsiteProducts(),
       getPlatformProductCounts(logs),
     ]);
 
     if (shopifyResult.status === 'fulfilled') {
-      allCounts.push({ platform: 'Shopify', count: shopifyResult.value.rawProducts.length });
+      allCounts.push({ platform: 'Shopify', count: shopifyResult.value.count as number });
     } else {
       console.error('Shopify API Error:', shopifyResult.reason);
       // Optionally add a placeholder or error indicator
