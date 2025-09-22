@@ -127,52 +127,6 @@ export interface ShopifyProductUpdate {
   variants?: ShopifyVariantUpdate[];
 }
 
-export interface ShopifyOrder {
-    id: number;
-    admin_graphql_api_id: string;
-    name: string; // The order name, e.g., #1001
-    created_at: string;
-    processed_at: string;
-    total_price: string;
-    currency: string;
-    financial_status: string;
-    fulfillment_status: string | null;
-    customer: {
-        id: number;
-        first_name: string;
-        last_name: string;
-        email: string;
-        phone: string | null;
-        default_address: {
-            address1: string;
-            address2: string | null;
-            city: string;
-            province: string;
-            country: string;
-            zip: string;
-            phone: string | null;
-        }
-    } | null;
-    line_items: {
-        id: number;
-        title: string;
-        quantity: number;
-        price: string;
-        sku: string | null;
-    }[];
-    shipping_address: {
-      first_name?: string;
-      last_name?: string;
-      address1: string;
-      address2: string | null;
-      city: string;
-      province: string;
-      country: string;
-      zip: string;
-      phone: string | null;
-    } | null;
-}
-
 export interface AmazonCredentials {
     profile_id: string;
     client_id: string;
