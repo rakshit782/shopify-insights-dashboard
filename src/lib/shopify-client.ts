@@ -237,16 +237,16 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
 
   try {
     if (options?.countOnly) {
-      const endpoint = `${storeUrl}/admin/api/2025-01/collects/count.json`;
-      logs.push(`Calling Shopify collects count API endpoint: ${endpoint}`);
+      const endpoint = `${storeUrl}/admin/api/2025-01/products/count.json`;
+      logs.push(`Calling Shopify products count API endpoint: ${endpoint}`);
       const response = await fetch(endpoint, { headers, cache: 'no-store' });
        if (!response.ok) {
         const errorData = await response.text();
         logs.push(`Shopify API Error: ${response.status} ${response.statusText}. Details: ${errorData}`);
-        throw new Error(`Failed to fetch Shopify collects count: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch Shopify products count: ${response.status} ${response.statusText}`);
       }
       const { count } = await response.json() as { count: number };
-      logs.push(`Successfully fetched collects count: ${count}`);
+      logs.push(`Successfully fetched products count: ${count}`);
       return { count, logs };
     }
     
@@ -444,3 +444,4 @@ export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[], logs
     
 
     
+

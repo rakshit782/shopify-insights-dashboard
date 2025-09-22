@@ -18,7 +18,7 @@ export default async function OrdersPage() {
           <AlertTitle>Configuration Error</AlertTitle>
           <AlertDescription>
             Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the `.env` file in the root of the project and ensure your server is restarted.
-          </AlerDescription>
+          </AlertDescription>
         </Alert>
       </div>
     );
