@@ -4,11 +4,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Terminal } from 'lucide-react';
+import { Terminal, Settings } from 'lucide-react';
 import type { ShopifyOrder } from '@/lib/types';
 import { OrderTable } from './order-table';
 import type { DateRange } from 'react-day-picker';
 import { PaginationControls } from './pagination-controls';
+import { Button } from './ui/button';
+import Link from 'next/link';
 
 export interface FilteredOrdersResult {
     platform: string;
@@ -17,6 +19,7 @@ export interface FilteredOrdersResult {
 
 interface OrdersDashboardProps {
   platform: 'Shopify' | 'Amazon' | 'Walmart' | 'eBay' | 'Etsy' | 'Wayfair';
+  isConnected: boolean;
   searchQuery: string;
   dateRange?: DateRange;
   onFilteredOrdersChange: (platform: string, orders: ShopifyOrder[]) => void;
@@ -41,7 +44,7 @@ const getCustomerName = (order: ShopifyOrder) => {
     return 'N/A';
 };
 
-export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOrdersChange }: OrdersDashboardProps) {
+export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange, onFilteredOrdersChange }: OrdersDashboardProps) {
     const [orders, setOrders] = useState<ShopifyOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -51,10 +54,16 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const fetchOrders = useCallback(async () => {
+        if (!isConnected) {
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         setCurrentPage(1); // Reset page on new fetch
         
+        // Currently, we only fetch from Shopify.
         if (platform !== 'Shopify') {
             setOrders([]);
             setIsLoading(false);
@@ -83,7 +92,7 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
         } finally {
             setIsLoading(false);
         }
-    }, [platform, dateRange]);
+    }, [platform, dateRange, isConnected]);
 
     useEffect(() => {
         fetchOrders();
@@ -120,6 +129,24 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
     }, [platform, filteredOrders, onFilteredOrdersChange]);
 
 
+    if (!isConnected) {
+        return (
+            <Alert>
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>{platform} is Not Connected</AlertTitle>
+                <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2">
+                    <p>Please connect your {platform} account to view orders.</p>
+                    <Button asChild variant="outline" size="sm" className="mt-4 sm:mt-0">
+                        <Link href="/connections">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Go to Connections
+                        </Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        )
+    }
+
     if (isLoading) {
         return <OrdersSkeleton />;
     }
@@ -152,7 +179,7 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>No Orders Found</AlertTitle>
                 <AlertDescription>
-                    There are no orders to display for {platform}. This could be because there are no orders in the selected date range or the connection is not configured.
+                    There are no orders to display for {platform}. This could be because there are no orders in the selected date range or the connection is not configured correctly.
                 </AlertDescription>
             </Alert>
         )
