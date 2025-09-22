@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import type { ShopifyProduct } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Star } from 'lucide-react';
+import { ProductSummaryGenerator } from './product-summary-generator';
 
 interface ProductTableProps {
   products: ShopifyProduct[];
@@ -25,9 +26,11 @@ export function ProductTable({ products }: ProductTableProps) {
           <TableRow>
             <TableHead className="w-[400px]">Product</TableHead>
             <TableHead>Price</TableHead>
+            <TableHead>Inventory</TableHead>
             <TableHead>Units Sold</TableHead>
             <TableHead>Revenue</TableHead>
             <TableHead className="text-right">Rating</TableHead>
+            <TableHead className="text-center">AI</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -54,6 +57,7 @@ export function ProductTable({ products }: ProductTableProps) {
                 </div>
               </TableCell>
               <TableCell>${product.price.toFixed(2)}</TableCell>
+              <TableCell>{product.inventory}</TableCell>
               <TableCell>{product.unitsSold.toLocaleString()}</TableCell>
               <TableCell>
                 ${product.totalRevenue.toLocaleString(undefined, {
@@ -69,6 +73,9 @@ export function ProductTable({ products }: ProductTableProps) {
                     ({product.numberOfReviews})
                   </span>
                 </div>
+              </TableCell>
+              <TableCell className="text-center">
+                 <ProductSummaryGenerator product={product} />
               </TableCell>
             </TableRow>
           ))}

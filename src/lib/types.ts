@@ -1,5 +1,6 @@
+
 export interface ShopifyProduct {
-  id: number;
+  id: string; // Shopify IDs are strings
   title: string;
   description: string;
   vendor: string;
@@ -8,6 +9,8 @@ export interface ShopifyProduct {
   inventory: number;
   imageUrl: string;
   imageHint: string;
+  // These fields are not directly available from the basic product endpoint.
+  // They are kept for compatibility with existing components but will be placeholders.
   unitsSold: number;
   totalRevenue: number;
   averageRating: number;

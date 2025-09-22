@@ -1,8 +1,9 @@
+
 import type { ShopifyProduct } from './types';
 
 export const products: ShopifyProduct[] = [
   {
-    id: 1,
+    id: 'gid://shopify/Product/1',
     title: 'Classic Leather Wallet',
     description:
       'A timeless bifold wallet crafted from genuine full-grain leather. Features multiple card slots, a clear ID window, and a spacious bill compartment. Perfect for everyday use.',
@@ -18,7 +19,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 312,
   },
   {
-    id: 2,
+    id: 'gid://shopify/Product/2',
     title: 'Ergonomic Office Chair',
     description:
       'Experience ultimate comfort and support with our ergonomic office chair. Features adjustable lumbar support, 4D armrests, a breathable mesh back, and a smooth recline function.',
@@ -34,7 +35,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 129,
   },
   {
-    id: 3,
+    id: 'gid://shopify/Product/3',
     title: 'Wireless Noise-Cancelling Headphones',
     description:
       'Immerse yourself in pure sound. These headphones offer industry-leading noise cancellation, high-resolution audio, and up to 30 hours of battery life on a single charge.',
@@ -50,7 +51,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 1805,
   },
   {
-    id: 4,
+    id: 'gid://shopify/Product/4',
     title: 'Smart Coffee Maker',
     description:
       'Brew the perfect cup every time with this Wi-Fi enabled smart coffee maker. Schedule brewing, adjust strength, and more, all from your smartphone. Compatible with Alexa and Google Assistant.',
@@ -66,7 +67,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 240,
   },
   {
-    id: 5,
+    id: 'gid://shopify/Product/5',
     title: 'Organic Cotton T-Shirt',
     description:
       'A wardrobe essential, this t-shirt is made from 100% GOTS-certified organic cotton for a soft, comfortable feel. Ethically made and built to last.',
@@ -82,7 +83,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 890,
   },
   {
-    id: 6,
+    id: 'gid://shopify/Product/6',
     title: 'Portable Bluetooth Speaker',
     description:
       'Take your music anywhere. This rugged, waterproof speaker delivers powerful sound and deep bass. With a 24-hour playtime, the party never has to stop.',
@@ -98,7 +99,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 455,
   },
   {
-    id: 7,
+    id: 'gid://shopify/Product/7',
     title: 'Stainless Steel Water Bottle',
     description:
       'Stay hydrated on the go. This double-wall insulated bottle keeps drinks cold for 24 hours or hot for 12. Made from durable, food-grade stainless steel.',
@@ -114,7 +115,7 @@ export const products: ShopifyProduct[] = [
     numberOfReviews: 1023,
   },
   {
-    id: 8,
+    id: 'gid://shopify/Product/8',
     title: 'Yoga Mat Pro',
     description:
       'Find your flow on our premium non-slip yoga mat. Made from eco-friendly, natural tree rubber, it provides excellent cushioning and grip for any practice.',
