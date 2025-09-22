@@ -1,6 +1,85 @@
 
+// This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
-  id: string; // Shopify IDs are strings
+  id: number;
+  admin_graphql_api_id: string;
+  title: string;
+  body_html: string;
+  vendor: string;
+  product_type: string;
+  created_at: string;
+  handle: string;
+  updated_at: string;
+  published_at: string | null;
+  template_suffix: string;
+  published_scope: string;
+  tags: string;
+  status: string;
+  variants: {
+    id: number;
+    product_id: number;
+    title: string;
+    price: string;
+    sku: string;
+    position: number;
+    inventory_policy: string;
+    compare_at_price: string | null;
+    fulfillment_service: string;
+    inventory_management: string;
+    option1: string;
+    option2: string | null;
+    option3: string | null;
+    created_at: string;
+    updated_at: string;
+    taxable: boolean;
+    barcode: string;
+    grams: number;
+    image_id: number | null;
+    weight: number;
+    weight_unit: string;
+    inventory_item_id: number;
+    inventory_quantity: number;
+    old_inventory_quantity: number;
+    requires_shipping: boolean;
+    admin_graphql_api_id: string;
+  }[];
+  options: {
+    id: number;
+    product_id: number;
+    name: string;
+    position: number;
+    values: string[];
+  }[];
+  images: {
+    id: number;
+    product_id: number;
+    position: number;
+    created_at: string;
+    updated_at: string;
+    alt: string | null;
+    width: number;
+    height: number;
+    src: string;
+    variant_ids: number[];
+    admin_graphql_api_id: string;
+  }[];
+  image: {
+    id: number;
+    product_id: number;
+    position: number;
+    created_at: string;
+    updated_at: string;
+    alt: string | null;
+    width: number;
+    height: number;
+    src: string;
+    variant_ids: number[];
+    admin_graphql_api_id: string;
+  } | null;
+}
+
+export interface MappedShopifyProduct {
+  id: string;
   title: string;
   description: string;
   vendor: string;
@@ -16,17 +95,7 @@ export interface ShopifyProduct {
 }
 
 export interface WebsiteProduct {
-    id: string;
-    title: string;
-    description: string;
-    vendor: string;
-    product_type: string;
-    price: number;
-    inventory: number;
-    image_url: string;
-    image_hint: string;
-    units_sold: number;
-    total_revenue: number;
-    average_rating: number;
-    number_of_reviews: number;
+    id: string; // This will be the admin_graphql_api_id
+    handle: string;
+    shopify_data: ShopifyProduct;
 }

@@ -1,27 +1,15 @@
 
 import 'dotenv/config';
-import type { ShopifyProduct } from './types';
+import type { MappedShopifyProduct, ShopifyProduct } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 
 // If running locally on Node <18, uncomment:
 // import fetch from 'node-fetch';
 
-interface ShopifyAdminProduct {
-  id: number;
-  title: string;
-  body_html: string;
-  vendor: string;
-  product_type: string;
-  variants: {
-    price: string;
-    inventory_quantity: number;
-  }[];
-  image: { src: string } | null;
-}
-
 interface ShopifyFetchResult {
-  products: ShopifyProduct[];
+  products: MappedShopifyProduct[];
+  rawProducts: ShopifyProduct[];
   logs: string[];
 }
 
@@ -61,7 +49,6 @@ async function getShopifyCredentialsFromSupabase(
   }
 
   const credentials = data[0];
-
   logs.push('Successfully fetched Shopify credentials from Supabase.');
   return { storeName: credentials.store_name, accessToken: credentials.access_token };
 }
@@ -105,11 +92,11 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
       throw new Error(`Failed to fetch Shopify products: ${response.status} ${response.statusText}`);
     }
 
-    const { products: shopifyProducts } = (await response.json()) as {
-      products: ShopifyAdminProduct[];
+    const { products: rawProducts } = (await response.json()) as {
+      products: ShopifyProduct[];
     };
 
-    logs.push(`Processing ${shopifyProducts.length} products from Shopify.`);
+    logs.push(`Processing ${rawProducts.length} products from Shopify for dashboard view.`);
 
     const staticMetrics = [
       { unitsSold: 1502, totalRevenue: 120144, averageRating: 4.8, numberOfReviews: 312 },
@@ -122,13 +109,13 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
       { unitsSold: 980, totalRevenue: 87220, averageRating: 4.8, numberOfReviews: 350 },
     ];
 
-    const products: ShopifyProduct[] = shopifyProducts.map((product, index) => {
+    const products: MappedShopifyProduct[] = rawProducts.map((product, index) => {
       const placeholder = PlaceHolderImages[index % PlaceHolderImages.length];
       const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
       const metricData = staticMetrics[index % staticMetrics.length];
 
       return {
-        id: `gid://shopify/Product/${product.id}`,
+        id: product.admin_graphql_api_id,
         title: product.title,
         description: product.body_html || 'No description available.',
         vendor: product.vendor,
@@ -141,7 +128,7 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
       };
     });
 
-    return { products, logs };
+    return { products, rawProducts, logs };
   } catch (error) {
     if (error instanceof Error) {
       logs.push(`Fetch Error: ${error.message}`);

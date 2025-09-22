@@ -14,19 +14,9 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const productsToUpsert = products.map(p => ({
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        vendor: p.vendor,
-        product_type: p.product_type,
-        price: p.price,
-        inventory: p.inventory,
-        image_url: p.imageUrl,
-        image_hint: p.imageHint,
-        units_sold: p.unitsSold,
-        total_revenue: p.totalRevenue,
-        average_rating: p.averageRating,
-        number_of_reviews: p.numberOfReviews,
+        id: p.admin_graphql_api_id, // Use the GraphQL API ID as the primary key
+        handle: p.handle,
+        shopify_data: p, // Store the entire raw product object
     }));
 
     const { error } = await supabase

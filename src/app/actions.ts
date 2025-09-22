@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -21,12 +22,14 @@ export async function handleGenerateSummary(input: GenerateProductSummaryInput) 
 
 export async function handleSyncProducts() {
   try {
-    const { products } = await getShopifyProducts();
-    if (products.length === 0) {
+    // We now get the rawProducts array from the API response
+    const { rawProducts } = await getShopifyProducts();
+    if (rawProducts.length === 0) {
       return { success: false, error: 'No products found to sync.' };
     }
-    await syncProductsToWebsite(products);
-    return { success: true, error: null, count: products.length };
+    // We pass the raw, complete product objects to the sync function
+    await syncProductsToWebsite(rawProducts);
+    return { success: true, error: null, count: rawProducts.length };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
      console.error('Sync failed:', errorMessage);
