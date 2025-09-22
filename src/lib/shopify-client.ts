@@ -16,17 +16,15 @@ interface ShopifyFetchResult {
 async function getShopifyCredentialsFromSupabase(
   logs: string[]
 ): Promise<{ storeName: string; accessToken: string }> {
-  // Use NEXT_PUBLIC_ variables for client-side access
   const supabaseUrl = process.env.SUPABASE_URL;
-  // On the server, prefer the service role key. On the client, the anon key will be used.
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl) {
     logs.push('Supabase URL is not configured. Please set SUPABASE_URL.');
     throw new Error('Missing SUPABASE_URL in environment variables.');
   }
   if (!supabaseKey) {
-    logs.push('Supabase key is not configured. Please set SUPABASE_SERVICE_ROLE_KEY (for server) or SUPABASE_ANON_KEY (for client).');
+    logs.push('Supabase key is not configured. Please set SUPABASE_SERVICE_ROLE_KEY.');
     throw new Error('Missing Supabase key in environment variables.');
   }
 
