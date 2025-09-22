@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,24 +55,23 @@ export function OrdersHeader({
         }
     };
 
-    const getSelectedPreset = () => {
+    const selectedPreset = useMemo(() => {
         const now = new Date();
         if (!dateRange || !dateRange.from) return 'custom';
         
         const from = startOfDay(dateRange.from);
         const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-
+    
         if (isSameDay(from, startOfDay(now)) && isSameDay(to, endOfDay(now))) return 'today';
         const yesterday = subDays(now, 1);
         if (isSameDay(from, startOfDay(yesterday)) && isSameDay(to, endOfDay(yesterday))) return 'yesterday';
         if (isSameDay(from, startOfDay(subDays(now, 6))) && isSameDay(to, endOfDay(now))) return 'last7';
         if (isSameDay(from, startOfDay(subDays(now, 13))) && isSameDay(to, endOfDay(now))) return 'last14';
         if (isSameDay(from, startOfDay(subDays(now, 29))) && isSameDay(to, endOfDay(now))) return 'last30';
-
+    
         return 'custom';
-    };
+    }, [dateRange]);
 
-    const selectedPreset = getSelectedPreset();
 
     return (
         <div className="flex flex-col md:flex-row items-center gap-4">
