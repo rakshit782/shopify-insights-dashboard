@@ -8,7 +8,7 @@ import { Terminal } from 'lucide-react';
 import type { ShopifyOrder } from '@/lib/types';
 import { OrderTable } from './order-table';
 import type { DateRange } from 'react-day-picker';
-import { isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { PaginationControls } from './pagination-controls';
 
 export interface FilteredOrdersResult {
     platform: string;
@@ -46,9 +46,14 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     const fetchOrders = useCallback(async () => {
         setIsLoading(true);
         setError(null);
+        setCurrentPage(1); // Reset page on new fetch
         
         if (platform !== 'Shopify') {
             setOrders([]);
@@ -85,21 +90,34 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
     }, [fetchOrders]);
     
     const filteredOrders = useMemo(() => {
-        if (!searchQuery) {
-            return orders;
+        let results = orders;
+        if (searchQuery) {
+            const lowercasedQuery = searchQuery.toLowerCase();
+            results = orders.filter(order =>
+                order.name.toLowerCase().includes(lowercasedQuery) ||
+                getCustomerName(order).toLowerCase().includes(lowercasedQuery) ||
+                (order.customer?.email || '').toLowerCase().includes(lowercasedQuery)
+            );
         }
-
-        const lowercasedQuery = searchQuery.toLowerCase();
-        return orders.filter(order =>
-            order.name.toLowerCase().includes(lowercasedQuery) ||
-            getCustomerName(order).toLowerCase().includes(lowercasedQuery) ||
-            (order.customer?.email || '').toLowerCase().includes(lowercasedQuery)
-        );
+        return results;
     }, [orders, searchQuery]);
+
+    const { paginatedData, totalPages } = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedData = filteredOrders.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+        return { paginatedData, totalPages };
+    }, [filteredOrders, currentPage, itemsPerPage]);
+
+    const handleItemsPerPageChange = (value: number) => {
+        setItemsPerPage(value);
+        setCurrentPage(1);
+    };
 
     useEffect(() => {
         onFilteredOrdersChange(platform, filteredOrders);
-    }, [filteredOrders, onFilteredOrdersChange, platform]);
+    }, [platform, filteredOrders, onFilteredOrdersChange]);
 
 
     if (isLoading) {
@@ -140,5 +158,19 @@ export function OrdersDashboard({ platform, searchQuery, dateRange, onFilteredOr
         )
     }
 
-    return <OrderTable orders={filteredOrders} platform={platform} />;
+    return (
+        <>
+            <OrderTable orders={paginatedData} platform={platform} />
+            {totalPages > 1 && (
+                <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                    totalItems={filteredOrders.length}
+                />
+            )}
+        </>
+    );
 }

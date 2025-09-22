@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { ProductCard } from '@/components/product-card';
 import type { MappedShopifyProduct } from '@/lib/types';
@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { DashboardSkeleton } from './dashboard-skeleton';
+import { PaginationControls } from './pagination-controls';
 
 interface DashboardProps {
   initialProducts: MappedShopifyProduct[];
@@ -27,6 +28,10 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
   const [error, setError] = useState<string | null>(initialError || null);
   const [logs, setLogs] = useState<string[]>(initialLogs);
   const [isLogsOpen, setIsLogsOpen] = useState(true);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const addLog = (message: string) => {
     setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev]);
@@ -36,6 +41,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
     setIsLoading(true);
     setError(null);
     setLogs([]); 
+    setCurrentPage(1); // Reset to first page on new fetch
 
     addLog(`Starting data fetch from ${dataSource}...`);
     
@@ -80,6 +86,18 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
     }
   }, [error, logs]);
 
+  const { paginatedData, totalPages } = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = productData.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(productData.length / itemsPerPage);
+    return { paginatedData, totalPages };
+  }, [productData, currentPage, itemsPerPage]);
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  }
 
   const renderContent = () => {
     if (isLoading) {
@@ -114,13 +132,13 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
     if (viewMode === 'grid') {
       return (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {productData.map((product) => (
+          {paginatedData.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
       );
     } else {
-      return <ProductTable products={productData} />;
+      return <ProductTable products={paginatedData} />;
     }
   };
 
@@ -140,6 +158,16 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
         </h2>
         {renderContent()}
       </main>
+      {productData.length > 0 && !isLoading && !error && (
+         <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          totalItems={productData.length}
+        />
+      )}
       <div className="flex-shrink-0">
         <Collapsible open={isLogsOpen} onOpenChange={setIsLogsOpen} className="w-full">
             <CollapsibleTrigger className="w-full bg-muted/50 p-2 border-t">

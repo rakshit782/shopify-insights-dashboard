@@ -405,7 +405,6 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
   try {
     const params = new URLSearchParams({
         status: 'any',
-        limit: '250',
     });
     if (options?.createdAtMin) {
         params.append('created_at_min', options.createdAtMin);
