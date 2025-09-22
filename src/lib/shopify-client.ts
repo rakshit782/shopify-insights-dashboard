@@ -214,7 +214,7 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
     throw new Error('Unknown error while fetching credentials.');
   }
 
-  const storeUrl = `https://${storeName}`;
+  const storeUrl = `https://${storeName}.myshopify.com`;
   const headers = {
     'X-Shopify-Access-Token': accessToken,
     'Content-Type': 'application/json',
@@ -276,7 +276,7 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
   const { storeName, accessToken } = credentials;
-  const storeUrl = `https://${storeName}`;
+  const storeUrl = `https://${storeName}.myshopify.com`;
   const endpoint = `${storeUrl}/admin/api/2025-01/products.json`;
 
   const payload = {
@@ -314,7 +314,7 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
   const { storeName, accessToken } = credentials;
-  const storeUrl = `https://${storeName}`;
+  const storeUrl = `https://${storeName}.myshopify.com`;
   const endpoint = `${storeUrl}/admin/api/2025-01/products/${id}.json`;
 
   const response = await fetch(endpoint, {
@@ -343,7 +343,7 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
   const logs: string[] = [];
   const credentials = await getShopifyCredentialsFromSupabase(logs);
   const { storeName, accessToken } = credentials;
-  const storeUrl = `https://${storeName}`;
+  const storeUrl = `https://${storeName}.myshopify.com`;
   const endpoint = `${storeUrl}/admin/api/2025-01/products/${productData.id}.json`;
 
   const payload = {
@@ -376,7 +376,7 @@ export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[], logs
   let allOrders: ShopifyOrder[] = [];
 
   const { storeName, accessToken } = await getShopifyCredentialsFromSupabase(logs);
-  const storeUrl = `https://${storeName}`;
+  const storeUrl = `https://${storeName}.myshopify.com`;
   let endpoint = `${storeUrl}/admin/api/2025-01/orders.json?status=any&limit=250`;
 
   logs.push('Starting Shopify order fetch...');

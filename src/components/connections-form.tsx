@@ -122,7 +122,7 @@ export function ConnectionsForm() {
         const result = await handleSaveShopifyCredentials(shopifyStoreName, shopifyApiToken);
         if (result.success) {
             toast({ title: "Shopify Credentials Saved" });
-            setConnections(prev => ({...prev, shopify: true}));
+            fetchStatuses(); // Re-fetch statuses
         } else {
             toast({ title: "Save Failed", description: result.error, variant: "destructive" });
         }
@@ -140,7 +140,7 @@ export function ConnectionsForm() {
         const result = await handleSaveAmazonCredentials(creds);
         if (result.success) {
             toast({ title: "Amazon Credentials Saved" });
-            setConnections(prev => ({...prev, amazon: true}));
+            fetchStatuses();
         } else {
             toast({ title: "Save Failed", description: result.error, variant: "destructive" });
         }
@@ -152,7 +152,7 @@ export function ConnectionsForm() {
         const result = await handleSaveWalmartCredentials({ client_id: walmartClientId, client_secret: walmartClientSecret });
         if (result.success) {
             toast({ title: "Walmart Credentials Saved" });
-            setConnections(prev => ({...prev, walmart: true}));
+            fetchStatuses();
         } else {
             toast({ title: "Save Failed", description: result.error, variant: "destructive" });
         }
@@ -164,7 +164,7 @@ export function ConnectionsForm() {
         const result = await handleSaveEbayCredentials({ app_id: ebayAppId, cert_id: ebayCertId, dev_id: ebayDevId, oauth_token: ebayOauthToken });
         if (result.success) {
             toast({ title: "eBay Credentials Saved" });
-            setConnections(prev => ({...prev, ebay: true}));
+            fetchStatuses();
         } else {
             toast({ title: "Save Failed", description: result.error, variant: "destructive" });
         }
@@ -176,7 +176,7 @@ export function ConnectionsForm() {
         const result = await handleSaveEtsyCredentials({ keystring: etsyKeystring });
         if (result.success) {
             toast({ title: "Etsy Credentials Saved" });
-            setConnections(prev => ({...prev, etsy: true}));
+            fetchStatuses();
         } else {
             toast({ title: "Save Failed", description: result.error, variant: "destructive" });
         }
@@ -188,7 +188,7 @@ export function ConnectionsForm() {
         const result = await handleSaveWayfairCredentials({ client_id: wayfairClientId, client_secret: wayfairClientSecret });
         if (result.success) {
             toast({ title: "Wayfair Credentials Saved" });
-            setConnections(prev => ({...prev, wayfair: true}));
+            fetchStatuses();
         } else {
             toast({ title: "Save Failed", description: result.error, variant: "destructive" });
         }
