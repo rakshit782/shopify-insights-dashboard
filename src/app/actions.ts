@@ -3,6 +3,7 @@
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
+import { runCompetitorScraper } from '../../scripts/fetch-competitors.js';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 
 
@@ -144,4 +145,19 @@ export async function handleSaveWayfairCredentials(credentials: WayfairCredentia
         console.error('Failed to save Wayfair credentials:', errorMessage);
         return { success: false, error: `Failed to save credentials: ${errorMessage}` };
     }
+}
+
+export async function handleFetchCompetitors() {
+  try {
+    const monitoredBrand = process.env.MONITORED_BRAND;
+    if (!monitoredBrand) {
+      throw new Error('MONITORED_BRAND environment variable is not set.');
+    }
+    const result = await runCompetitorScraper(monitoredBrand);
+    return { success: true, count: result.count, error: null };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during scraping.';
+    console.error('Competitor fetch failed:', errorMessage);
+    return { success: false, count: 0, error: errorMessage };
+  }
 }
