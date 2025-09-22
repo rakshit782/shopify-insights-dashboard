@@ -152,43 +152,94 @@ export interface WayfairCredentials {
 
 // Corresponds to the Order object from Shopify Admin API
 export interface ShopifyOrder {
-    id: number;
+    id: number | string; // Made flexible for other platforms
     admin_graphql_api_id: string;
-    name: string; // e.g., #1001
+    name: string; // e.g., #1001 or a purchase order ID
     created_at: string;
     updated_at: string;
-    processed_at: string;
+    processed_at?: string | null; // Optional for other platforms
     total_price: string;
-    subtotal_price: string;
-    total_tax: string;
+    subtotal_price?: string | null; // Optional for other platforms
+    total_tax?: string | null; // Optional for other platforms
     currency: string;
-    financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided';
-    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | null;
+    financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided' | 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
+    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled' | null;
     customer: {
-        id: number;
-        email: string;
-        first_name: string;
-        last_name: string;
-        phone: string | null;
+        id?: number | string | null;
+        email?: string | null;
+        first_name?: string | null;
+        last_name?: string | null;
+        phone?: string | null;
     } | null;
     shipping_address: {
-        first_name: string;
-        last_name: string;
-        address1: string;
-        address2: string | null;
-        city: string;
-        province: string; // State/Province code
-        country: string;
-        zip: string;
-        phone: string | null;
-        country_code: string;
+        first_name: string | null;
+        last_name: string | null;
+        address1: string | null;
+        address2?: string | null;
+        city: string | null;
+        province: string | null; // State/Province code
+        country: string | null;
+        zip: string | null;
+        phone?: string | null;
+        country_code?: string | null;
     } | null;
     line_items: {
-        id: number;
+        id?: number | string;
         title: string;
         quantity: number;
         price: string;
         sku: string | null;
-        vendor: string | null;
+        vendor?: string | null;
     }[];
+}
+
+// Represents a raw order from the Walmart API
+export interface WalmartOrder {
+  purchaseOrderId: string;
+  customerOrderId: string;
+  customerEmailId: string;
+  orderDate: number; // This is a timestamp
+  shippingInfo: {
+    postalAddress: {
+      name: string;
+      address1: string;
+      address2: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+    };
+    phone: string;
+  };
+  orderLines: {
+    orderLine: {
+      lineNumber: string;
+      item: {
+        productName: string;
+        sku: string;
+      };
+      charges: {
+        charge: {
+          chargeType: string;
+          chargeName: string;
+          chargeAmount: {
+            currency: string;
+            amount: number;
+          };
+          tax: {
+            taxName: string;
+            taxAmount: {
+              currency: string;
+              amount: number;
+            };
+          };
+        }[];
+      };
+      orderLineQuantity: {
+        unitOfMeasurement: string;
+        amount: string;
+      };
+      status: 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
+    }[];
+  };
 }

@@ -1,9 +1,10 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, ShopifyOrder, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, ShopifyOrder, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, WalmartOrder } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ShopifyFetchResult {
   products: MappedShopifyProduct[];
@@ -190,10 +191,8 @@ export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopify
     const variant = product.variants?.[0] || { price: '0', inventory_quantity: 0 };
 
     return {
+      ...product, 
       id: product.admin_graphql_api_id,
-      title: product.title,
-      vendor: product.vendor,
-      product_type: product.product_type,
       description: product.body_html || 'No description available.',
       price: parseFloat(variant.price || '0'),
       inventory: variant.inventory_quantity || 0,
@@ -442,4 +441,133 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
   }
 }
 
-    
+// ========== Walmart ==========
+
+async function getWalmartCredentials(logs: string[]): Promise<WalmartCredentials> {
+    const supabase = await getSupabaseClient(logs);
+    logs.push("Fetching Walmart credentials...");
+    const { data, error } = await supabase.from('walmart_credentials').select('client_id, client_secret').limit(1);
+
+    if (error) throw new Error(`Failed to fetch Walmart credentials: ${error.message}`);
+    if (!data || data.length === 0) throw new Error('No Walmart credentials found in Supabase.');
+
+    logs.push("Successfully fetched Walmart credentials.");
+    return data[0];
+}
+
+async function getWalmartAccessToken(credentials: WalmartCredentials, logs: string[]): Promise<string> {
+    const authUrl = 'https://marketplace.walmartapis.com/v3/token';
+    const authString = Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64');
+    const correlationId = uuidv4();
+
+    logs.push("Requesting Walmart access token...");
+    const response = await fetch(authUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'WM_QOS.CORRELATION_ID': correlationId,
+            'WM_SVC.NAME': 'Walmart Marketplace',
+            'Accept': 'application/json'
+        },
+        body: 'grant_type=client_credentials',
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        logs.push(`Failed to get Walmart access token: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to get Walmart access token: ${errorText}`);
+    }
+
+    const data = await response.json() as { access_token: string };
+    logs.push("Successfully obtained Walmart access token.");
+    return data.access_token;
+}
+
+export async function getWalmartOrders(options: { createdStartDate?: string, limit?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
+    const logs: string[] = [];
+    const credentials = await getWalmartCredentials(logs);
+    const accessToken = await getWalmartAccessToken(credentials, logs);
+    const correlationId = uuidv4();
+    const apiUrl = 'https://marketplace.walmartapis.com/v3/orders';
+
+    const params = new URLSearchParams({
+        limit: options.limit || '100',
+    });
+
+    if (options.createdStartDate) {
+        params.append('createdStartDate', options.createdStartDate);
+    }
+
+    logs.push(`Fetching Walmart orders from: ${apiUrl}?${params.toString()}`);
+
+    const response = await fetch(`${apiUrl}?${params.toString()}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'WM_QOS.CORRELATION_ID': correlationId,
+            'WM_SVC.NAME': 'Walmart Marketplace',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        logs.push(`Failed to fetch Walmart orders: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to fetch Walmart orders: ${errorText}`);
+    }
+
+    const data = await response.json() as { list: { elements: { order: WalmartOrder[] } } };
+    const rawOrders = data.list?.elements?.order || [];
+    logs.push(`Successfully fetched ${rawOrders.length} Walmart orders.`);
+
+    const mappedOrders = rawOrders.map(mapWalmartOrderToShopifyOrder);
+
+    return { orders: mappedOrders, logs };
+}
+
+function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder {
+    const orderTotal = walmartOrder.orderLines.orderLine.reduce((total, line) => {
+        return total + line.charges.charge.reduce((lineTotal, charge) => lineTotal + charge.chargeAmount.amount, 0);
+    }, 0);
+
+    const nameParts = walmartOrder.shippingInfo.postalAddress.name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
+
+    const latestStatus = walmartOrder.orderLines.orderLine[0]?.status || 'Created';
+
+    return {
+        id: walmartOrder.purchaseOrderId,
+        admin_graphql_api_id: `gid://walmart/Order/${walmartOrder.purchaseOrderId}`,
+        name: walmartOrder.purchaseOrderId,
+        created_at: new Date(walmartOrder.orderDate).toISOString(),
+        updated_at: new Date(walmartOrder.orderDate).toISOString(),
+        total_price: orderTotal.toFixed(2),
+        currency: walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency || 'USD',
+        financial_status: 'paid', // Walmart API doesn't provide this, assuming paid for simplicity
+        fulfillment_status: latestStatus,
+        customer: {
+            email: walmartOrder.customerEmailId,
+            first_name: firstName,
+            last_name: lastName,
+        },
+        shipping_address: {
+            first_name: firstName,
+            last_name: lastName,
+            address1: walmartOrder.shippingInfo.postalAddress.address1,
+            address2: walmartOrder.shippingInfo.postalAddress.address2,
+            city: walmartOrder.shippingInfo.postalAddress.city,
+            province: walmartOrder.shippingInfo.postalAddress.state,
+            country: walmartOrder.shippingInfo.postalAddress.country,
+            zip: walmartOrder.shippingInfo.postalAddress.postalCode,
+            phone: walmartOrder.shippingInfo.phone,
+        },
+        line_items: walmartOrder.orderLines.orderLine.map(line => ({
+            id: line.lineNumber,
+            title: line.item.productName,
+            quantity: parseInt(line.orderLineQuantity.amount, 10),
+            price: line.charges.charge[0]?.chargeAmount.amount.toFixed(2) || '0.00',
+            sku: line.item.sku
+        })),
+    };
+}

@@ -64,29 +64,32 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         setError(null);
         setCurrentPage(1); // Reset page on new fetch
         
-        // Currently, we only fetch from Shopify.
-        if (platform !== 'Shopify') {
+        let endpoint = '';
+        const params = new URLSearchParams();
+
+        if (platform === 'Shopify') {
+            endpoint = '/api/orders/shopify';
+            if (dateRange?.from) params.append('created_at_min', dateRange.from.toISOString());
+            if (dateRange?.to) params.append('created_at_max', dateRange.to.toISOString());
+        } else if (platform === 'Walmart') {
+            endpoint = '/api/orders/walmart';
+            // Walmart uses `createdStartDate`
+            if (dateRange?.from) params.append('createdStartDate', dateRange.from.toISOString().split('T')[0]);
+        } else {
+            // For other platforms, we currently don't fetch data
             setOrders([]);
             setIsLoading(false);
             return;
         }
 
         try {
-            const params = new URLSearchParams();
-            if (dateRange?.from) {
-                params.append('created_at_min', dateRange.from.toISOString());
-            }
-            if (dateRange?.to) {
-                params.append('created_at_max', dateRange.to.toISOString());
-            }
-
-            const response = await fetch(`/api/orders/shopify?${params.toString()}`);
+            const response = await fetch(`${endpoint}?${params.toString()}`);
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch orders.');
+                throw new Error(errorData.error || `Failed to fetch ${platform} orders.`);
             }
             const data = await response.json();
-            setOrders(data.orders);
+            setOrders(data.orders || []);
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
             setError(errorMessage);
@@ -162,7 +165,16 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         );
     }
     
-    // This case covers when a search returns no results for a list that originally had orders
+    if (platform !== 'Shopify' && platform !== 'Walmart' && !isLoading) {
+        return (
+            <Alert>
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Coming Soon</AlertTitle>
+                <AlertDescription>Order fetching for {platform} is not yet implemented.</AlertDescription>
+            </Alert>
+        );
+    }
+
     if (orders.length > 0 && filteredOrders.length === 0) {
        return (
              <Alert variant="secondary">
@@ -175,14 +187,13 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
        )
     }
     
-    // This case covers when the initial fetch returns no orders
     if (orders.length === 0 && !isLoading) {
         return (
              <Alert>
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>No Orders Found</AlertTitle>
                 <AlertDescription>
-                    There are no orders to display for {platform}. This could be because there are no orders in the selected date range or the connection is not configured correctly.
+                    There are no orders to display for {platform} in the selected date range.
                 </AlertDescription>
             </Alert>
         )
@@ -204,5 +215,3 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         </>
     );
 }
-
-    
