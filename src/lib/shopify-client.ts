@@ -1,16 +1,10 @@
 
 import 'dotenv/config';
-import type { MappedShopifyProduct, ShopifyProduct, ShopifyOrder, WebsiteProduct, ShopifyProductCreation, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, WalmartOrder } from './types';
+import type { MappedShopifyProduct, ShopifyProduct, ShopifyOrder, ShopifyProductCreation, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, WalmartOrder } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
-
-interface ShopifyFetchResult {
-  products: MappedShopifyProduct[];
-  rawProducts: ShopifyProduct[];
-  logs: string[];
-}
 
 export interface PlatformProductCount {
     platform: string;
@@ -37,21 +31,16 @@ async function getSupabaseClient(logs: string[]): Promise<any> {
 // ========== Credential Management ==========
 
 async function upsertCredential(supabase: any, tableName: string, data: any) {
-    // This function ensures that there is only one row in the credential table.
-    // It first tries to select an existing row. If found, it updates it.
-    // If not found, it inserts a new one.
     const { data: existing, error: selectError } = await supabase
         .from(tableName)
         .select('id')
         .limit(1);
 
     if (selectError && !selectError.message.includes('relation') && !selectError.message.includes('does not exist')) {
-        // If the error is anything other than the table not existing, throw it.
         throw new Error(`Failed to check for existing credentials in ${tableName}: ${selectError.message}`);
     }
 
     if (existing && existing.length > 0) {
-        // Row exists, so update it.
         const { error: updateError } = await supabase
             .from(tableName)
             .update(data)
@@ -61,7 +50,6 @@ async function upsertCredential(supabase: any, tableName: string, data: any) {
             throw new Error(`Failed to update credentials in ${tableName}: ${updateError.message}`);
         }
     } else {
-        // No row exists, so insert a new one.
         const { error: insertError } = await supabase
             .from(tableName)
             .insert(data);
@@ -76,7 +64,6 @@ async function upsertCredential(supabase: any, tableName: string, data: any) {
 async function checkCredentialExists(supabase: any, tableName: string, logs: string[]): Promise<boolean> {
     const { data, error } = await supabase.from(tableName).select('id').limit(1);
     if (error) {
-        // Don't throw an error if the table doesn't exist, just return false.
         if (error.message.includes('relation') && error.message.includes('does not exist')) {
             logs.push(`Table ${tableName} does not exist, considering it not connected.`);
             return false;
@@ -150,7 +137,6 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
 
     if (error) {
         logs.push(`Supabase error fetching platform counts: ${error.message}`);
-        // Don't throw, just return empty array so other analytics can load
         return [];
     }
     
@@ -341,7 +327,6 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
   });
 
   if (!response.ok) {
-    // If the product is not found, Shopify returns a 404
     if (response.status === 404) {
       return { product: null };
     }
@@ -398,6 +383,7 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
   try {
     const params = new URLSearchParams({
         status: 'any',
+        limit: '250',
     });
     if (options?.createdAtMin) {
         params.append('created_at_min', options.createdAtMin);
@@ -407,7 +393,7 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
     }
 
     let allOrders: ShopifyOrder[] = [];
-    let endpoint = `${storeUrl}/admin/api/2025-01/orders.json?${params.toString()}`;
+    let endpoint: string | null = `${storeUrl}/admin/api/2025-01/orders.json?${params.toString()}`;
     logs.push('Starting Shopify order fetch...');
 
     while (endpoint) {
@@ -427,9 +413,9 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
       const linkHeader = response.headers.get('Link');
       if (linkHeader) {
         const nextLink = linkHeader.split(',').find(s => s.includes('rel="next"'));
-        endpoint = nextLink ? nextLink.match(/<(.*?)>/)?.[1] || '' : '';
+        endpoint = nextLink ? nextLink.match(/<(.*?)>/)?.[1] || null : null;
       } else {
-        endpoint = '';
+        endpoint = null;
       }
     }
 
@@ -469,7 +455,7 @@ async function getWalmartAccessToken(credentials: WalmartCredentials, logs: stri
             'Authorization': `Basic ${authString}`,
             'Content-Type': 'application/x-www-form-urlencoded',
             'WM_QOS.CORRELATION_ID': correlationId,
-            'WM_SVC.NAME': 'Walmart Marketplace',
+            'WM_SVC.NAME': 'Shopify-Insights-App',
             'Accept': 'application/json'
         },
         body: 'grant_type=client_credentials',
@@ -478,7 +464,7 @@ async function getWalmartAccessToken(credentials: WalmartCredentials, logs: stri
     if (!response.ok) {
         const errorText = await response.text();
         logs.push(`Failed to get Walmart access token: ${response.status} - ${errorText}`);
-        throw new Error(`Failed to get Walmart access token: ${errorText}`);
+        throw new Error(errorText);
     }
 
     const data = await response.json() as { access_token: string };
@@ -507,7 +493,7 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
         headers: {
             'Authorization': `Bearer ${accessToken}`,
             'WM_QOS.CORRELATION_ID': correlationId,
-            'WM_SVC.NAME': 'Walmart Marketplace',
+            'WM_SVC.NAME': 'Shopify-Insights-App',
             'Accept': 'application/json'
         }
     });
@@ -515,7 +501,7 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     if (!response.ok) {
         const errorText = await response.text();
         logs.push(`Failed to fetch Walmart orders: ${response.status} - ${errorText}`);
-        throw new Error(`Failed to fetch Walmart orders: ${errorText}`);
+        throw new Error(errorText);
     }
 
     const data = await response.json() as { list: { elements: { order: WalmartOrder[] } } };
@@ -529,14 +515,15 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
 
 function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder {
     const orderTotal = walmartOrder.orderLines.orderLine.reduce((total, line) => {
-        return total + line.charges.charge.reduce((lineTotal, charge) => lineTotal + charge.chargeAmount.amount, 0);
+        return total + line.charges.charge.reduce((lineTotal, charge) => {
+            return lineTotal + (charge.chargeAmount?.amount || 0);
+        }, 0);
     }, 0);
 
     const nameParts = walmartOrder.shippingInfo.postalAddress.name.split(' ');
-    const firstName = nameParts[0] || null;
-    const lastName = nameParts.slice(1).join(' ') || null;
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Use the status of the first line item as the overall status. This is a simplification.
     const latestStatus = walmartOrder.orderLines.orderLine[0]?.status || 'Created';
 
     return {
@@ -547,8 +534,6 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
         updated_at: new Date(walmartOrder.orderDate).toISOString(),
         total_price: orderTotal.toFixed(2),
         currency: walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency || 'USD',
-        // Mapping Walmart status to a financial status is ambiguous, so we simplify.
-        // Assuming 'Created' or 'Acknowledged' are 'pending', and others are 'paid'.
         financial_status: (latestStatus === 'Created' || latestStatus === 'Acknowledged') ? 'pending' : 'paid',
         fulfillment_status: latestStatus,
         customer: {
@@ -573,10 +558,12 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
         line_items: walmartOrder.orderLines.orderLine.map(line => ({
             id: line.lineNumber,
             title: line.item.productName,
-            quantity: parseInt(line.orderLineQuantity.amount, 10),
+            quantity: line.orderLineQuantity ? parseInt(line.orderLineQuantity.amount, 10) : 0,
             price: line.charges.charge[0]?.chargeAmount.amount.toFixed(2) || '0.00',
             sku: line.item.sku,
             vendor: 'Walmart'
         })),
     };
 }
+
+    

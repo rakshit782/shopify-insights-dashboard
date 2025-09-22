@@ -46,12 +46,18 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
   const getStatusVariant = (status: string | null) => {
     switch (status) {
       case 'fulfilled':
+      case 'Shipped':
+      case 'Delivered':
         return 'default';
       case 'unfulfilled':
+      case 'Created':
+      case 'Acknowledged':
       case null:
         return 'secondary';
       case 'partial':
         return 'outline';
+      case 'Cancelled':
+          return 'destructive'
       default:
         return 'secondary';
     }
@@ -124,7 +130,7 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
               <TableCell>
                 <div className="font-medium">{getCustomerName(order)}</div>
                 <div className="text-sm text-muted-foreground">{order.customer?.email || 'N/A'}</div>
-                <div className="text-sm text-muted-foreground">{order.customer?.phone || order.shipping_address?.phone || 'N/A'}</div>
+                <div className="text-sm text-muted-foreground">{order.customer?.phone || order.shipping_address?.phone || ''}</div>
               </TableCell>
               <TableCell className="max-w-[200px] truncate">{getProductTitles(order)}</TableCell>
               <TableCell>{getFullAddress(order.shipping_address)}</TableCell>
@@ -170,3 +176,5 @@ export function OrderTable({ orders, platform }: OrderTableProps) {
     </>
   );
 }
+
+    
