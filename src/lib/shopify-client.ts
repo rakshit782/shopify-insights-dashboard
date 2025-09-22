@@ -148,7 +148,7 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
 
 async function getShopifyCredentialsFromSupabase(
   logs: string[]
-): Promise<{ storeName: string; accessToken: string }> {
+): Promise<{ store_name: string; access_token: string }> {
   const supabase = await getSupabaseClient(logs);
 
   logs.push("Fetching Shopify credentials from 'shopify_credentials' table...");
@@ -238,7 +238,7 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
     }
     
     let allProducts: ShopifyProduct[] = [];
-    let endpoint = `${storeUrl}/admin/api/2025-01/products.json?limit=250`;
+    let endpoint: string | null = `${storeUrl}/admin/api/2025-01/products.json?limit=250`;
     logs.push('Starting Shopify product fetch...');
 
     while (endpoint) {
@@ -258,9 +258,9 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
       const linkHeader = response.headers.get('Link');
       if (linkHeader) {
         const nextLink = linkHeader.split(',').find(s => s.includes('rel="next"'));
-        endpoint = nextLink ? nextLink.match(/<(.*?)>/)?.[1] || '' : '';
+        endpoint = nextLink ? nextLink.match(/<(.*?)>/)?.[1] || null : null;
       } else {
-        endpoint = '';
+        endpoint = null;
       }
     }
 
@@ -447,8 +447,16 @@ async function getWalmartCredentials(logs: string[]): Promise<WalmartCredentials
 function getWalmartSignature(consumerId: string, privateKey: string, requestUrl: string, requestMethod: string, timestamp: string): string {
     const stringToSign = `${consumerId}\n${requestUrl}\n${requestMethod.toUpperCase()}\n${timestamp}\n`;
     
-    // The private key from Walmart is already in the correct format, but might have escaped newlines
-    const formattedPrivateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey.replace(/\\n/g, '\n')}\n-----END PRIVATE KEY-----`;
+    // Robustly re-format the private key to the standard PEM format
+    const keyContent = privateKey
+      .replace('-----BEGIN PRIVATE KEY-----', '')
+      .replace('-----END PRIVATE KEY-----', '')
+      .replace(/\s/g, ''); // Remove all whitespace/newlines
+      
+    // Re-wrap the key content into 64-character lines
+    const pemBody = keyContent.match(/.{1,64}/g)?.join('\n') || '';
+
+    const formattedPrivateKey = `-----BEGIN PRIVATE KEY-----\n${pemBody}\n-----END PRIVATE KEY-----`;
 
     try {
         const pkiKey = forge.pki.privateKeyFromPem(formattedPrivateKey);
@@ -465,20 +473,27 @@ function getWalmartSignature(consumerId: string, privateKey: string, requestUrl:
 async function getWalmartAccessToken(credentials: WalmartCredentials, logs: string[]): Promise<string> {
     const authUrl = 'https://marketplace.walmartapis.com/v3/token';
     const correlationId = uuidv4();
-    
-    // As per the error message, the token endpoint uses Basic auth
-    const authHeader = `Basic ${Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64')}`;
+    const timestamp = Date.now().toString();
 
-    logs.push("Requesting Walmart access token with Basic Auth...");
+    const signature = getWalmartSignature(
+        credentials.client_id,
+        credentials.client_secret, // The secret is the private key for signing
+        authUrl,
+        'POST',
+        timestamp
+    );
+
+    logs.push("Requesting Walmart access token with signature...");
 
     const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
             'WM_SVC.NAME': 'Shopify-Insights-App',
             'WM_QOS.CORRELATION_ID': correlationId,
-            'Authorization': authHeader,
+            'WM_SEC.TIMESTAMP': timestamp,
+            'WM_SEC.AUTH_SIGNATURE': signature,
+            'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
         },
         body: 'grant_type=client_credentials',
     });
@@ -519,10 +534,9 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
     const fullUrl = `${apiUrl}?${params.toString()}`;
     logs.push(`Fetching Walmart orders from: ${fullUrl}`);
 
-    // The signature is required for the orders endpoint itself, not the token endpoint.
     const signature = getWalmartSignature(
         credentials.client_id,
-        credentials.client_secret, // For Walmart, the secret is the private key for signing
+        credentials.client_secret,
         fullUrl,
         'GET',
         timestamp
@@ -535,7 +549,7 @@ export async function getWalmartOrders(options: { createdStartDate?: string, lim
             'WM_QOS.CORRELATION_ID': correlationId,
             'WM_SEC.TIMESTAMP': timestamp,
             'WM_SEC.AUTH_SIGNATURE': signature,
-            'WM_SEC.ACCESS_TOKEN': accessToken, // The token is passed as a separate header
+            'WM_SEC.ACCESS_TOKEN': accessToken,
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
@@ -607,5 +621,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
             vendor: 'Walmart'
         })),
         processed_at: new Date(walmartOrder.orderDate).toISOString(),
+        subtotal_price: null,
+        total_tax: null,
     };
 }
