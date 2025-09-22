@@ -5,12 +5,12 @@ import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 import 'dotenv/config';
 
-// Make sure your .env file has these variables
+// Make sure your .env file has these variables for your MAIN Supabase project
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error("Supabase URL or Service Key is not defined in your .env file.");
+  throw new Error("Supabase URL or Service Key is not defined in your .env file. Please check your main application credentials.");
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
