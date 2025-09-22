@@ -132,6 +132,7 @@ export interface ShopifyOrder {
     admin_graphql_api_id: string;
     name: string; // The order name, e.g., #1001
     created_at: string;
+    processed_at: string;
     total_price: string;
     currency: string;
     financial_status: string;
@@ -141,6 +142,15 @@ export interface ShopifyOrder {
         first_name: string;
         last_name: string;
         email: string;
+        phone: string | null;
+        default_address: {
+            address1: string;
+            address2: string | null;
+            city: string;
+            province: string;
+            country: string;
+            zip: string;
+        }
     } | null;
     line_items: {
         id: number;
@@ -149,6 +159,14 @@ export interface ShopifyOrder {
         price: string;
         sku: string | null;
     }[];
+    shipping_address: {
+      address1: string;
+      address2: string | null;
+      city: string;
+      province: string;
+      country: string;
+      zip: string;
+    } | null;
 }
 
 export interface AmazonCredentials {

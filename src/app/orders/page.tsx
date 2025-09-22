@@ -1,10 +1,10 @@
 
 import { Suspense } from 'react';
-import { OrdersDashboard } from '@/components/orders-dashboard';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import 'dotenv/config';
+import { MultiPlatformOrdersDashboard } from '@/components/multi-platform-orders-dashboard';
 
 export default async function OrdersPage() {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -18,7 +18,7 @@ export default async function OrdersPage() {
           <AlertTitle>Configuration Error</AlertTitle>
           <AlertDescription>
             Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the `.env` file in the root of the project and ensure your server is restarted.
-          </AlertDescription>
+          </AlerDescription>
         </Alert>
       </div>
     );
@@ -26,7 +26,7 @@ export default async function OrdersPage() {
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <OrdersDashboard />
+      <MultiPlatformOrdersDashboard />
     </Suspense>
   );
 }
