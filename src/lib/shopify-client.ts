@@ -35,27 +35,39 @@ async function getSupabaseClient(logs: string[]): Promise<any> {
 
 // ========== Credential Management ==========
 
-async function upsertCredential(supabase: any, tableName: string, data: any, conflictColumn?: string) {
-    // This generic upsert function handles both inserts and updates.
-    // It checks if a row exists and updates it, otherwise it inserts a new row.
-    // For simple, single-row credential tables, we don't need a conflict column.
-    
-    const { data: existing, error: selectError } = await supabase.from(tableName).select('id').limit(1);
+async function upsertCredential(supabase: any, tableName: string, data: any) {
+    // This function ensures that there is only one row in the credential table.
+    // It first tries to select an existing row. If found, it updates it.
+    // If not found, it inserts a new row.
+    const { data: existing, error: selectError } = await supabase
+        .from(tableName)
+        .select('id')
+        .limit(1);
 
-    if (selectError) {
-        // This can happen if the table doesn't exist yet, which is a valid state before first save.
-        // We will proceed to insert, and if the table is truly missing, the insert will fail with a clear error.
-        console.warn(`Could not check for existing credentials in ${tableName}: ${selectError.message}`);
+    if (selectError && !selectError.message.includes('relation') && !selectError.message.includes('does not exist')) {
+        // If the error is anything other than the table not existing, throw it.
+        throw new Error(`Failed to check for existing credentials in ${tableName}: ${selectError.message}`);
     }
 
     if (existing && existing.length > 0) {
-        // Update the existing record (we assume only one row of credentials per table)
-        const { error: updateError } = await supabase.from(tableName).update(data).eq('id', existing[0].id);
-        if (updateError) throw new Error(`Failed to update credentials in ${tableName}: ${updateError.message}`);
+        // Row exists, so update it.
+        const { error: updateError } = await supabase
+            .from(tableName)
+            .update(data)
+            .eq('id', existing[0].id);
+
+        if (updateError) {
+            throw new Error(`Failed to update credentials in ${tableName}: ${updateError.message}`);
+        }
     } else {
-        // Insert a new record
-        const { error: insertError } = await supabase.from(tableName).insert(data);
-        if (insertError) throw new Error(`Failed to insert credentials into ${tableName}: ${insertError.message}`);
+        // No row exists, so insert a new one.
+        const { error: insertError } = await supabase
+            .from(tableName)
+            .insert(data);
+        
+        if (insertError) {
+            throw new Error(`Failed to insert credentials into ${tableName}: ${insertError.message}`);
+        }
     }
 }
 
@@ -422,7 +434,5 @@ export async function getShopifyOrders(options?: { createdAtMin?: string, create
     throw new Error(`An error occurred while fetching orders from Shopify: ${errorMessage}`);
   }
 }
-
-    
 
     
