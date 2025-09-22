@@ -35,6 +35,23 @@ async function getSupabaseClient(logs: string[]): Promise<any> {
     return createClient(supabaseUrl, supabaseKey);
 }
 
+export async function saveShopifyCredentials(storeName: string, accessToken: string): Promise<void> {
+    const logs: string[] = [];
+    const supabase = await getSupabaseClient(logs);
+
+    // It's a good practice to have a unique ID for the credentials row if you plan to support multiple users.
+    // For a single-user app, a fixed ID like 1 is fine.
+    const { error } = await supabase
+        .from('shopify_credentials')
+        .upsert({ id: 1, store_name: storeName, access_token: accessToken }, { onConflict: 'id' });
+
+    if (error) {
+        logs.push(`Supabase error saving credentials: ${error.message}`);
+        throw new Error(`Failed to save Shopify credentials: ${error.message}`);
+    }
+    logs.push('Successfully saved Shopify credentials to Supabase.');
+}
+
 export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
     const supabase = await getSupabaseClient(logs);
     

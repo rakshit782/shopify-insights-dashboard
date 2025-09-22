@@ -1,6 +1,9 @@
 
 'use client';
 
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { handleSaveShopifyCredentials } from '@/app/actions';
 import {
     Accordion,
     AccordionContent,
@@ -12,36 +15,84 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, RefreshCw, Trash2 } from "lucide-react";
+import { PlusCircle, RefreshCw, Trash2, Loader2 } from "lucide-react";
 
 
 export function ConnectionsForm() {
-    // In a real app, these would be managed with useForm, useState, and server actions
-    // This is a stateless UI representation for now.
+    const { toast } = useToast();
+    const [shopifyStoreName, setShopifyStoreName] = useState('');
+    const [shopifyApiToken, setShopifyApiToken] = useState('');
+    const [isSavingShopify, setIsSavingShopify] = useState(false);
+
+    const onSaveShopify = async () => {
+        setIsSavingShopify(true);
+        if (!shopifyStoreName || !shopifyApiToken) {
+            toast({
+                title: "Missing Information",
+                description: "Please provide both a store name and an access token.",
+                variant: "destructive",
+            });
+            setIsSavingShopify(false);
+            return;
+        }
+
+        const result = await handleSaveShopifyCredentials(shopifyStoreName, shopifyApiToken);
+        
+        if (result.success) {
+            toast({
+                title: "Credentials Saved",
+                description: "Your Shopify credentials have been saved successfully.",
+                variant: "default",
+            });
+        } else {
+             toast({
+                title: "Save Failed",
+                description: result.error,
+                variant: "destructive",
+            });
+        }
+        setIsSavingShopify(false);
+    };
 
     const renderShopifyForm = () => (
         <Card>
             <CardHeader>
                 <CardTitle>Shopify</CardTitle>
                 <CardDescription>
-                    Enter your Shopify store name and Admin API access token.
+                    Enter your Shopify store name and Admin API access token. These are stored securely.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="shopify-store-name">Store Name</Label>
                     <div className="flex items-center">
-                        <Input id="shopify-store-name" placeholder="your-store" />
+                        <Input 
+                            id="shopify-store-name" 
+                            placeholder="your-store" 
+                            value={shopifyStoreName}
+                            onChange={(e) => setShopifyStoreName(e.target.value)}
+                        />
                         <span className="ml-2 text-muted-foreground">.myshopify.com</span>
                     </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="shopify-api-token">Admin API Access Token</Label>
-                    <Input id="shopify-api-token" type="password" placeholder="shpat_..." />
+                    <Input 
+                        id="shopify-api-token" 
+                        type="password" 
+                        placeholder="shpat_..." 
+                        value={shopifyApiToken}
+                        onChange={(e) => setShopifyApiToken(e.target.value)}
+                    />
                 </div>
             </CardContent>
             <CardFooter>
-                <Button>Save Shopify Credentials</Button>
+                <Button onClick={onSaveShopify} disabled={isSavingShopify}>
+                    {isSavingShopify ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save Shopify Credentials
+                </Button>
             </CardFooter>
         </Card>
     );

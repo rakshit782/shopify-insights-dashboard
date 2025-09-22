@@ -5,7 +5,7 @@ import {
   generateProductSummary,
   type GenerateProductSummaryInput,
 } from '@/ai/flows/generate-product-summary';
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate } from '@/lib/types';
 
@@ -83,4 +83,15 @@ export async function handleGetProduct(id: number) {
     console.error('Get product failed:', errorMessage);
     return { product: null, error: `Failed to retrieve product: ${errorMessage}` };
   }
+}
+
+export async function handleSaveShopifyCredentials(storeName: string, accessToken: string) {
+    try {
+        await saveShopifyCredentials(storeName, accessToken);
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Failed to save Shopify credentials:', errorMessage);
+        return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
 }
