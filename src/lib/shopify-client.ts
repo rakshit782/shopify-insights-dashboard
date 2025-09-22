@@ -88,7 +88,7 @@ export async function getShopifyProducts(): Promise<ShopifyFetchResult> {
     throw new Error('Shopify store name or access token is not defined after fetching from Supabase.');
   }
 
-  const storeUrl = `https://${storeName}.myshopify.com`;
+  const storeUrl = `https://${storeName}`;
   logs.push(`Constructed Shopify Store URL: ${storeUrl}`);
 
   const endpoint = `${storeUrl}/admin/api/2025-01/products.json`;
