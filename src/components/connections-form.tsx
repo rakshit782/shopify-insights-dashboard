@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, RefreshCw, Trash2 } from "lucide-react";
 
 
 export function ConnectionsForm() {
@@ -74,6 +74,19 @@ export function ConnectionsForm() {
                      <div className="space-y-2">
                         <Label htmlFor="amazon-na-secret-key">AWS Secret Access Key</Label>
                         <Input id="amazon-na-secret-key" type="password" />
+                    </div>
+                    <div className="space-y-2">
+                         <Label htmlFor="amazon-na-secret-key">Client Secret</Label>
+                        <div className="flex items-center gap-2">
+                            <Input id="amazon-na-secret-key" type="password" />
+                            <Button variant="outline">
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Rotate Secret
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            It is recommended to rotate your client secret periodically.
+                        </p>
                     </div>
                 </div>
                 <Button variant="outline" className="w-full">

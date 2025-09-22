@@ -1,5 +1,5 @@
 
-import { ConnectionsForm } from '@/components/connections-form';
+import { SettingsPage } from '@/components/settings-page';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import 'dotenv/config';
@@ -23,14 +23,6 @@ export default async function ConnectionsPage() {
     }
     
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Manage Connections</h1>
-                <p className="text-muted-foreground mb-8">
-                    Securely add and manage API credentials for your e-commerce platforms.
-                </p>
-                <ConnectionsForm />
-            </div>
-        </div>
+        <SettingsPage />
     );
 }
