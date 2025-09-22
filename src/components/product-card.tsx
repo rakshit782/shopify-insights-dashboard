@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import {
   Card,
@@ -31,6 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={product.imageUrl}
             alt={product.title}
             fill
+            unoptimized
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             data-ai-hint={product.imageHint}

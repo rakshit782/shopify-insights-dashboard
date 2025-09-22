@@ -18,23 +18,23 @@ const platforms = [
   },
   {
     name: 'Amazon',
-    icon: <Image src="/amazon.svg" alt="Amazon" width={20} height={20} />,
+    icon: <Image src="/amazon.svg" alt="Amazon" width={20} height={20} unoptimized />,
   },
   {
     name: 'Walmart',
-    icon: <Image src="/walmart.svg" alt="Walmart" width={20} height={20} />,
+    icon: <Image src="/walmart.svg" alt="Walmart" width={20} height={20} unoptimized />,
   },
   {
     name: 'eBay',
-    icon: <Image src="/ebay.svg" alt="eBay" width={20} height={20} />,
+    icon: <Image src="/ebay.svg" alt="eBay" width={20} height={20} unoptimized />,
   },
   {
     name: 'Etsy',
-    icon: <Image src="/etsy.svg" alt="Etsy" width={20} height={20} />,
+    icon: <Image src="/etsy.svg" alt="Etsy" width={20} height={20} unoptimized />,
   },
   {
     name: 'Wayfair',
-    icon: <Image src="/wayfair.svg" alt="Wayfair" width={20} height={20} />,
+    icon: <Image src="/wayfair.svg" alt="Wayfair" width={20} height={20} unoptimized />,
   },
 ];
 

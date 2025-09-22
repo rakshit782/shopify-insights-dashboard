@@ -211,7 +211,7 @@ export function ConnectionsForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Shopify */}
             <MarketplaceCard
-                logo={<Image src="/shopify.svg" alt="Shopify Logo" width={48} height={48} />}
+                logo={<Image src="/shopify.svg" alt="Shopify Logo" width={48} height={48} unoptimized />}
                 name="Shopify"
                 description="Manage your primary e-commerce storefront."
                 isConnected={connections.shopify}
@@ -248,7 +248,7 @@ export function ConnectionsForm() {
 
             {/* Amazon */}
             <MarketplaceCard
-                logo={<Image src="/amazon.svg" alt="Amazon Logo" width={48} height={48} />}
+                logo={<Image src="/amazon.svg" alt="Amazon Logo" width={48} height={48} unoptimized />}
                 name="Amazon"
                 description="Connect your Seller Central account."
                 isConnected={connections.amazon}
@@ -288,7 +288,7 @@ export function ConnectionsForm() {
             
             {/* Walmart */}
             <MarketplaceCard
-                logo={<Image src="/walmart.svg" alt="Walmart Logo" width={48} height={48} />}
+                logo={<Image src="/walmart.svg" alt="Walmart Logo" width={48} height={48} unoptimized />}
                 name="Walmart"
                 description="Sync with Walmart Marketplace."
                 isConnected={connections.walmart}
@@ -320,7 +320,7 @@ export function ConnectionsForm() {
 
              {/* eBay */}
             <MarketplaceCard
-                logo={<Image src="/ebay.svg" alt="eBay Logo" width={48} height={48} />}
+                logo={<Image src="/ebay.svg" alt="eBay Logo" width={48} height={48} unoptimized />}
                 name="eBay"
                 description="List products on the eBay platform."
                 isConnected={connections.ebay}
@@ -360,7 +360,7 @@ export function ConnectionsForm() {
 
             {/* Etsy */}
             <MarketplaceCard
-                logo={<Image src="/etsy.svg" alt="Etsy Logo" width={48} height={48} />}
+                logo={<Image src="/etsy.svg" alt="Etsy Logo" width={48} height={48} unoptimized />}
                 name="Etsy"
                 description="Connect your creative marketplace."
                 isConnected={connections.etsy}
@@ -391,7 +391,7 @@ export function ConnectionsForm() {
 
             {/* Wayfair */}
             <MarketplaceCard
-                logo={<Image src="/wayfair.svg" alt="Wayfair Logo" width={48} height={48} />}
+                logo={<Image src="/wayfair.svg" alt="Wayfair Logo" width={48} height={48} unoptimized />}
                 name="Wayfair"
                 description="Manage your home goods products."
                 isConnected={connections.wayfair}

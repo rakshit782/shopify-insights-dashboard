@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
            <div className="flex items-center gap-2 p-2">
             {businessLogo ? (
-              <Image src={businessLogo} alt="Business Logo" width={20} height={20} className="h-5 w-5 object-contain" />
+              <Image src={businessLogo} alt="Business Logo" width={20} height={20} unoptimized className="h-5 w-5 object-contain" />
             ) : (
               <ShoppingCart className="h-5 w-5 text-primary" />
             )}

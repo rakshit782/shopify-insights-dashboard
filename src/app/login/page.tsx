@@ -90,6 +90,7 @@ export default function LoginPage() {
                         src={loginImage.imageUrl}
                         alt={loginImage.description}
                         fill
+                        unoptimized
                         className="object-cover dark:brightness-[0.3] dark:grayscale"
                         data-ai-hint={loginImage.imageHint}
                     />

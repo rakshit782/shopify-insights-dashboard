@@ -47,6 +47,7 @@ export function ProductTable({ products }: ProductTableProps) {
                         src={product.imageUrl}
                         alt={product.title}
                         fill
+                        unoptimized
                         className="object-cover"
                         sizes="64px"
                         data-ai-hint={product.imageHint}

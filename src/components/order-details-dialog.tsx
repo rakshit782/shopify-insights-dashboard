@@ -26,12 +26,12 @@ interface OrderDetailsDialogProps {
 }
 
 const platformIcons: { [key: string]: React.ReactNode } = {
-  Shopify: <Image src="/shopify.svg" alt="Shopify" width={24} height={24} />,
-  Amazon: <Image src="/amazon.svg" alt="Amazon" width={24} height={24} />,
-  Walmart: <Image src="/walmart.svg" alt="Walmart" width={24} height={24} />,
-  eBay: <Image src="/ebay.svg" alt="eBay" width={24} height={24} />,
-  Etsy: <Image src="/etsy.svg" alt="Etsy" width={24} height={24} />,
-  Wayfair: <Image src="/wayfair.svg" alt="Wayfair" width={24} height={24} />,
+  Shopify: <Image src="/shopify.svg" alt="Shopify" width={24} height={24} unoptimized />,
+  Amazon: <Image src="/amazon.svg" alt="Amazon" width={24} height={24} unoptimized />,
+  Walmart: <Image src="/walmart.svg" alt="Walmart" width={24} height={24} unoptimized />,
+  eBay: <Image src="/ebay.svg" alt="eBay" width={24} height={24} unoptimized />,
+  Etsy: <Image src="/etsy.svg" alt="Etsy" width={24} height={24} unoptimized />,
+  Wayfair: <Image src="/wayfair.svg" alt="Wayfair" width={24} height={24} unoptimized />,
 };
 
 export function OrderDetailsDialog({ isOpen, onOpenChange, order, platform, onAction }: OrderDetailsDialogProps) {
