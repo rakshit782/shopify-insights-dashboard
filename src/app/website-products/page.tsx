@@ -24,10 +24,9 @@ export default async function WebsiteProductsPage() {
     );
   }
 
-  // Pass initial empty arrays and let the client-side component fetch the data
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <Dashboard initialProducts={[]} initialLogs={[]} dataSource="website" />
+      <Dashboard dataSource="website" />
     </Suspense>
   );
 }

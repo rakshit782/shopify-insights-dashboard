@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { handleSyncProducts } from "@/app/actions";
 
-export function SyncButton() {
+interface SyncButtonProps {
+    onSyncComplete: () => void;
+}
+
+export function SyncButton({ onSyncComplete }: SyncButtonProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
@@ -20,6 +25,7 @@ export function SyncButton() {
         description: `${result.count} products have been synced to your website database.`,
         variant: "default",
       });
+      onSyncComplete(); // Trigger refresh
     } else {
       toast({
         title: "Sync Failed",

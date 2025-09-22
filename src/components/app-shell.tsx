@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck } from 'lucide-react';
+import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -48,6 +48,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link href="/">
                   <BarChartHorizontal className="h-5 w-5" />
                   <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Analytics</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/listing-manager'}
+                tooltip={{ children: 'Listing Manager' }}
+              >
+                <Link href="/listing-manager">
+                  <ListTodo className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Listing Manager</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -91,6 +103,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/channel-health'}
+                tooltip={{ children: 'Channel Health' }}
+              >
+                <Link href="/channel-health">
+                  <ShieldCheck className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Channel Health</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild

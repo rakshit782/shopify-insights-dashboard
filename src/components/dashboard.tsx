@@ -15,18 +15,15 @@ import { DashboardSkeleton } from './dashboard-skeleton';
 import { PaginationControls } from './pagination-controls';
 
 interface DashboardProps {
-  initialProducts: MappedShopifyProduct[];
-  initialLogs: string[];
-  error?: string | null;
   dataSource?: 'shopify' | 'website';
 }
 
-export function Dashboard({ initialProducts, initialLogs, error: initialError, dataSource = 'shopify' }: DashboardProps) {
-  const [productData, setProductData] = useState<MappedShopifyProduct[]>(initialProducts);
+export function Dashboard({ dataSource = 'shopify' }: DashboardProps) {
+  const [productData, setProductData] = useState<MappedShopifyProduct[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isLoading, setIsLoading] = useState(true); // Start with loading true
-  const [error, setError] = useState<string | null>(initialError || null);
-  const [logs, setLogs] = useState<string[]>(initialLogs);
+  const [error, setError] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   const [isLogsOpen, setIsLogsOpen] = useState(true);
   
   // Pagination state
@@ -56,7 +53,9 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
 
       const { products: mappedProducts, logs: fetchLogs } = await response.json();
 
-      fetchLogs.forEach((log: string) => addLog(log));
+      if (fetchLogs) {
+        fetchLogs.forEach((log: string) => addLog(log));
+      }
       setProductData(mappedProducts);
       addLog(`Successfully fetched and mapped ${mappedProducts.length} products.`);
     } catch (e) {
@@ -81,10 +80,10 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
   }, [fetchData]);
 
   useEffect(() => {
-    if (error || logs.length > 0) {
+    if (error || (logs.length > 0 && !isLoading)) {
       setIsLogsOpen(true);
     }
-  }, [error, logs]);
+  }, [error, logs, isLoading]);
 
   const { paginatedData, totalPages } = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -123,7 +122,7 @@ export function Dashboard({ initialProducts, initialLogs, error: initialError, d
           <Terminal className="h-4 w-4" />
           <AlertTitle>No Products Found</AlertTitle>
           <AlertDescription>
-            No products were found in the {dataSource} data source. Please check your configuration and review the logs below.
+            No products were found in the {dataSource} data source. If you're on the Shopify Products page, check your credentials. If you're on the Website Products page, try syncing your products first.
           </AlertDescription>
         </Alert>
       )

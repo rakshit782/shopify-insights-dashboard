@@ -26,10 +26,9 @@ export default async function ShopifyProductsPage() {
     );
   }
 
-  // Pass initial empty arrays and let the client-side component fetch the data
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <Dashboard initialProducts={[]} initialLogs={[]} dataSource="shopify" />
+      <Dashboard dataSource="shopify" />
     </Suspense>
   );
 }

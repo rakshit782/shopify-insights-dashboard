@@ -192,15 +192,3 @@ export interface ShopifyOrder {
         vendor: string | null;
     }[];
 }
-
-export interface Competitor {
-  id: string; // uuid
-  monitored_brand: string;
-  competitor_brand: string;
-  product_title: string;
-  source: string;
-  price: number;
-  url: string;
-  metric_json: any; // jsonb
-  fetched_at: string; // timestamptz
-}
