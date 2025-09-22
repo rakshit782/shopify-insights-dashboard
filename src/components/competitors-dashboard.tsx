@@ -4,12 +4,13 @@
 import { useState, useEffect } from 'react';
 import type { Competitor } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, ExternalLink } from 'lucide-react';
+import { Terminal, ExternalLink, DollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
+import { Badge } from './ui/badge';
 
 function CompetitorSkeleton() {
     return (
@@ -19,20 +20,22 @@ function CompetitorSkeleton() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead><Skeleton className="h-5 w-24" /></TableHead>
                             <TableHead><Skeleton className="h-5 w-32" /></TableHead>
                             <TableHead><Skeleton className="h-5 w-48" /></TableHead>
                             <TableHead><Skeleton className="h-5 w-24" /></TableHead>
+                            <TableHead><Skeleton className="h-5 w-24" /></TableHead>
+                            <TableHead><Skeleton className="h-5 w-32" /></TableHead>
                             <TableHead className="text-right"><Skeleton className="h-5 w-20" /></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {Array.from({ length: 5 }).map((_, i) => (
                             <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
                             </TableRow>
                         ))}
@@ -94,7 +97,7 @@ export function CompetitorsDashboard() {
                     <Terminal className="h-4 w-4" />
                     <AlertTitle>No Competitor Data Found</AlertTitle>
                     <AlertDescription>
-                        Your `competitors` table in Supabase might be empty. Once your scraper runs, the data will appear here.
+                        Your `brand_competitors` table in Supabase might be empty. Once your scraper runs, the data will appear here.
                     </AlertDescription>
                 </Alert>
             </div>
@@ -103,35 +106,40 @@ export function CompetitorsDashboard() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Competitor Analysis</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Competitor Product Analysis</h1>
             <p className="text-muted-foreground mb-8">
-                An overview of competitor data scraped from the web.
+                An overview of competitor products scraped from various sources.
             </p>
             <Card>
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Competitor</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Strengths</TableHead>
-                            <TableHead>Weaknesses</TableHead>
-                            <TableHead>Last Scraped</TableHead>
-                            <TableHead className="text-right">Website</TableHead>
+                            <TableHead>Product Title</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Source</TableHead>
+                            <TableHead>Last Fetched</TableHead>
+                            <TableHead className="text-right">Link</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {competitors.map((competitor) => (
                             <TableRow key={competitor.id}>
-                                <TableCell className="font-medium">{competitor.name}</TableCell>
-                                <TableCell>{competitor.category}</TableCell>
-                                <TableCell className="text-sm text-green-600">{competitor.strengths || 'N/A'}</TableCell>
-                                <TableCell className="text-sm text-red-600">{competitor.weaknesses || 'N/A'}</TableCell>
+                                <TableCell className="font-medium">{competitor.competitor_brand}</TableCell>
+                                <TableCell>{competitor.product_title}</TableCell>
+                                <TableCell className="flex items-center">
+                                    <DollarSign className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+                                    {competitor.price.toFixed(2)}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline">{competitor.source}</Badge>
+                                </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(new Date(competitor.last_scraped_at), { addSuffix: true })}
+                                    {formatDistanceToNow(new Date(competitor.fetched_at), { addSuffix: true })}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button asChild variant="ghost" size="icon">
-                                        <a href={competitor.website} target="_blank" rel="noopener noreferrer">
+                                        <a href={competitor.url} target="_blank" rel="noopener noreferrer">
                                             <ExternalLink className="h-4 w-4" />
                                         </a>
                                     </Button>

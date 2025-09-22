@@ -1,4 +1,5 @@
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -81,7 +82,6 @@ export interface ShopifyProduct {
 export interface MappedShopifyProduct {
   id: string;
   title: string;
-  description: string;
   vendor: string;
   product_type: string;
   price: number;
@@ -194,11 +194,13 @@ export interface ShopifyOrder {
 }
 
 export interface Competitor {
-  id: number;
-  name: string;
-  website: string;
-  category: string;
-  strengths: string | null;
-  weaknesses: string | null;
-  last_scraped_at: string;
+  id: string; // uuid
+  monitored_brand: string;
+  competitor_brand: string;
+  product_title: string;
+  source: string;
+  price: number;
+  url: string;
+  metric_json: any; // jsonb
+  fetched_at: string; // timestamptz
 }

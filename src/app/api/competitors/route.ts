@@ -16,10 +16,11 @@ export async function GET() {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
+    // Query the new 'brand_competitors' table
     const { data, error } = await supabase
-      .from('competitors')
+      .from('brand_competitors')
       .select('*')
-      .order('last_scraped_at', { ascending: false });
+      .order('fetched_at', { ascending: false });
 
     if (error) {
       console.error('Supabase error fetching competitors:', error);
