@@ -27,7 +27,6 @@ async function getShopifyCredentialsFromSupabase(): Promise<{ storeName: string;
   }
   
   if (supabaseUrl.includes('YOUR_SUPABASE_URL') || supabaseKey.includes('YOUR_SUPABASE_ANON_KEY')) {
-     console.warn('Using placeholder Supabase credentials. Please update your settings.');
     throw new Error('Please configure your Supabase credentials in the settings page.');
   }
 
@@ -40,11 +39,11 @@ async function getShopifyCredentialsFromSupabase(): Promise<{ storeName: string;
     .single();
 
   if (error) {
-    throw new Error(`Failed to fetch Shopify credentials from Supabase: ${error.message}. Please check your table and column names.`);
+    throw new Error(`Failed to fetch Shopify credentials from Supabase: ${error.message}. Please check your table and column names (expected 'shopify_credentials' table with 'store_name' and 'access_token' columns).`);
   }
 
   if (!data) {
-    throw new Error('No Shopify credentials found in Supabase.');
+    throw new Error('No Shopify credentials found in Supabase. Please ensure the \'shopify_credentials\' table has at least one entry.');
   }
 
   return { storeName: data.store_name, accessToken: data.access_token };
@@ -64,14 +63,14 @@ export async function getShopifyProducts(): Promise<ShopifyProduct[]> {
     }
   } catch (e) {
       if (e instanceof Error) {
-        console.error(e.message);
+        // Re-throw the specific error from getShopifyCredentialsFromSupabase
         throw e;
       }
-      throw new Error("Could not fetch credentials from Supabase.");
+      throw new Error("An unknown error occurred while fetching credentials from Supabase.");
   }
   
   if (!storeUrl || !accessToken) {
-    throw new Error('Shopify store URL or access token is not defined.');
+    throw new Error('Shopify store URL or access token is not defined after fetching from Supabase.');
   }
 
   const endpoint = `${storeUrl}/admin/api/2023-10/products.json`;
@@ -87,7 +86,7 @@ export async function getShopifyProducts(): Promise<ShopifyProduct[]> {
 
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(`Failed to fetch Shopify products: ${response.status} ${response.statusText} - ${errorData}`);
+      throw new Error(`Failed to fetch Shopify products: ${response.status} ${response.statusText}. Check your Shopify store name and admin access token.`);
     }
 
     const { products: shopifyProducts } = await response.json() as { products: ShopifyAdminProduct[] };
@@ -117,7 +116,8 @@ export async function getShopifyProducts(): Promise<ShopifyProduct[]> {
   } catch (error) {
     console.error('Error fetching from Shopify:', error);
     if (error instanceof Error) {
-        throw new Error(`An error occurred while fetching products from Shopify: ${error.message}`);
+        // Re-throw the specific error for the UI to display
+        throw error;
     }
     throw new Error('An unknown error occurred while fetching products from Shopify.');
   }

@@ -19,21 +19,23 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasSupabaseCreds, setHasSupabaseCreds] = useState(false);
+  const [hasSupabaseCreds, setHasSupabaseCreds] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkCredentialsAndFetch = async () => {
       setIsLoading(true);
       setError(null);
+      setHasSupabaseCreds(null);
       
       const creds = await getSupabaseCredentials();
       
-      if (!creds.supabaseUrl || !creds.supabaseKey || creds.supabaseUrl.includes('YOUR_SUPABASE_URL')) {
-        setHasSupabaseCreds(false);
+      const hasCreds = creds.supabaseUrl && creds.supabaseKey && !creds.supabaseUrl.includes('YOUR_SUPABASE_URL');
+      setHasSupabaseCreds(hasCreds);
+      
+      if (!hasCreds) {
         setIsLoading(false);
         return;
       }
-      setHasSupabaseCreds(true);
 
       try {
         const products = await getShopifyProducts();
@@ -42,7 +44,7 @@ export default function Home() {
         if (e instanceof Error) {
           setError(e.message);
         } else {
-          setError('An unknown error occurred.');
+          setError('An unknown error occurred while fetching products.');
         }
       } finally {
         setIsLoading(false);
@@ -52,7 +54,7 @@ export default function Home() {
   }, []);
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || hasSupabaseCreds === null) {
       return (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -71,7 +73,7 @@ export default function Home() {
       );
     }
 
-    if (!hasSupabaseCreds) {
+    if (hasSupabaseCreds === false) {
       return (
         <Alert>
           <Terminal className="h-4 w-4" />
