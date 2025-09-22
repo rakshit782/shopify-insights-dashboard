@@ -64,7 +64,7 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
     const supabase = await getSupabaseClient(logs);
     const { error } = await supabase
         .from('shopify_credentials')
-        .upsert({ id: 1, store_name: storeName, access_token: accessToken }, { onConflict: 'id' });
+        .upsert({ store_name: storeName, access_token: accessToken }, { onConflict: 'store_name' });
 
     if (error) throw new Error(`Failed to save Shopify credentials: ${error.message}`);
 }
@@ -74,7 +74,7 @@ export async function saveAmazonCredentials(credentials: AmazonCredentials): Pro
     const supabase = await getSupabaseClient(logs);
     const { error } = await supabase
         .from('amazon_credentials')
-        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+        .upsert(credentials, { onConflict: 'profile_id' });
 
     if (error) throw new Error(`Failed to save Amazon credentials: ${error.message}`);
 }
@@ -82,9 +82,10 @@ export async function saveAmazonCredentials(credentials: AmazonCredentials): Pro
 export async function saveWalmartCredentials(credentials: WalmartCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+    // Use client_id as the conflict target, assuming it's unique.
     const { error } = await supabase
         .from('walmart_credentials')
-        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+        .upsert(credentials, { onConflict: 'client_id' });
 
     if (error) throw new Error(`Failed to save Walmart credentials: ${error.message}`);
 }
@@ -92,9 +93,10 @@ export async function saveWalmartCredentials(credentials: WalmartCredentials): P
 export async function saveEbayCredentials(credentials: EbayCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+     // Use app_id as the conflict target, assuming it's unique.
     const { error } = await supabase
         .from('ebay_credentials')
-        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+        .upsert(credentials, { onConflict: 'app_id' });
 
     if (error) throw new Error(`Failed to save eBay credentials: ${error.message}`);
 }
@@ -102,9 +104,10 @@ export async function saveEbayCredentials(credentials: EbayCredentials): Promise
 export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+     // Use keystring as the conflict target, assuming it's unique.
     const { error } = await supabase
         .from('etsy_credentials')
-        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+        .upsert(credentials, { onConflict: 'keystring' });
 
     if (error) throw new Error(`Failed to save Etsy credentials: ${error.message}`);
 }
@@ -112,9 +115,10 @@ export async function saveEtsyCredentials(credentials: EtsyCredentials): Promise
 export async function saveWayfairCredentials(credentials: WayfairCredentials): Promise<void> {
     const logs: string[] = [];
     const supabase = await getSupabaseClient(logs);
+     // Use client_id as the conflict target, assuming it's unique.
     const { error } = await supabase
         .from('wayfair_credentials')
-        .upsert({ id: 1, ...credentials }, { onConflict: 'id' });
+        .upsert(credentials, { onConflict: 'client_id' });
 
     if (error) throw new Error(`Failed to save Wayfair credentials: ${error.message}`);
 }
