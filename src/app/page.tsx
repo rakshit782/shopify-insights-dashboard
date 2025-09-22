@@ -1,4 +1,6 @@
 
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { Suspense } from 'react';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,6 +26,13 @@ function AnalyticsSkeleton() {
 }
 
 export default async function Home() {
+    const supabase = createClient()
+
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data?.user) {
+        redirect('/login')
+    }
+    
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

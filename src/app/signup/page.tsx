@@ -1,5 +1,5 @@
 
-import { login } from '@/app/auth/actions'
+import { signup } from '@/app/auth/actions'
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -10,53 +10,54 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Link from 'next/link'
-import Image from 'next/image'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { ChromeIcon, GithubIcon } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
 
-export default function LoginPage() {
+export default function SignupPage() {
     const loginImage = PlaceHolderImages.find(p => p.id === 'login-background');
-
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12">
+     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
+       <div className="flex items-center justify-center py-12">
         <Card className="mx-auto max-w-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
+            <CardTitle className="text-xl">Sign Up</CardTitle>
             <CardDescription>
-              Enter your email below to login to your account
+              Enter your information to create an account
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form>
-                <div className="grid gap-4">
+            <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    />
+                  <Label htmlFor="first-name">First name</Label>
+                  <Input id="first-name" name="first-name" placeholder="Max" required />
                 </div>
                 <div className="grid gap-2">
-                    <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                    <Link
-                        href="#"
-                        className="ml-auto inline-block text-sm underline"
-                    >
-                        Forgot your password?
-                    </Link>
-                    </div>
-                    <Input id="password" name="password" type="password" required />
+                  <Label htmlFor="last-name">Last name</Label>
+                  <Input id="last-name" name="last-name" placeholder="Robinson" required />
                 </div>
-                <Button formAction={login} className="w-full">
-                    Login
-                </Button>
-                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" name="password" type="password" />
+              </div>
+              <Button formAction={signup} className="w-full">
+                Create an account
+              </Button>
+            </div>
             </form>
             <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
@@ -79,15 +80,15 @@ export default function LoginPage() {
                 </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="underline">
-                Sign up
+              Already have an account?{" "}
+              <Link href="/login" className="underline">
+                Sign in
               </Link>
             </div>
           </CardContent>
         </Card>
       </div>
-       <div className="hidden bg-muted lg:block relative">
+        <div className="hidden bg-muted lg:block relative">
             {loginImage && (
                 <Image
                     src={loginImage.imageUrl}
