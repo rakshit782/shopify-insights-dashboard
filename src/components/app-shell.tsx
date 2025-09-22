@@ -10,9 +10,10 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingCart, Globe, BarChartHorizontal, ClipboardList } from 'lucide-react';
+import { BarChartHorizontal, ClipboardList, Globe, Settings, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -80,6 +81,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/connections'}
+                tooltip={{ children: 'Connections' }}
+              >
+                <Link href="/connections">
+                  <Settings />
+                  <span>Connections</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
          <div className="md:hidden flex items-center gap-2 p-4 border-b">
