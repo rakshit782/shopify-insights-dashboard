@@ -28,7 +28,7 @@ export async function getSupabaseCredentials(): Promise<{ supabaseUrl: string | 
     const supabaseKey = cookies().get('supabaseKey')?.value;
 
     return { 
-      supabaseUrl: supabaseUrl ?? process.env.SUPABASE_URL, 
-      supabaseKey: supabaseKey ?? process.env.SUPABASE_ANON_KEY 
+      supabaseUrl: supabaseUrl, 
+      supabaseKey: supabaseKey 
     };
 }
