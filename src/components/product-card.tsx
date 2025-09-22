@@ -1,4 +1,3 @@
-
 import Image from 'next/image';
 import {
   Card,
@@ -37,8 +36,8 @@ export function ProductCard({ product }: ProductCardProps) {
             data-ai-hint={product.imageHint}
           />
         </div>
-        <div className="p-6 pb-2">
-          <CardTitle className="mb-2 text-lg font-bold leading-tight tracking-tight">
+        <div className="p-6 pb-4">
+          <CardTitle className="mb-2 text-lg font-semibold leading-tight tracking-tight">
             {product.title}
           </CardTitle>
           <div className="flex flex-wrap gap-2">
@@ -47,12 +46,12 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid flex-1 grid-cols-2 gap-4 p-6 pt-2">
+      <CardContent className="grid flex-1 grid-cols-2 gap-x-4 gap-y-5 p-6 pt-0">
         <MetricDisplay
           icon={DollarSign}
           label="Price"
           value={`$${product.price.toFixed(2)}`}
-          className="text-green-600"
+          className="text-primary"
         />
         <MetricDisplay
           icon={Package}
@@ -83,9 +82,9 @@ export function ProductCard({ product }: ProductCardProps) {
           })}`}
         />
       </CardContent>
-      <CardFooter className="flex gap-2">
+      <CardFooter className="flex flex-col sm:flex-row gap-2 mt-auto pt-4">
         <ProductSummaryGenerator product={product} />
-        <Button asChild variant="outline" size="sm" className="w-full">
+        <Button asChild variant="secondary" size="sm" className="w-full">
           <Link href={`/products/${numericId}/edit`}>
             <Pencil className="mr-2 h-4 w-4" /> Edit
           </Link>
