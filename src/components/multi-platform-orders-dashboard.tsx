@@ -47,6 +47,10 @@ export function MultiPlatformOrdersDashboard() {
     setFilteredOrdersByTab(prev => ({ ...prev, [platform]: orders }));
   }, []);
 
+  const handleDateRangeChange = useCallback((range?: DateRange) => {
+    setDateRange(range);
+  }, []);
+
   const currentFilteredOrders = useMemo(() => {
     return filteredOrdersByTab[activeTab] || [];
   }, [activeTab, filteredOrdersByTab]);
@@ -62,7 +66,7 @@ export function MultiPlatformOrdersDashboard() {
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        onDateRangeChange={handleDateRangeChange}
         filteredOrders={currentFilteredOrders}
       />
 
