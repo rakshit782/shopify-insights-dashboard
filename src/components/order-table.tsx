@@ -181,7 +181,6 @@ declare module '@/lib/types' {
             address2: string | null;
             city: string;
             province: string;
-            country: string;
             zip: string;
             phone: string | null;
         } | null;
