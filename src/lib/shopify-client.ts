@@ -531,9 +531,10 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     }, 0);
 
     const nameParts = walmartOrder.shippingInfo.postalAddress.name.split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
+    const firstName = nameParts[0] || null;
+    const lastName = nameParts.slice(1).join(' ') || null;
 
+    // Use the status of the first line item as the overall status. This is a simplification.
     const latestStatus = walmartOrder.orderLines.orderLine[0]?.status || 'Created';
 
     return {
@@ -544,12 +545,16 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
         updated_at: new Date(walmartOrder.orderDate).toISOString(),
         total_price: orderTotal.toFixed(2),
         currency: walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency || 'USD',
-        financial_status: 'paid', // Walmart API doesn't provide this, assuming paid for simplicity
+        // Mapping Walmart status to a financial status is ambiguous, so we simplify.
+        // Assuming 'Created' or 'Acknowledged' are 'pending', and others are 'paid'.
+        financial_status: (latestStatus === 'Created' || latestStatus === 'Acknowledged') ? 'pending' : 'paid',
         fulfillment_status: latestStatus,
         customer: {
+            id: walmartOrder.customerOrderId,
             email: walmartOrder.customerEmailId,
             first_name: firstName,
             last_name: lastName,
+            phone: walmartOrder.shippingInfo.phone
         },
         shipping_address: {
             first_name: firstName,
@@ -567,7 +572,8 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
             title: line.item.productName,
             quantity: parseInt(line.orderLineQuantity.amount, 10),
             price: line.charges.charge[0]?.chargeAmount.amount.toFixed(2) || '0.00',
-            sku: line.item.sku
+            sku: line.item.sku,
+            vendor: 'Walmart'
         })),
     };
 }

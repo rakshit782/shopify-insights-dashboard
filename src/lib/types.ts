@@ -150,7 +150,7 @@ export interface WayfairCredentials {
     client_secret: string;
 }
 
-// Corresponds to the Order object from Shopify Admin API
+// Corresponds to the Order object from Shopify Admin API, adapted for multiple platforms
 export interface ShopifyOrder {
     id: number | string; // Made flexible for other platforms
     admin_graphql_api_id: string;

@@ -73,7 +73,7 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
             if (dateRange?.to) params.append('created_at_max', dateRange.to.toISOString());
         } else if (platform === 'Walmart') {
             endpoint = '/api/orders/walmart';
-            // Walmart uses `createdStartDate`
+            // Walmart uses `createdStartDate` in YYYY-MM-DD format
             if (dateRange?.from) params.append('createdStartDate', dateRange.from.toISOString().split('T')[0]);
         } else {
             // For other platforms, we currently don't fetch data
@@ -165,6 +165,7 @@ export function OrdersDashboard({ platform, isConnected, searchQuery, dateRange,
         );
     }
     
+    // Message for platforms not yet implemented
     if (platform !== 'Shopify' && platform !== 'Walmart' && !isLoading) {
         return (
             <Alert>
