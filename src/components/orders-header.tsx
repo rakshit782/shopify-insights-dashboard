@@ -1,18 +1,18 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, Search } from "lucide-react";
 import type { DateRange } from "react-day-picker";
-import { subDays, format, startOfDay, endOfDay } from "date-fns";
+import { subDays, format, startOfDay, endOfDay, isSameDay } from "date-fns";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Calendar } from "./ui/calendar";
 import { ExportOrdersButton } from "./export-orders-button";
 import type { ShopifyOrder } from "@/lib/types";
+import { useMemo } from "react";
 
 
 interface OrdersHeaderProps {
@@ -30,17 +30,8 @@ export function OrdersHeader({
     onDateRangeChange,
     filteredOrders
 }: OrdersHeaderProps) {
-    const [preset, setPreset] = useState('last14');
 
-    useEffect(() => {
-        // If an external change clears the date range, reset the preset dropdown
-        if (!dateRange) {
-            setPreset('custom'); // Or another appropriate default
-        }
-    }, [dateRange]);
-    
     const handlePresetChange = (value: string) => {
-        setPreset(value);
         const now = new Date();
         switch (value) {
             case 'today':
@@ -60,16 +51,27 @@ export function OrdersHeader({
                 onDateRangeChange({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
                 break;
             default:
-                onDateRangeChange(undefined);
                 break;
         }
     };
 
-    const handleDateChange = (range?: DateRange) => {
-        onDateRangeChange(range);
-        // When a custom date is picked, the preset is no longer active
-        setPreset('custom');
-    }
+    const selectedPreset = useMemo(() => {
+        const now = new Date();
+        if (!dateRange || !dateRange.from) return 'custom';
+        
+        const from = startOfDay(dateRange.from);
+        const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+
+        if (isSameDay(from, startOfDay(now)) && isSameDay(to, endOfDay(now))) return 'today';
+        const yesterday = subDays(now, 1);
+        if (isSameDay(from, startOfDay(yesterday)) && isSameDay(to, endOfDay(yesterday))) return 'yesterday';
+        if (isSameDay(from, startOfDay(subDays(now, 6))) && isSameDay(to, endOfDay(now))) return 'last7';
+        if (isSameDay(from, startOfDay(subDays(now, 13))) && isSameDay(to, endOfDay(now))) return 'last14';
+        if (isSameDay(from, startOfDay(subDays(now, 29))) && isSameDay(to, endOfDay(now))) return 'last30';
+
+        return 'custom';
+    }, [dateRange]);
+
 
     return (
         <div className="flex flex-col md:flex-row items-center gap-4">
@@ -83,7 +85,7 @@ export function OrdersHeader({
                 />
             </div>
             <div className="flex w-full flex-col sm:flex-row items-center gap-2 md:w-auto">
-                 <Select value={preset} onValueChange={handlePresetChange}>
+                 <Select value={selectedPreset} onValueChange={handlePresetChange}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Select a date range" />
                     </SelectTrigger>
@@ -93,7 +95,7 @@ export function OrdersHeader({
                         <SelectItem value="last7">Last 7 Days</SelectItem>
                         <SelectItem value="last14">Last 14 Days</SelectItem>
                         <SelectItem value="last30">Last 30 Days</SelectItem>
-                        {preset === 'custom' && <SelectItem value="custom" disabled>Custom Range</SelectItem>}
+                        {selectedPreset === 'custom' && <SelectItem value="custom" disabled>Custom Range</SelectItem>}
                     </SelectContent>
                 </Select>
 
@@ -128,7 +130,7 @@ export function OrdersHeader({
                             mode="range"
                             defaultMonth={dateRange?.from}
                             selected={dateRange}
-                            onSelect={handleDateChange}
+                            onSelect={onDateRangeChange}
                             numberOfMonths={2}
                         />
                     </PopoverContent>
