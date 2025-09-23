@@ -2,7 +2,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export function createClient(request: NextRequest) {
+export function createClient(request: NextRequest, supabaseUrl: string, supabaseAnonKey: string) {
   // Create an unmodified response
   let response = NextResponse.next({
     request: {
@@ -10,9 +10,13 @@ export function createClient(request: NextRequest) {
     },
   })
 
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase URL and Anon Key are required.');
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
