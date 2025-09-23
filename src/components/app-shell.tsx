@@ -17,6 +17,7 @@ import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart } from '
 import Link from 'next/link';
 import Image from 'next/image';
 
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // In a real app, this would come from a context or a server fetch
@@ -51,6 +52,71 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/shopify-products')}
+                tooltip={{ children: 'Shopify Products' }}
+              >
+                <Link href="/shopify-products">
+                    <Image src="/shopify.svg" alt="Shopify" width={20} height={20} className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Shopify Products</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/amazon-products')}
+                    tooltip={{ children: 'Amazon Products' }}
+                >
+                    <Link href="/amazon-products/us">
+                        <Image src="/amazon.svg" alt="Amazon" width={20} height={20} className="h-5 w-5" />
+                        <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Amazon Products</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/walmart-products')}
+                tooltip={{ children: 'Walmart Products' }}
+              >
+                <Link href="/walmart-products">
+                  <Image src="/walmart.svg" alt="Walmart" width={20} height={20} className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Walmart Products</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/ebay-products')}
+                tooltip={{ children: 'eBay Products' }}
+              >
+                <Link href="/ebay-products">
+                  <Image src="/ebay.svg" alt="eBay" width={20} height={20} className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">eBay Products</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/etsy-products')}
+                tooltip={{ children: 'Etsy Products' }}
+              >
+                <Link href="/etsy-products">
+                  <Image src="/etsy.svg" alt="Etsy" width={20} height={20} className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Etsy Products</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
