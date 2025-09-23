@@ -2,9 +2,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// The 'createClient' function for middleware is now simplified to just accept the URL and anon key.
-export function createClient(request: NextRequest) {
-  // Create an unmodified response
+// This file is now the single source of truth for middleware-based client creation.
+// It is simplified to align with official Supabase documentation.
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -20,7 +20,6 @@ export function createClient(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          // If the cookie is updated, update the cookies for the request and response
           request.cookies.set({
             name,
             value,
@@ -38,7 +37,6 @@ export function createClient(request: NextRequest) {
           })
         },
         remove(name: string, options: CookieOptions) {
-          // If the cookie is removed, update the cookies for the request and response
           request.cookies.set({
             name,
             value: '',
@@ -59,5 +57,19 @@ export function createClient(request: NextRequest) {
     }
   )
 
-  return { supabase, response }
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+
+  // If the user is not logged in and not on the login page, redirect them there.
+  if (!user && pathname !== '/login') {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // If the user is logged in and trying to access the login page, redirect them to the root.
+  if (user && pathname === '/login') {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  return response
 }
