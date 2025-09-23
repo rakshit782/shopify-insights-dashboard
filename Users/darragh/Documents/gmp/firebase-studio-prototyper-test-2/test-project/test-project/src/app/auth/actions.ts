@@ -2,8 +2,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid';
 
 export async function login(formData: FormData) {
