@@ -607,3 +607,56 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
+
+// ============================================
+// Website DB Functions
+// ============================================
+
+export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
+    const logs: string[] = [];
+    
+    logs.push('Creating website Supabase client...');
+    const supabase = await createClient({ db: 'DATA' });
+
+    logs.push("Fetching products from 'products' table...");
+    // Select all the individual columns
+    const { data, error } = await supabase
+        .from('products')
+        .select('*');
+
+    if (error) {
+        logs.push(`Supabase error: ${error.message}`);
+        throw new Error(`Failed to fetch products from website DB: ${error.message}`);
+    }
+
+    if (!data) {
+        logs.push('No products found in website database.');
+        return { rawProducts: [], logs };
+    }
+
+    // Reconstruct the ShopifyProduct object from the individual columns
+    const products: ShopifyProduct[] = data.map(item => ({
+        id: item.shopify_product_id,
+        admin_graphql_api_id: item.id,
+        title: item.title,
+        body_html: item.body_html,
+        vendor: item.vendor,
+        product_type: item.product_type,
+        created_at: item.created_at,
+        handle: item.handle,
+        updated_at: item.updated_at,
+        published_at: item.published_at,
+        template_suffix: item.template_suffix, // Note: this field might be null if not synced
+        published_scope: item.published_scope, // Note: this field might be null if not synced
+        tags: item.tags,
+        status: item.status,
+        variants: item.variants,
+        options: item.options,
+        images: item.images,
+        image: item.image,
+    }));
+
+    logs.push(`Successfully fetched ${products.length} products from website database.`);
+
+    return { rawProducts: products, logs };
+}

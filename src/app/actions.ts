@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getWebsiteProducts } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
@@ -211,4 +211,14 @@ export async function handleShipOrder(orderId: string | number, platform: string
     // In a real app, call the platform's fulfillment/shipping API
     await new Promise(res => setTimeout(res, 500));
     return { success: true, message: `Order ${orderId} has been marked as shipped.` };
+}
+
+export async function handleGetWebsiteProducts() {
+    try {
+        const { rawProducts } = await getWebsiteProducts();
+        return { success: true, products: rawProducts, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, products: [], error: `Failed to fetch website products: ${errorMessage}` };
+    }
 }

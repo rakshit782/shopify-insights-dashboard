@@ -1,32 +1,46 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database } from 'lucide-react';
+import { WebsiteProductTable } from '@/components/website-product-table';
+import { handleGetWebsiteProducts } from '@/app/actions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
-export default function ProductDatabasePage() {
+export default async function ProductDatabasePage() {
+    const supabaseDataUrl = process.env.SUPABASE_URL_DATA;
+    const supabaseDataKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
+    
+    if (!supabaseDataUrl || !supabaseDataKey) {
+        return (
+          <div className="flex h-screen items-center justify-center p-8">
+            <Alert variant="destructive" className="max-w-2xl">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Configuration Error</AlertTitle>
+              <AlertDescription>
+                Your Supabase **DATA** credentials are not configured correctly. Please add `SUPABASE_URL_DATA` and `SUPABASE_SERVICE_ROLE_KEY_DATA` to your `.env` file and restart the server to view the product database.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+    }
+    
+    const { products, error } = await handleGetWebsiteProducts();
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <div className="mb-8">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">Product Database</h1>
                 <p className="text-muted-foreground">
-                    View and manage all product data synced from your channels.
+                    View and manage all product data synced from your channels to your Supabase instance.
                 </p>
             </div>
-
-            <Card className="min-h-[60vh]">
-                <CardHeader>
-                    <CardTitle>Coming Soon</CardTitle>
-                    <CardDescription>
-                        This section will house your unified product database.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-16">
-                    <Database className="h-16 w-16 mb-4" />
-                    <p className="text-lg font-semibold">The product database is being built.</p>
-                    <p className="mt-2 max-w-md">
-                        You'll soon be able to search, filter, and view all product information that has been synced to your local database.
-                    </p>
-                </CardContent>
-            </Card>
+            {error ? (
+                <Alert variant="destructive">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Failed to load products</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            ) : (
+                <WebsiteProductTable products={products} />
+            )}
         </div>
     );
 }
