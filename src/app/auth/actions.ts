@@ -19,29 +19,28 @@ const signupSchema = z.object({
 });
 
 export async function login(formData: z.infer<typeof loginSchema>) {
-  const origin = headers().get('origin')
   const validatedData = loginSchema.safeParse(formData)
 
   if (!validatedData.success) {
-    return { error: 'Invalid form data.' }
+    return { success: false, error: 'Invalid form data.' }
   }
 
   const { email, password } = validatedData.data
   const supabase = createClient({ db: 'MAIN' })
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
   if (error) {
      if (error.message.includes('Email not confirmed')) {
-      return { error: 'Email not confirmed. Please check your inbox for a confirmation link.' };
+      return { success: false, error: 'Email not confirmed. Please check your inbox for a confirmation link.' };
     }
-    return { error: error.message }
+    return { success: false, error: error.message }
   }
 
-  return redirect('/')
+  return { success: true, error: null }
 }
 
 export async function signup(formData: z.infer<typeof signupSchema>) {

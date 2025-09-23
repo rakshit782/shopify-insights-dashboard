@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -50,6 +51,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(refinedSchema),
@@ -63,6 +65,7 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
+    let errorMessage = 'An unknown error occurred.';
 
     try {
         if (isSignUp) {
@@ -72,28 +75,37 @@ export default function LoginPage() {
                 firstName: values.firstName!,
                 lastName: values.lastName!,
             });
-            if (result?.error) throw new Error(result.error);
+            if (result?.error) {
+                errorMessage = result.error;
+                throw new Error(errorMessage);
+            }
             toast({
                 title: 'Check your email',
                 description: 'A confirmation link has been sent to your email address.',
             });
              setIsSignUp(false); // Switch back to login view
+             form.reset();
         } else {
             const result = await login({
                 email: values.email,
                 password: values.password,
             });
-             if (result?.error) throw new Error(result.error);
+             if (!result.success) {
+                errorMessage = result.error || errorMessage;
+                throw new Error(errorMessage);
+             }
+             // On successful login, redirect to the homepage.
+             router.push('/');
+             router.refresh();
         }
     } catch (error) {
         toast({
             title: `Authentication Failed`,
-            description: error instanceof Error ? error.message : 'An unknown error occurred.',
+            description: error instanceof Error ? error.message : errorMessage,
             variant: 'destructive',
         });
     } finally {
         setIsSubmitting(false);
-        form.reset();
     }
   };
 
