@@ -305,26 +305,33 @@ export async function handleSaveBusinessProfile(profileData: BusinessProfileCrea
 }
 
 export async function handleGetBusinessProfiles(): Promise<{ success: boolean, profiles: BusinessProfile[], error: string | null }> {
-    const supabase = createClient({ db: 'MAIN' });
+    try {
+        const supabase = createClient({ db: 'MAIN' });
 
-    const { data: profiles, error } = await supabase
-        .from('business_profiles')
-        .select('*');
+        const { data: profiles, error } = await supabase
+            .from('business_profiles')
+            .select('*');
 
-    if (error) {
-        console.error('Error fetching business profiles:', error);
-        return { success: false, profiles: [], error: error.message };
+        if (error) {
+            console.error('Error fetching business profiles:', error);
+            return { success: false, profiles: [], error: error.message };
+        }
+
+        // For each profile, fetch the credential statuses
+        const profilesWithStatuses = await Promise.all(
+            (profiles || []).map(async (profile) => {
+                const statuses = await getCredentialStatuses(profile.id);
+                return { ...profile, credential_statuses: statuses };
+            })
+        );
+        
+        return { success: true, profiles: profilesWithStatuses, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Error in handleGetBusinessProfiles:', errorMessage);
+        return { success: false, profiles: [], error: errorMessage };
     }
-
-    // For each profile, fetch the credential statuses
-    const profilesWithStatuses = await Promise.all(
-        profiles.map(async (profile) => {
-            const statuses = await getCredentialStatuses(profile.id);
-            return { ...profile, credential_statuses: statuses };
-        })
-    );
-    
-    return { success: true, profiles: profilesWithStatuses, error: null };
 }
+    
 
     
