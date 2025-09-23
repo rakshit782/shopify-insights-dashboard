@@ -55,7 +55,7 @@ export function HomeDashboard() {
     const fetchProfiles = useCallback(async () => {
         setIsLoading(true);
         const result = await handleGetBusinessProfiles();
-        if (result.success && result.profiles.length > 0) {
+        if (result && result.success && result.profiles.length > 0) {
             setProfiles(result.profiles);
             setSelectedProfileId(result.profiles[0].id);
         } else {
@@ -72,10 +72,10 @@ export function HomeDashboard() {
     const fetchStats = useCallback(async (profileId: string | null, range?: DateRange) => {
         setIsLoading(true);
         const result = await getDashboardStats(profileId, range);
-        if (result.success && result.stats) {
+        if (result && result.success && result.stats) {
             setStats(result.stats);
         } else {
-            console.error(result.error);
+            console.error(result?.error);
         }
         setIsLoading(false);
     }, []);
