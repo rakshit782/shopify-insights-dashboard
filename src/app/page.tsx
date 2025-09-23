@@ -1,6 +1,5 @@
+
 // app/page.tsx
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -23,14 +22,6 @@ function AnalyticsSkeleton() {
 }
 
 export default async function Home() {
-  // 🔑 Check session cookie
-  const cookieStore = await cookies()
-  const session = cookieStore.get('user-session')
-
-  if (!session) {
-    redirect('/login')
-  }
-
   // 🔑 Check Supabase env vars (server-only)
   const supabaseUrl = process.env.SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -38,7 +29,7 @@ export default async function Home() {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
       '❌ Supabase credentials are missing. ' +
-      'Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env.local file, ' +
+      'Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env file, ' +
       'then restart the Next.js server.'
     )
   }
