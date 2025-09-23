@@ -86,7 +86,7 @@ async function checkCredentialExists(
 
 export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
   const logs: string[] = [];
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   const statuses: Record<string, boolean> = {};
 
   const platforms = ['shopify', 'amazon', 'walmart', 'ebay', 'etsy', 'wayfair'];
@@ -102,7 +102,7 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
 // Individual save functions
 
 export async function saveShopifyCredentials(storeName: string, accessToken: string) {
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(
     supabase,
     'shopify_credentials',
@@ -112,7 +112,7 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
 }
 
 export async function saveAmazonCredentials(credentials: AmazonCredentials) {
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   // In a real app, you would likely encrypt the client_secret and refresh_token
   const credsToSave = {
       profile_id: credentials.profile_id,
@@ -126,22 +126,22 @@ export async function saveAmazonCredentials(credentials: AmazonCredentials) {
 }
 
 export async function saveWalmartCredentials(credentials: WalmartCredentials) {
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'walmart_credentials', credentials, 'client_id');
 }
 
 export async function saveEbayCredentials(credentials: EbayCredentials) {
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'ebay_credentials', credentials, 'app_id');
 }
 
 export async function saveEtsyCredentials(credentials: EtsyCredentials) {
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy'}, 'client_id');
 }
 
 export async function saveWayfairCredentials(credentials: WayfairCredentials) {
-  const supabase = await createClient({ db: 'MAIN' });
+  const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'wayfair_credentials', credentials, 'client_id');
 }
 
@@ -150,7 +150,7 @@ export async function saveWayfairCredentials(credentials: WayfairCredentials) {
 // ============================================
 
 async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; accessToken: string, apiVersion: string }> {
-    const supabase = await createClient({ db: 'MAIN' });
+    const supabase = createClient({ db: 'MAIN' });
     
     logs.push("Attempting to fetch Shopify credentials from Supabase...");
     const { data, error } = await supabase
@@ -424,7 +424,7 @@ export async function getShopifyOrders(dateRange?: DateRange): Promise<{ orders:
 // External Platform Functions
 // ============================================
 export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
-    const supabase = await createClient({ db: 'MAIN' });
+    const supabase = createClient({ db: 'MAIN' });
     const counts: PlatformProductCount[] = [];
 
     // Mocking counts for now
@@ -452,7 +452,7 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
 // ============================================
 
 async function getWalmartConfig(logs: string[]): Promise<{ clientId: string; clientSecret: string; }> {
-    const supabase = await createClient({ db: 'MAIN' });
+    const supabase = createClient({ db: 'MAIN' });
     
     logs.push("Attempting to fetch Walmart credentials from Supabase...");
     const { data, error } = await supabase
@@ -632,70 +632,4 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     subtotal_price: null,
     total_tax: null,
   };
-}
-
-// ============================================
-// Website DB Functions
-// ============================================
-
-export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
-    const logs: string[] = [];
-    
-    logs.push('Creating website Supabase client...');
-    const supabase = await createClient({ db: 'DATA' });
-
-    logs.push("Fetching products from 'products' table...");
-    // Select all the individual columns
-    const { data, error } = await supabase
-        .from('products')
-        .select('*');
-
-    if (error) {
-        logs.push(`Supabase error: ${error.message}`);
-        throw new Error(`Failed to fetch products from website DB: ${error.message}`);
-    }
-
-    if (!data) {
-        logs.push('No products found in website database.');
-        return { rawProducts: [], logs };
-    }
-
-    // Reconstruct the ShopifyProduct object from the individual columns
-    const products: ShopifyProduct[] = data.map(item => ({
-        id: item.shopify_product_id,
-        admin_graphql_api_id: item.id,
-        title: item.title,
-        body_html: item.body_html,
-        vendor: item.vendor,
-        product_type: item.product_type,
-        created_at: item.created_at,
-        handle: item.handle,
-        updated_at: item.updated_at,
-        published_at: item.published_at,
-        template_suffix: item.template_suffix, // Note: this field might be null if not synced
-        published_scope: item.published_scope, // Note: this field might be null if not synced
-        tags: item.tags,
-        status: item.status,
-        variants: item.variants,
-        options: item.options,
-        images: item.images,
-        image: item.image,
-    }));
-
-    logs.push(`Successfully fetched ${products.length} products from website database.`);
-
-    return { rawProducts: products, logs };
-}
-
-export async function getWebsiteProductCount(logs: string[]): Promise<number> {
-    const supabase = await createClient({ db: 'DATA' });
-    const { count, error } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
-
-    if (error) {
-        logs.push(`Error fetching website product count: ${error.message}`);
-        return 0;
-    }
-    return count || 0;
 }

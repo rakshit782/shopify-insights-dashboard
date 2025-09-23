@@ -4,9 +4,10 @@ import type { ShopifyProduct } from './types';
 import { createClient } from '@/lib/supabase/server';
 
 const BATCH_SIZE = 50;
+const SUPABASE_MAX_ROWS = 1000;
 
 export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise<void> {
-    const supabase = await createClient({ db: 'DATA' });
+    const supabase = createClient({ db: 'DATA' });
 
     const productsToUpsert = products.map(p => ({
         id: p.admin_graphql_api_id, // Use the GraphQL API ID as the primary key
@@ -45,28 +46,44 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
 
 export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
     const logs: string[] = [];
-    
+    const supabase = createClient({ db: 'DATA' });
     logs.push('Creating website Supabase client...');
-    const supabase = await createClient({ db: 'DATA' });
 
-    logs.push("Fetching products from 'products' table...");
-    // Select all the individual columns
-    const { data, error } = await supabase
-        .from('products')
-        .select('*');
+    let allProducts: any[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    if (error) {
-        logs.push(`Supabase error: ${error.message}`);
-        throw new Error(`Failed to fetch products from website DB: ${error.message}`);
+    logs.push("Fetching all products from 'products' table with pagination...");
+
+    while(hasMore) {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .range(page * SUPABASE_MAX_ROWS, (page + 1) * SUPABASE_MAX_ROWS - 1);
+        
+        if (error) {
+            logs.push(`Supabase error on page ${page}: ${error.message}`);
+            throw new Error(`Failed to fetch products from website DB: ${error.message}`);
+        }
+
+        if (data && data.length > 0) {
+            allProducts = allProducts.concat(data);
+            page++;
+            if(data.length < SUPABASE_MAX_ROWS) {
+                hasMore = false;
+            }
+        } else {
+            hasMore = false;
+        }
     }
 
-    if (!data) {
+    if (allProducts.length === 0) {
         logs.push('No products found in website database.');
         return { rawProducts: [], logs };
     }
 
     // Reconstruct the ShopifyProduct object from the individual columns
-    const products: ShopifyProduct[] = data.map(item => ({
+    const products: ShopifyProduct[] = allProducts.map(item => ({
         id: item.shopify_product_id,
         admin_graphql_api_id: item.id,
         title: item.title,
@@ -77,8 +94,8 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
         handle: item.handle,
         updated_at: item.updated_at,
         published_at: item.published_at,
-        template_suffix: item.template_suffix, // Note: this field might be null if not synced
-        published_scope: item.published_scope, // Note: this field might be null if not synced
+        template_suffix: item.template_suffix,
+        published_scope: item.published_scope,
         tags: item.tags,
         status: item.status,
         variants: item.variants,
@@ -92,4 +109,16 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
     return { rawProducts: products, logs };
 }
 
+export async function getWebsiteProductCount(logs: string[]): Promise<number> {
+    const supabase = createClient({ db: 'DATA' });
+    const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+    if (error) {
+        logs.push(`Error fetching website product count: ${error.message}`);
+        return 0;
+    }
+    return count || 0;
+}
     

@@ -1,8 +1,8 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getWebsiteProducts, getPlatformProductCounts, getWebsiteProductCount } from '@/lib/shopify-client';
-import { syncProductsToWebsite } from '@/lib/website-supabase-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getPlatformProductCounts } from '@/lib/shopify-client';
+import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder, BusinessProfile, BusinessProfileCreation } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
