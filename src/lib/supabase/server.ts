@@ -1,14 +1,12 @@
-
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// This is now a generic client, not tied to auth specifically
-export function createClient() {
-  const cookieStore = cookies()
+export async function createClient() {
+  const cookieStore = await cookies() // 👈 must await
 
   return createServerClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role key for direct table access
+    process.env.SUPABASE_SERVICE_ROLE_KEY!, // service role only, never expose to client
     {
       cookies: {
         get(name: string) {
@@ -17,15 +15,15 @@ export function createClient() {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // The `set` method was called from a Server Component.
+          } catch {
+            /* ignore in server components */
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // The `delete` method was called from a Server Component.
+          } catch {
+            /* ignore in server components */
           }
         },
       },

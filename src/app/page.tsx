@@ -24,7 +24,7 @@ function AnalyticsSkeleton() {
 
 export default async function Home() {
   // 🔑 Check session cookie
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const session = cookieStore.get('user-session')
 
   if (!session) {

@@ -5,16 +5,17 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcryptjs';
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
-  const password = formData.get('password') as string // Not used for now for security
+  const password = formData.get('password') as string
   const supabase = createClient()
 
   // Find user by email in the custom 'users' table
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email')
+    .select('id, email, password_hash')
     .eq('email', email)
     .single();
 
@@ -22,8 +23,10 @@ export async function login(formData: FormData) {
     return redirect('/login?message=Could not authenticate user.')
   }
   
-  // WARNING: We are not checking the password.
-  // In a real-world scenario, you MUST hash passwords on signup and compare the hash on login.
+  const validPassword = await bcrypt.compare(password, user.password_hash);
+  if (!validPassword) {
+    return redirect('/login?message=Invalid credentials.');
+  }
 
   // Set a cookie to maintain the session.
   const response = redirect('/')
@@ -44,15 +47,14 @@ export async function signup(formData: FormData) {
   const lastName = formData.get('last-name') as string
   const supabase = createClient()
 
+  const passwordHash = await bcrypt.hash(password, 10);
+
   // 1. Insert into the custom 'users' table.
-  // WARNING: Storing plaintext passwords is a major security risk.
-  // For this to work, the 'password_hash' column in your 'users' table must not be null.
-  // We are inserting the plaintext password for now.
   const { data: newUser, error: userError } = await supabase
     .from('users')
     .insert({
       email: email,
-      password_hash: password, // Storing plaintext password - NOT SECURE
+      password_hash: passwordHash,
     })
     .select('id')
     .single();
