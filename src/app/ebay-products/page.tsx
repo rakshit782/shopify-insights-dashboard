@@ -1,14 +1,14 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart } from 'lucide-react';
+import Image from 'next/image';
 
-export default function AnalyticsPage() {
+export default function EbayProductsPage() {
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">eBay Products</h1>
                 <p className="text-muted-foreground">
-                    Insights and performance metrics across all your channels.
+                    Manage your eBay products.
                 </p>
             </div>
 
@@ -16,15 +16,12 @@ export default function AnalyticsPage() {
                 <CardHeader>
                     <CardTitle>Coming Soon</CardTitle>
                     <CardDescription>
-                        This section will house the analytics dashboard.
+                        This section will house your eBay products.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-16">
-                    <LineChart className="h-16 w-16 mb-4" />
-                    <p className="text-lg font-semibold">The analytics dashboard is on the way.</p>
-                    <p className="mt-2 max-w-md">
-                        You'll soon be able to view sales, orders, units by channel, and profitability insights.
-                    </p>
+                     <Image src="/ebay.svg" alt="eBay" width={64} height={64} className="h-16 w-16 mb-4" />
+                    <p className="text-lg font-semibold">eBay product management is on the way.</p>
                 </CardContent>
             </Card>
         </div>
