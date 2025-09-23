@@ -1,6 +1,4 @@
 
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { Suspense } from 'react';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,13 +24,6 @@ function AnalyticsSkeleton() {
 }
 
 export default async function Home() {
-    const cookieStore = cookies()
-    const session = cookieStore.get('user-session');
-
-    if (!session) {
-        redirect('/login')
-    }
-    
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -56,4 +47,3 @@ export default async function Home() {
     </Suspense>
   );
 }
-

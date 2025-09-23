@@ -1,22 +1,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 
+// We are simplifying middleware as we are not using Supabase's session management
 export async function middleware(request: NextRequest) {
-  const session = request.cookies.get('user-session');
-  const { pathname } = request.nextUrl;
-
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
-
-  // If no session cookie and not on an auth page, redirect to login
-  if (!session && !isAuthPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // If there is a session and the user is trying to access an auth page, redirect to home
-  if (session && isAuthPage) {
-     return NextResponse.redirect(new URL('/', request.url));
-  }
-
   return NextResponse.next();
 }
 
