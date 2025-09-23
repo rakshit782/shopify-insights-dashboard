@@ -17,10 +17,12 @@ export async function GET() {
       getPlatformProductCounts(logs),
     ]);
 
-    if (shopifyResult.status === 'fulfilled') {
-      allCounts.push({ platform: 'Shopify', count: shopifyResult.value.count as number });
+    if (shopifyResult.status === 'fulfilled' && shopifyResult.value.count !== undefined) {
+      allCounts.push({ platform: 'Shopify', count: shopifyResult.value.count });
     } else {
-      console.error('Shopify API Error:', shopifyResult.reason);
+      if (shopifyResult.status === 'rejected') {
+        console.error('Shopify API Error:', shopifyResult.reason);
+      }
       // Ensure a placeholder is added on failure so the frontend doesn't break
       allCounts.push({ platform: 'Shopify', count: 0 });
     }
