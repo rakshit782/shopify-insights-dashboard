@@ -22,6 +22,8 @@ const platformIcons: { [key: string]: React.ElementType } = {
     'Wayfair': Truck,
 };
 
+const platformOrder = ['Shopify', 'Website DB', 'Amazon', 'Walmart', 'eBay', 'Etsy', 'Wayfair'];
+
 export function AnalyticsDashboard() {
     const [productCounts, setProductCounts] = useState<ProductCount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -41,8 +43,7 @@ export function AnalyticsDashboard() {
 
                 const data = await res.json();
                 
-                // Ensure a specific order
-                const platformOrder = ['Shopify', 'Website DB', 'Amazon', 'Walmart', 'eBay', 'Etsy', 'Wayfair'];
+                // Ensure a specific order and that all platforms are present
                 const sortedCounts = platformOrder.map(platform => {
                     const found = data.counts.find((c: ProductCount) => c.platform === platform);
                     return found || { platform, count: 0 };
@@ -65,8 +66,8 @@ export function AnalyticsDashboard() {
         if (isLoading) {
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <Card key={i} className="animate-pulse">
+                    {platformOrder.map((platform) => (
+                         <Card key={platform} className="animate-pulse">
                             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                                 <Skeleton className="h-6 w-1/2" />
                                 <Skeleton className="h-6 w-6 rounded-sm" />

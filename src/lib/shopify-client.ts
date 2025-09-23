@@ -25,7 +25,7 @@ export interface PlatformProductCount {
   count: number;
 }
 
-const apiVerson = '2025-07';
+const apiVersionDefault = '2025-07';
 
 // ============================================
 // Supabase Client
@@ -121,7 +121,7 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
   await upsertCredential(
     supabase,
     'shopify_credentials',
-    { store_name: storeName, access_token: accessToken, api_version: apiVerson },
+    { store_name: storeName, access_token: accessToken, api_version: apiVersionDefault },
     'store_name'
   );
 }
@@ -181,7 +181,7 @@ async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; acc
     const { store_name, access_token, api_version } = data[0];
     const storeUrl = getStoreUrl(store_name);
     
-    const apiVersion = api_version || '2025-07';
+    const apiVersion = api_version || apiVersionDefault;
     logs.push(`Successfully fetched credentials. Store: ${storeUrl}, API Version: ${apiVersion}`);
 
     return { storeUrl, accessToken: access_token, apiVersion };
@@ -586,10 +586,3 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
-
-
-    
-
-    
-
-    
