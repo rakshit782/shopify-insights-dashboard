@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { ConnectionsDialog } from './connections-dialog';
+import { cn } from '@/lib/utils';
 
 interface ChannelStatus {
     id: string;
@@ -39,7 +40,7 @@ function ChannelHealthCard({ status, onConfigure }: { status: ChannelStatus, onC
                     {status.name}
                 </CardTitle>
                 <div className={`flex items-center gap-2 text-sm ${status.connected ? 'text-green-600' : 'text-muted-foreground'}`}>
-                    {status.connected ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                    <span className={cn("h-2 w-2 rounded-full", status.connected ? "bg-green-500" : "bg-red-500")} />
                     <span>{status.connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
             </CardHeader>
