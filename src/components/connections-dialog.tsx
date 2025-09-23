@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { handleSaveShopifyCredentials, handleSaveAmazonCredentials, handleSaveWalmartCredentials, handleSaveEbayCredentials, handleSaveEtsyCredentials, handleSaveWayfairCredentials } from '@/app/actions';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface ConnectionsDialogProps {
   platform: string;
@@ -28,7 +29,7 @@ interface ConnectionsDialogProps {
   onClose: (credentialsSaved: boolean) => void;
 }
 
-const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; schema: z.ZodObject<any>; } } = {
+const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; schema: z.ZodObject<any>; helpLink: string; } } = {
   shopify: {
     name: 'Shopify',
     icon: <Image src="/shopify.svg" alt="Shopify" width={24} height={24} unoptimized />,
@@ -36,6 +37,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
       storeName: z.string().min(1, 'Store Name is required.').refine(val => !val.includes('.'), "Enter the name only, not the full URL (e.g., 'my-store' instead of 'my-store.myshopify.com')."),
       accessToken: z.string().min(1, 'Admin API access token is required.'),
     }),
+    helpLink: 'https://help.shopify.com/en/manual/apps/custom-apps',
   },
   amazon: {
     name: 'Amazon',
@@ -48,6 +50,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
       sellerId: z.string().min(1, 'Seller ID is required.'),
       marketplaceId: z.string().min(1, 'Marketplace ID is required.'),
     }),
+    helpLink: 'https://developer-docs.amazon.com/sp-api/docs/connecting-to-the-selling-partner-api',
   },
   walmart: {
     name: 'Walmart',
@@ -56,6 +59,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
       clientId: z.string().min(1, 'Client ID is required.'),
       clientSecret: z.string().min(1, 'Client Secret is required.'),
     }),
+    helpLink: 'https://developer.walmart.com/documentation/authentication-and-authorization/production-keys/',
   },
   ebay: {
     name: 'eBay',
@@ -66,6 +70,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
       devId: z.string().min(1, 'Dev ID is required.'),
       oauthToken: z.string().min(1, 'OAuth Token is required.'),
     }),
+    helpLink: 'https://developer.ebay.com/api-docs/static/oauth-tokens.html',
   },
   etsy: {
     name: 'Etsy',
@@ -73,6 +78,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
     schema: z.object({
       keystring: z.string().min(1, 'Keystring is required.'),
     }),
+    helpLink: 'https://www.etsy.com/developers/documentation/getting_started/api_basics#section_register_as_a_developer',
   },
   wayfair: {
     name: 'Wayfair',
@@ -81,6 +87,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
       clientId: z.string().min(1, 'Client ID is required.'),
       clientSecret: z.string().min(1, 'Client Secret is required.'),
     }),
+    helpLink: 'https://developer.wayfair.com/docs/authorization-and-authentication',
   },
 };
 
@@ -158,8 +165,12 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
              {platformInfo.icon}
              Connect to {platformInfo.name}
           </DialogTitle>
-          <DialogDescription>
-            Enter your API credentials to connect your {platformInfo.name} store.
+          <DialogDescription className="space-y-2">
+            <span>Enter your API credentials to connect your {platformInfo.name} store.</span>
+             <Link href={platformInfo.helpLink} target="_blank" rel="noopener noreferrer" className="flex items-center text-sm text-blue-500 hover:underline">
+                <LinkIcon className="mr-1 h-3 w-3" />
+                Need help finding these?
+            </Link>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
