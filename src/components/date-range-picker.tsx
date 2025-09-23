@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { addDays, format, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
@@ -27,32 +27,46 @@ interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function DateRangePicker({ className, onUpdate }: DateRangePickerProps) {
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: subDays(new Date(), 6),
-    to: new Date(),
-  });
+  const [date, setDate] = React.useState<DateRange | undefined>(undefined);
   const [preset, setPreset] = React.useState<string>('7');
 
   React.useEffect(() => {
-    onUpdate(date);
-  }, [date, onUpdate]);
+    // Set initial date on client-side to avoid hydration mismatch
+    if (date === undefined) {
+        const initialDate = {
+            from: subDays(new Date(), 6),
+            to: new Date(),
+        };
+        setDate(initialDate);
+        onUpdate(initialDate);
+    }
+  // We only want this to run once on mount, so we pass an empty dependency array.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleUpdate = (range?: DateRange) => {
+    setDate(range);
+    onUpdate(range);
+  }
 
   const handlePresetChange = (value: string) => {
     setPreset(value);
     const now = new Date();
+    let newRange: DateRange | undefined;
     switch (value) {
-        case '1': setDate({ from: now, to: now }); break;
-        case '2': setDate({ from: subDays(now, 1), to: subDays(now, 1) }); break;
-        case '7': setDate({ from: subDays(now, 6), to: now }); break;
-        case '30': setDate({ from: subDays(now, 29), to: now }); break;
-        case 'month': setDate({ from: new Date(now.getFullYear(), now.getMonth(), 1), to: now }); break;
-        case 'year': setDate({ from: new Date(now.getFullYear(), 0, 1), to: now }); break;
-        default: setDate(undefined);
+        case '1': newRange = { from: now, to: now }; break;
+        case '2': newRange = { from: subDays(now, 1), to: subDays(now, 1) }; break;
+        case '7': newRange = { from: subDays(now, 6), to: now }; break;
+        case '30': newRange = { from: subDays(now, 29), to: now }; break;
+        case 'month': newRange = { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now }; break;
+        case 'year': newRange = { from: new Date(now.getFullYear(), 0, 1), to: now }; break;
+        default: newRange = undefined;
     }
+    handleUpdate(newRange);
   }
 
   const handleDateChange = (newDate: DateRange | undefined) => {
-      setDate(newDate);
+      handleUpdate(newDate);
       if (newDate) {
           // A custom date range was selected, so clear the preset
           setPreset('custom');

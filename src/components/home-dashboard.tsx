@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDashboardStats } from '@/app/actions';
@@ -46,20 +46,27 @@ export function HomeDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-    useEffect(() => {
-        async function fetchStats() {
-            setIsLoading(true);
-            const result = await getDashboardStats(dateRange);
-            if (result.success && result.stats) {
-                setStats(result.stats);
-            } else {
-                // TODO: Handle error state
-                console.error(result.error);
-            }
-            setIsLoading(false);
+    const fetchStats = useCallback(async (range?: DateRange) => {
+        setIsLoading(true);
+        const result = await getDashboardStats(range);
+        if (result.success && result.stats) {
+            setStats(result.stats);
+        } else {
+            // TODO: Handle error state
+            console.error(result.error);
         }
-        fetchStats();
-    }, [dateRange]);
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        if (dateRange) {
+            fetchStats(dateRange);
+        }
+    }, [dateRange, fetchStats]);
+
+    const handleDateUpdate = useCallback((range?: DateRange) => {
+        setDateRange(range);
+    }, []);
 
     return (
         <div>
@@ -70,10 +77,10 @@ export function HomeDashboard() {
                         Your central hub for e-commerce operations.
                     </p>
                 </div>
-                <DateRangePicker onUpdate={setDateRange} />
+                <DateRangePicker onUpdate={handleDateUpdate} />
             </div>
 
-            {isLoading ? (
+            {isLoading && !stats ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <StatCardSkeleton />
                     <StatCardSkeleton />
@@ -87,9 +94,11 @@ export function HomeDashboard() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">
-                                ${stats?.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            </div>
+                            {isLoading ? <Skeleton className="h-8 w-3/4" /> :
+                                <div className="text-2xl font-bold">
+                                    ${stats?.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                </div>
+                            }
                             <p className="text-xs text-muted-foreground">
                                 Across all connected channels
                             </p>
@@ -101,17 +110,19 @@ export function HomeDashboard() {
                             <List className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-2">
-                                {stats?.platformCounts.filter(p => p.count > 0).map(platform => (
-                                     <div key={platform.platform} className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <Image src={platformIconMap[platform.platform]} alt={platform.platform} width={16} height={16} unoptimized />
-                                            <span className="text-muted-foreground">{platform.platform}</span>
+                             {isLoading ? <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div> :
+                                <div className="space-y-2">
+                                    {stats?.platformCounts.filter(p => p.count > 0).map(platform => (
+                                        <div key={platform.platform} className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Image src={platformIconMap[platform.platform]} alt={platform.platform} width={16} height={16} unoptimized />
+                                                <span className="text-muted-foreground">{platform.platform}</span>
+                                            </div>
+                                            <span className="font-semibold">{platform.count.toLocaleString()}</span>
                                         </div>
-                                        <span className="font-semibold">{platform.count.toLocaleString()}</span>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                             }
                         </CardContent>
                     </Card>
                     <Card>
@@ -120,9 +131,11 @@ export function HomeDashboard() {
                              <Database className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats?.websiteProductCount.toLocaleString() || '0'}
-                            </div>
+                             {isLoading ? <Skeleton className="h-8 w-1/2" /> :
+                                <div className="text-2xl font-bold">
+                                    {stats?.websiteProductCount.toLocaleString() || '0'}
+                                </div>
+                             }
                             <p className="text-xs text-muted-foreground">
                                 Total unique products in catalog
                             </p>
