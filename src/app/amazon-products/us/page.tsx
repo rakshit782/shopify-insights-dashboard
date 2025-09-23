@@ -1,29 +1,19 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Image from 'next/image';
+'use client';
 
-export default function AmazonUSProductsPage() {
-    return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Amazon Products (US)</h1>
-                <p className="text-muted-foreground">
-                    Manage your Amazon products for the US marketplace.
-                </p>
-            </div>
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-            <Card className="min-h-[60vh]">
-                <CardHeader>
-                    <CardTitle>Coming Soon</CardTitle>
-                    <CardDescription>
-                        This section will house your Amazon (US) products.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-16">
-                    <Image src="/amazon.svg" alt="Amazon" width={64} height={64} className="h-16 w-16 mb-4" />
-                    <p className="text-lg font-semibold">Amazon (US) product management is on the way.</p>
-                </CardContent>
-            </Card>
-        </div>
-    );
+export default function DeprecatedPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <p className="text-muted-foreground">This page has been removed. Redirecting...</p>
+    </div>
+  );
 }
