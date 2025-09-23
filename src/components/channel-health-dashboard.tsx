@@ -39,9 +39,8 @@ function ChannelHealthCard({ status, onConfigure }: { status: ChannelStatus, onC
                     {status.icon}
                     {status.name}
                 </CardTitle>
-                <div className={`flex items-center gap-2 text-sm ${status.connected ? 'text-green-600' : 'text-muted-foreground'}`}>
+                <div className={`flex items-center gap-2 text-sm`}>
                     <span className={cn("h-2 w-2 rounded-full", status.connected ? "bg-green-500" : "bg-red-500")} />
-                    <span>{status.connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-6">
