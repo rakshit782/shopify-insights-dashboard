@@ -201,8 +201,8 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
                 {renderField("keystring", "Keystring")}
              </>}
               {platform === 'wayfair' && <>
-                {render_field("clientId", "Client ID")}
-                {render_field("clientSecret", "Client Secret", true)}
+                {renderField("clientId", "Client ID")}
+                {renderField("clientSecret", "Client Secret", true)}
              </>}
             <DialogFooter className="pt-4">
               <DialogClose asChild>
