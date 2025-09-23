@@ -46,13 +46,13 @@ export async function signup(formData: FormData) {
 
   // 1. Insert into the custom 'users' table.
   // WARNING: Storing plaintext passwords is a major security risk.
-  // The 'password_hash' column should be used to store a securely hashed password.
-  // For now, we will insert the user without a password check.
+  // For this to work, the 'password_hash' column in your 'users' table must not be null.
+  // We are inserting the plaintext password for now.
   const { data: newUser, error: userError } = await supabase
     .from('users')
     .insert({
       email: email,
-      // password_hash: [A securely hashed password should go here]
+      password_hash: password, // Storing plaintext password - NOT SECURE
     })
     .select('id')
     .single();
