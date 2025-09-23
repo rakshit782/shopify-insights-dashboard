@@ -159,7 +159,7 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose(false)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
              {platformInfo.icon}
@@ -179,30 +179,30 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
                 {renderField("storeName", "Shopify Store Name")}
                 {renderField("accessToken", "Admin API Access Token", true)}
              </>}
-             {platform === 'amazon' && <>
+             {platform === 'amazon' && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {renderField("sellerId", "Seller ID")}
                 {renderField("marketplaceId", "Marketplace ID")}
                 {renderField("profileId", "Profile ID")}
                 {renderField("clientId", "Client ID")}
                 {renderField("clientSecret", "Client Secret", true)}
                 {renderField("refreshToken", "Refresh Token", true)}
-             </>}
+             </div>}
              {platform === 'walmart' && <>
                 {renderField("clientId", "Client ID")}
                 {renderField("clientSecret", "Client Secret", true)}
              </>}
-             {platform === 'ebay' && <>
+             {platform === 'ebay' && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {renderField("appId", "App ID")}
                 {renderField("certId", "Cert ID")}
                 {renderField("devId", "Dev ID")}
                 {renderField("oauthToken", "OAuth Token", true)}
-             </>}
+             </div>}
              {platform === 'etsy' && <>
                 {renderField("keystring", "Keystring")}
              </>}
               {platform === 'wayfair' && <>
-                {renderField("clientId", "Client ID")}
-                {renderField("clientSecret", "Client Secret", true)}
+                {render_field("clientId", "Client ID")}
+                {render_field("clientSecret", "Client Secret", true)}
              </>}
             <DialogFooter className="pt-4">
               <DialogClose asChild>
