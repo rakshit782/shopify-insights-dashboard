@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { Loader2, Trash2, Wand2, Plus, Image as ImageIcon, Video, X, Link } from 'lucide-react';
+import { Loader2, Trash2, Wand2, Plus, Image as ImageIcon, Video, X, Link as LinkIcon, CheckCircle, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +14,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { handleOptimizeContent } from '@/app/actions';
+import { handleOptimizeContent, handleGetCredentialStatuses } from '@/app/actions';
 import { RichTextEditor } from './rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-
+import { Checkbox } from './ui/checkbox';
+import { Skeleton } from './ui/skeleton';
+import Image from 'next/image';
 
 const bulletPointSchema = z.object({
   id: z.string(),
@@ -44,10 +46,20 @@ const formSchema = z.object({
   imageUrl7: z.string().url().optional().or(z.literal('')),
   videoUrl1: z.string().url().optional().or(z.literal('')),
   videoUrl2: z.string().url().optional().or(z.literal('')),
+  marketplaces: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
 type Marketplace = 'google' | 'amazon' | 'walmart' | 'ebay' | 'etsy';
+
+const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } = {
+    'shopify': { name: 'Shopify', icon: <Image src="/shopify.svg" alt="Shopify" width={20} height={20} unoptimized /> },
+    'amazon': { name: 'Amazon', icon: <Image src="/amazon.svg" alt="Amazon" width={20} height={20} unoptimized /> },
+    'walmart': { name: 'Walmart', icon: <Image src="/walmart.svg" alt="Walmart" width={20} height={20} unoptimized /> },
+    'ebay': { name: 'eBay', icon: <Image src="/ebay.svg" alt="eBay" width={20} height={20} unoptimized /> },
+    'etsy': { name: 'Etsy', icon: <Image src="/etsy.svg" alt="Etsy" width={20} height={20} unoptimized /> },
+    'wayfair': { name: 'Wayfair', icon: <Image src="/wayfair.svg" alt="Wayfair" width={20} height={20} unoptimized /> },
+};
 
 function SectionHeader({ title, description }: { title: string; description?: string }) {
   return (
@@ -79,7 +91,7 @@ function UrlUpload({ name, control, label }: { name: any; control: any, label: s
                     <FormLabel className="text-xs">{label}</FormLabel>
                     <FormControl>
                         <div className="relative">
-                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input {...field} placeholder="https://... (must be a direct link)" className="pl-9" />
                         </div>
                     </FormControl>
@@ -94,6 +106,8 @@ export function ProductCreationForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState<Marketplace | null>(null);
+  const [channelStatuses, setChannelStatuses] = useState<Record<string, boolean>>({});
+  const [isLoadingChannels, setIsLoadingChannels] = useState(true);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -115,6 +129,7 @@ export function ProductCreationForm() {
       imageUrl7: '',
       videoUrl1: '',
       videoUrl2: '',
+      marketplaces: [],
     },
   });
 
@@ -122,6 +137,28 @@ export function ProductCreationForm() {
     control: form.control,
     name: 'bulletPoints',
   });
+
+   useEffect(() => {
+    async function fetchStatuses() {
+        setIsLoadingChannels(true);
+        const result = await handleGetCredentialStatuses();
+        if (result.success && result.statuses) {
+            setChannelStatuses(result.statuses);
+            // Pre-select connected marketplaces
+            const connected = Object.keys(result.statuses).filter(key => result.statuses![key]);
+            form.setValue('marketplaces', connected);
+        } else {
+            toast({
+                title: 'Error fetching channel statuses',
+                description: result.error,
+                variant: 'destructive'
+            });
+        }
+        setIsLoadingChannels(false);
+    }
+    fetchStatuses();
+  }, [form, toast]);
+
 
   const onOptimize = async (marketplace: Marketplace) => {
     setIsOptimizing(marketplace);
@@ -176,6 +213,9 @@ export function ProductCreationForm() {
     form.reset();
     setIsSubmitting(false);
   };
+
+  const connectedChannels = Object.keys(channelStatuses).filter(key => channelStatuses[key] && platformMeta[key]);
+
 
   return (
     <Form {...form}>
@@ -324,6 +364,62 @@ export function ProductCreationForm() {
                  </Tabs>
             </div>
 
+            {/* Publishing Section */}
+            <SectionHeader title="Publishing" description="Select which connected marketplaces to publish this product to." />
+            <FormField
+              control={form.control}
+              name="marketplaces"
+              render={() => (
+                <FormItem>
+                   {isLoadingChannels ? (
+                       <div className="space-y-2">
+                           <Skeleton className="h-8 w-1/2" />
+                           <Skeleton className="h-8 w-1/2" />
+                       </div>
+                   ) : connectedChannels.length > 0 ? (
+                        <div className="space-y-4">
+                        {connectedChannels.map((id) => (
+                            <FormField
+                            key={id}
+                            control={form.control}
+                            name="marketplaces"
+                            render={({ field }) => {
+                                return (
+                                <FormItem key={id} className="flex flex-row items-start space-x-3 space-y-0">
+                                    <FormControl>
+                                        <Checkbox
+                                            checked={field.value?.includes(id)}
+                                            onCheckedChange={(checked) => {
+                                            return checked
+                                                ? field.onChange([...(field.value || []), id])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                    (value) => value !== id
+                                                    )
+                                                )
+                                            }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal flex items-center gap-2">
+                                        {platformMeta[id].icon}
+                                        Publish to {platformMeta[id].name}
+                                    </FormLabel>
+                                </FormItem>
+                                )
+                            }}
+                            />
+                        ))}
+                        <FormMessage />
+                        </div>
+                   ) : (
+                        <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-md flex items-center gap-3">
+                            <XCircle className="h-5 w-5 text-destructive" />
+                            No marketplaces connected. Please add connections on the Channel Health page.
+                        </div>
+                   )}
+                </FormItem>
+              )}
+            />
 
             {/* SEO & Keywords Section */}
             <SectionHeader title="SEO & Keywords" description="Add keywords to improve discoverability on different channels." />
