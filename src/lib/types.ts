@@ -83,6 +83,7 @@ export interface MappedShopifyProduct {
   title: string;
   vendor: string;
   product_type: string;
+  description: string;
   price: number;
   inventory: number;
   imageUrl: string;

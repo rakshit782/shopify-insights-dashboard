@@ -1,11 +1,13 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getWebsiteProducts } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getWebsiteProducts, getPlatformProductCounts, getWebsiteProductCount } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
+import { DateRange } from 'react-day-picker';
+import { subDays } from 'date-fns';
 
 
 export async function handleSyncProducts() {
@@ -170,9 +172,9 @@ export async function handleOptimizeContent(input: OptimizeContentInput) {
     }
 }
 
-export async function handleGetShopifyOrders() {
+export async function handleGetShopifyOrders(dateRange?: DateRange) {
   try {
-    const { orders } = await getShopifyOrders();
+    const { orders } = await getShopifyOrders(dateRange);
     return { success: true, orders, error: null };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -220,5 +222,55 @@ export async function handleGetWebsiteProducts() {
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         return { success: false, products: [], error: `Failed to fetch website products: ${errorMessage}` };
+    }
+}
+
+
+// Dashboard Actions
+async function getSalesData(dateRange?: DateRange): Promise<number> {
+    // In a real app, you would fetch orders from all connected platforms.
+    // For now, we'll just use Shopify as the source.
+    try {
+        const { orders } = await getShopifyOrders(dateRange);
+        return orders.reduce((sum, order) => sum + parseFloat(order.total_price), 0);
+    } catch (error) {
+        console.error("Failed to fetch sales data:", error);
+        return 0;
+    }
+}
+
+export async function getDashboardStats(dateRange?: DateRange) {
+    const defaultRange: DateRange = { from: subDays(new Date(), 6), to: new Date() };
+    const range = dateRange || defaultRange;
+
+    try {
+        const [
+            totalSales,
+            platformCounts,
+            websiteProductCount
+        ] = await Promise.all([
+            getSalesData(range),
+            getPlatformProductCounts([]),
+            getWebsiteProductCount([])
+        ]);
+
+        return {
+            success: true,
+            stats: {
+                totalSales,
+                platformCounts,
+                websiteProductCount,
+            },
+            error: null,
+        };
+
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Dashboard stat fetching failed:', errorMessage);
+        return {
+            success: false,
+            stats: null,
+            error: `Failed to load dashboard stats: ${errorMessage}`
+        };
     }
 }

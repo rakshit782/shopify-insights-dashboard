@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import forge from 'node-forge';
+import { DateRange } from 'react-day-picker';
 
 export interface PlatformProductCount {
   platform: string;
@@ -368,13 +369,26 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
     }
 }
 
-export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+export async function getShopifyOrders(dateRange?: DateRange): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
     const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
-    const url = `${storeUrl}/admin/api/${apiVersion}/orders.json?status=any&limit=50`;
+    
+    const params = new URLSearchParams({
+        status: 'any',
+        limit: '250',
+    });
 
-    logs.push('Fetching Shopify orders...');
+    if (dateRange?.from) {
+        params.append('created_at_min', dateRange.from.toISOString());
+    }
+    if (dateRange?.to) {
+        params.append('created_at_max', dateRange.to.toISOString());
+    }
+
+    const url = `${storeUrl}/admin/api/${apiVersion}/orders.json?${params.toString()}`;
+
+    logs.push(`Fetching Shopify orders from ${url}`);
     const response = await safeFetch(url, {
       headers: { 'X-Shopify-Access-Token': accessToken },
     }, logs);
@@ -405,7 +419,7 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
     const counts: PlatformProductCount[] = [];
 
     // Mocking counts for now
-    const platforms = ['Amazon', 'Walmart', 'eBay', 'Etsy', 'Wayfair'];
+    const platforms = ['Shopify', 'Amazon', 'Walmart', 'eBay', 'Etsy'];
     for (const platform of platforms) {
         const tableName = `${platform.toLowerCase()}_credentials`;
         const connected = await checkCredentialExists(supabase, tableName, logs);
@@ -413,9 +427,12 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
             logs.push(`Fetching count for connected platform: ${platform}`);
             // In a real scenario, you'd make an API call to the platform
             // For now, we return a mock count if connected.
-            counts.push({ platform, count: Math.floor(Math.random() * 5000) });
-        } else {
-             counts.push({ platform, count: 0 });
+            if (platform === 'Shopify') {
+                 const { count } = await getShopifyProducts({ countOnly: true });
+                 counts.push({ platform, count: count || 0 });
+            } else {
+                counts.push({ platform, count: Math.floor(Math.random() * 5000) });
+            }
         }
     }
     return counts;
@@ -659,4 +676,17 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
     logs.push(`Successfully fetched ${products.length} products from website database.`);
 
     return { rawProducts: products, logs };
+}
+
+export async function getWebsiteProductCount(logs: string[]): Promise<number> {
+    const supabase = await createClient({ db: 'DATA' });
+    const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+    if (error) {
+        logs.push(`Error fetching website product count: ${error.message}`);
+        return 0;
+    }
+    return count || 0;
 }
