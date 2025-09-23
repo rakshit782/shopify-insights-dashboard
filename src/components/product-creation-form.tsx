@@ -80,7 +80,7 @@ function UrlUpload({ name, control, label }: { name: any; control: any, label: s
                     <FormControl>
                         <div className="relative">
                             <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input {...field} placeholder="https://..." className="pl-9" />
+                            <Input {...field} placeholder="https://... (must be a direct link)" className="pl-9" />
                         </div>
                     </FormControl>
                     <FormMessage />
