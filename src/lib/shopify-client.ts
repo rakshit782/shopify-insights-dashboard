@@ -32,11 +32,11 @@ const apiVersionDefault = '2025-07';
 // ============================================
 
 async function getSupabaseClient(logs: string[]): Promise<any> {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL_MAIN;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
 
-  if (!supabaseUrl) throw new Error('Missing SUPABASE_URL in environment variables.');
-  if (!supabaseKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY in environment variables.');
+  if (!supabaseUrl) throw new Error('Missing SUPABASE_URL_MAIN in environment variables.');
+  if (!supabaseKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY_MAIN in environment variables.');
 
   logs.push('Creating Supabase client...');
   return createClient(supabaseUrl, supabaseKey);
@@ -586,5 +586,3 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
-
-    

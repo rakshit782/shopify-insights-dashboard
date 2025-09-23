@@ -7,8 +7,8 @@ import { Terminal } from 'lucide-react';
 import 'dotenv/config';
 
 export default async function WebsiteProductsPage() {
-  const websiteUrl = process.env.WEBSITE_SUPABASE_URL;
-  const websiteKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
+  const websiteUrl = process.env.SUPABASE_URL_DATA;
+  const websiteKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
 
   if (!websiteUrl || !websiteKey) {
     return (
@@ -17,7 +17,7 @@ export default async function WebsiteProductsPage() {
           <Terminal className="h-4 w-4" />
           <AlertTitle>Configuration Error</AlertTitle>
           <AlertDescription>
-            Your website's Supabase credentials are not configured correctly. Please add your `WEBSITE_SUPABASE_URL` and `WEBSITE_SUPABASE_SERVICE_ROLE_KEY` to the `.env` file.
+            Your website's Supabase credentials are not configured correctly. Please add your `SUPABASE_URL_DATA` and `SUPABASE_SERVICE_ROLE_KEY_DATA` to the `.env` file.
           </AlertDescription>
         </Alert>
       </div>

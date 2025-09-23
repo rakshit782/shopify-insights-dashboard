@@ -6,8 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 const BATCH_SIZE = 50;
 
 export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise<void> {
-    const supabaseUrl = process.env.WEBSITE_SUPABASE_URL;
-    const supabaseKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL_DATA;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
 
     if (!supabaseUrl || !supabaseKey) {
         throw new Error('Website Supabase URL or Service Role Key is not configured.');
@@ -52,8 +52,8 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
 
 export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
     const logs: string[] = [];
-    const supabaseUrl = process.env.WEBSITE_SUPABASE_URL;
-    const supabaseKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL_DATA;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
 
     if (!supabaseUrl || !supabaseKey) {
         logs.push('Website Supabase URL or key is not configured.');

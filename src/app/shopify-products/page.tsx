@@ -7,10 +7,10 @@ import { Terminal } from 'lucide-react';
 import 'dotenv/config';
 
 export default async function ShopifyProductsPage() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const websiteUrl = process.env.WEBSITE_SUPABASE_URL;
-  const websiteKey = process.env.WEBSITE_SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL_MAIN;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+  const websiteUrl = process.env.SUPABASE_URL_DATA;
+  const websiteKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
 
   if (!supabaseUrl || !supabaseKey || !websiteUrl || !websiteKey) {
     return (
@@ -19,7 +19,7 @@ export default async function ShopifyProductsPage() {
           <Terminal className="h-4 w-4" />
           <AlertTitle>Configuration Error</AlertTitle>
           <AlertDescription>
-            Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WEBSITE_SUPABASE_URL`, and `WEBSITE_SUPABASE_SERVICE_ROLE_KEY` to the `.env` file in the root of the project and ensure your server is restarted.
+            Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL_MAIN`, `SUPABASE_SERVICE_ROLE_KEY_MAIN`, `SUPABASE_URL_DATA`, and `SUPABASE_SERVICE_ROLE_KEY_DATA` to the `.env` file in the root of the project and ensure your server is restarted.
           </AlertDescription>
         </Alert>
       </div>

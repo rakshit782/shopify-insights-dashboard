@@ -25,8 +25,8 @@ function AnalyticsSkeleton() {
 
 export default async function Home() {
   // 🔑 Check Supabase env vars (server-only)
-  const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.SUPABASE_URL_MAIN
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN
 
   if (!supabaseUrl || !supabaseKey) {
      return (
@@ -35,7 +35,7 @@ export default async function Home() {
               <Terminal className="h-4 w-4" />
               <AlertTitle>Configuration Error</AlertTitle>
               <AlertDescription>
-                Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the `.env` file in the root of the project and ensure your server is restarted.
+                Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL_MAIN` and `SUPABASE_SERVICE_ROLE_KEY_MAIN` to the `.env` file in the root of the project and ensure your server is restarted.
               </AlertDescription>
             </Alert>
           </div>
