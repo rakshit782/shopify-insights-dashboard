@@ -94,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
              <Collapsible open={isAmazonOpen} onOpenChange={setAmazonOpen}>
               <SidebarMenuItem>
-                  <CollapsibleTrigger className="w-full">
+                  <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       isActive={pathname.startsWith('/amazon-products')}
                       tooltip={{ children: 'Amazon Products' }}
