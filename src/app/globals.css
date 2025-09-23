@@ -5,27 +5,27 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%; /* Very light cool gray */
+    --background: 204 88% 97%; /* Very light blue (#E3F2FD) */
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 221 83% 53%; /* Vivid Blue from design */
+    --primary: 207 90% 67%; /* Light blue (#64B5F6) */
     --primary-foreground: 210 20% 98%;
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 220 13% 9%;
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 8.9% 46.1%;
-    --accent: 221 83% 47%; /* Darker Vivid Blue */
+    --accent: 124 39% 65%; /* Soft green (#81C784) */
     --accent-foreground: 210 20% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 221 83% 53%; /* Vivid Blue */
-    --chart-1: 221 80% 55%;
-    --chart-2: 162 76% 42%;
+    --ring: 207 90% 67%; /* Light blue */
+    --chart-1: 207 80% 55%;
+    --chart-2: 124 76% 42%;
     --chart-3: 39 91% 55%;
     --chart-4: 290 80% 60%;
     --chart-5: 190 75% 55%;
@@ -34,12 +34,12 @@
     /* Sidebar Light Theme */
     --sidebar-background: 220 14.3% 95.9%;
     --sidebar-foreground: 224 71.4% 4.1%;
-    --sidebar-primary: 221 83% 53%; /* Vivid Blue */
+    --sidebar-primary: 207 90% 67%; /* Light blue */
     --sidebar-primary-foreground: 210 20% 98%;
     --sidebar-accent: 0 0% 100%;
     --sidebar-accent-foreground: 224 71.4% 4.1%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%; /* Vivid Blue */
+    --sidebar-ring: 207 90% 67%; /* Light blue */
   }
 
   .dark {
@@ -49,21 +49,21 @@
     --card-foreground: 210 20% 98%;
     --popover: 222 84% 5%;
     --popover-foreground: 210 20% 98%;
-    --primary: 221 83% 53%; /* Vivid Blue from design */
+    --primary: 207 90% 67%; /* Light blue */
     --primary-foreground: 210 20% 98%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 20% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 25%;
+    --accent: 124 39% 65%; /* Soft green */
     --accent-foreground: 210 20% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 20% 98%;
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 221 83% 53%; /* Vivid Blue */
-    --chart-1: 221 80% 55%;
-    --chart-2: 162 76% 42%;
+    --ring: 207 90% 67%; /* Light blue */
+    --chart-1: 207 80% 55%;
+    --chart-2: 124 76% 42%;
     --chart-3: 39 91% 55%;
     --chart-4: 290 80% 60%;
     --chart-5: 190 75% 55%;
@@ -71,12 +71,12 @@
     /* Sidebar Dark Theme */
     --sidebar-background: 222 84% 5%;
     --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 221 83% 53%; /* Vivid Blue */
+    --sidebar-primary: 207 90% 67%; /* Light blue */
     --sidebar-primary-foreground: 210 20% 98%;
     --sidebar-accent: 217 33% 15%;
     --sidebar-accent-foreground: 210 20% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 221 83% 53%; /* Vivid Blue */
+    --sidebar-ring: 207 90% 67%; /* Light blue */
   }
 }
 
