@@ -6,7 +6,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { Loader2, Trash2, Wand2, Plus, Image as ImageIcon, Video, X } from 'lucide-react';
+import { Loader2, Trash2, Wand2, Plus, Image as ImageIcon, Video, X, Link } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,8 @@ import { handleOptimizeContent } from '@/app/actions';
 import { RichTextEditor } from './rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
 
 const bulletPointSchema = z.object({
   id: z.string(),
@@ -33,6 +35,15 @@ const formSchema = z.object({
   walmartKeywords: z.string().optional(),
   ebayKeywords: z.string().optional(),
   etsyKeywords: z.string().optional(),
+  imageUrl1: z.string().url().optional().or(z.literal('')),
+  imageUrl2: z.string().url().optional().or(z.literal('')),
+  imageUrl3: z.string().url().optional().or(z.literal('')),
+  imageUrl4: z.string().url().optional().or(z.literal('')),
+  imageUrl5: z.string().url().optional().or(z.literal('')),
+  imageUrl6: z.string().url().optional().or(z.literal('')),
+  imageUrl7: z.string().url().optional().or(z.literal('')),
+  videoUrl1: z.string().url().optional().or(z.literal('')),
+  videoUrl2: z.string().url().optional().or(z.literal('')),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -58,6 +69,27 @@ function FileUploadPlaceholder({ icon: Icon, label }: { icon: React.FC<any>; lab
     );
 }
 
+function UrlUpload({ name, control, label }: { name: any; control: any, label: string; }) {
+    return (
+        <FormField
+            control={control}
+            name={name}
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-xs">{label}</FormLabel>
+                    <FormControl>
+                        <div className="relative">
+                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input {...field} placeholder="https://..." className="pl-9" />
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+}
+
 export function ProductCreationForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,6 +106,15 @@ export function ProductCreationForm() {
       walmartKeywords: '',
       ebayKeywords: '',
       etsyKeywords: '',
+      imageUrl1: '',
+      imageUrl2: '',
+      imageUrl3: '',
+      imageUrl4: '',
+      imageUrl5: '',
+      imageUrl6: '',
+      imageUrl7: '',
+      videoUrl1: '',
+      videoUrl2: '',
     },
   });
 
@@ -234,23 +275,55 @@ export function ProductCreationForm() {
             <SectionHeader title="Media" description="Upload images and videos for your product." />
             
             <div className="space-y-6">
-                <div>
-                    <FormLabel>Images (up to 7)</FormLabel>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mt-2">
-                        {Array.from({ length: 7 }).map((_, i) => (
-                           <FileUploadPlaceholder key={i} icon={ImageIcon} label={`Image ${i + 1}`} />
-                        ))}
+                 <Tabs defaultValue="upload-images">
+                    <div className="flex items-center justify-between">
+                         <FormLabel>Images (up to 7)</FormLabel>
+                        <TabsList>
+                            <TabsTrigger value="upload-images">Upload</TabsTrigger>
+                            <TabsTrigger value="url-images">URL</TabsTrigger>
+                        </TabsList>
                     </div>
-                </div>
-                 <div>
-                    <FormLabel>Videos (up to 2)</FormLabel>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                         {Array.from({ length: 2 }).map((_, i) => (
-                           <FileUploadPlaceholder key={i} icon={Video} label={`Video ${i + 1}`} />
-                        ))}
+                    <TabsContent value="upload-images">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mt-2">
+                            {Array.from({ length: 7 }).map((_, i) => (
+                               <FileUploadPlaceholder key={i} icon={ImageIcon} label={`Image ${i + 1}`} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="url-images">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
+                             {Array.from({ length: 7 }).map((_, i) => (
+                               <UrlUpload key={i} name={`imageUrl${i + 1}`} control={form.control} label={`Image URL ${i + 1}`} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                 </Tabs>
+
+                 <Tabs defaultValue="upload-videos">
+                    <div className="flex items-center justify-between">
+                         <FormLabel>Videos (up to 2)</FormLabel>
+                        <TabsList>
+                            <TabsTrigger value="upload-videos">Upload</TabsTrigger>
+                            <TabsTrigger value="url-videos">URL</TabsTrigger>
+                        </TabsList>
                     </div>
-                </div>
+                    <TabsContent value="upload-videos">
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                             {Array.from({ length: 2 }).map((_, i) => (
+                               <FileUploadPlaceholder key={i} icon={Video} label={`Video ${i + 1}`} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="url-videos">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                            {Array.from({ length: 2 }).map((_, i) => (
+                                <UrlUpload key={i} name={`videoUrl${i + 1}`} control={form.control} label={`Video URL ${i+1}`} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                 </Tabs>
             </div>
+
 
             {/* SEO & Keywords Section */}
             <SectionHeader title="SEO & Keywords" description="Add keywords to improve discoverability on different channels." />
@@ -329,3 +402,5 @@ export function ProductCreationForm() {
     </Form>
   );
 }
+
+    
