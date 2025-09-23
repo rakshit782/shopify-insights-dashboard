@@ -12,6 +12,7 @@ import type {
   EtsyCredentials,
   WayfairCredentials,
   WalmartOrder,
+  AppSettings,
 } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@supabase/supabase-js';
@@ -157,22 +158,42 @@ export async function saveWayfairCredentials(credentials: WayfairCredentials) {
 // Shopify Helpers
 // ============================================
 
-async function getShopifyCredentials(logs: string[]): Promise<{ storeUrl: string; accessToken: string }> {
+async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; accessToken: string, apiVersion: string }> {
     const supabase = await getSupabaseClient(logs);
-    const { data, error } = await supabase.from('shopify_credentials').select('store_name, access_token').limit(1);
+    
+    // Fetch credentials and settings in parallel
+    const [credentialResult, settingsResult] = await Promise.all([
+        supabase.from('shopify_credentials').select('store_name, access_token').limit(1),
+        supabase.from('app_settings').select('value').eq('key', 'shopify_api_version').limit(1)
+    ]);
 
-    if (error) {
-        logs.push(`Supabase error fetching Shopify credentials: ${error.message}`);
+    const { data: credentialData, error: credentialError } = credentialResult;
+    const { data: settingsData, error: settingsError } = settingsResult;
+
+    if (credentialError) {
+        logs.push(`Supabase error fetching Shopify credentials: ${credentialError.message}`);
         throw new Error('Could not fetch Shopify credentials from the database.');
     }
-    if (!data || data.length === 0) {
+    if (!credentialData || credentialData.length === 0) {
         logs.push('Shopify credentials not found in the database.');
         throw new Error('Shopify credentials have not been configured. Please add them in the Connections settings.');
     }
     
     logs.push("Successfully fetched Shopify credentials.");
-    const { store_name, access_token } = data[0];
-    return { storeUrl: getStoreUrl(store_name), accessToken: access_token };
+    const { store_name, access_token } = credentialData[0];
+    const storeUrl = getStoreUrl(store_name);
+
+    let apiVersion = '2025-07'; // Default version
+    if (settingsError) {
+        logs.push(`Could not fetch API version from app_settings, using default: ${apiVersion}. Error: ${settingsError.message}`);
+    } else if (settingsData && settingsData.length > 0) {
+        apiVersion = settingsData[0].value;
+        logs.push(`Using Shopify API version from settings: ${apiVersion}`);
+    } else {
+        logs.push(`Shopify API version not set in app_settings, using default: ${apiVersion}`);
+    }
+
+    return { storeUrl, accessToken: access_token, apiVersion };
 }
 
 
@@ -218,9 +239,9 @@ async function safeFetch(url: string, options: any, logs: string[], retries = 3)
 export async function getShopifyProducts(options: { countOnly?: boolean } = {}): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken } = await getShopifyCredentials(logs);
+        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
         const endpoint = options.countOnly ? 'products/count.json' : 'products.json?limit=250';
-        const url = `${storeUrl}/admin/api/2023-10/${endpoint}`;
+        const url = `${storeUrl}/admin/api/${apiVersion}/${endpoint}`;
         
         logs.push(`Fetching from: ${url}`);
         const response = await safeFetch(url, {
@@ -258,8 +279,8 @@ export async function getShopifyProducts(options: { countOnly?: boolean } = {}):
 export async function createShopifyProduct(productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken } = await getShopifyCredentials(logs);
-        const url = `${storeUrl}/admin/api/2023-10/products.json`;
+        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
+        const url = `${storeUrl}/admin/api/${apiVersion}/products.json`;
 
         const body = JSON.stringify({
             product: {
@@ -310,8 +331,8 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
 export async function updateShopifyProduct(productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken } = await getShopifyCredentials(logs);
-        const url = `${storeUrl}/admin/api/2023-10/products/${productData.id}.json`;
+        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
+        const url = `${storeUrl}/admin/api/${apiVersion}/products/${productData.id}.json`;
 
         const body = JSON.stringify({ product: productData });
         
@@ -347,8 +368,8 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
 export async function getShopifyProduct(id: number): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken } = await getShopifyCredentials(logs);
-        const url = `${storeUrl}/admin/api/2023-10/products/${id}.json`;
+        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
+        const url = `${storeUrl}/admin/api/${apiVersion}/products/${id}.json`;
         
         logs.push(`Fetching product with ID: ${id}`);
         const response = await safeFetch(url, {
@@ -380,7 +401,7 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
 export async function getShopifyOrders(options: { createdAtMin?: string, createdAtMax?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken } = await getShopifyCredentials(logs);
+        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
         const params = new URLSearchParams({
             status: 'any',
             limit: '250',
@@ -388,7 +409,7 @@ export async function getShopifyOrders(options: { createdAtMin?: string, created
             ...(options.createdAtMax && { created_at_max: options.createdAtMax }),
         });
 
-        const url = `${storeUrl}/admin/api/2023-10/orders.json?${params.toString()}`;
+        const url = `${storeUrl}/admin/api/${apiVersion}/orders.json?${params.toString()}`;
         logs.push(`Fetching orders from: ${url}`);
         
         const response = await safeFetch(url, { headers: { 'X-Shopify-Access-Token': accessToken } }, logs);

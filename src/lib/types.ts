@@ -149,6 +149,11 @@ export interface WayfairCredentials {
     client_secret: string;
 }
 
+export interface AppSettings {
+    key: string;
+    value: string;
+}
+
 // Represents the possible fulfillment statuses from Walmart
 export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
 
