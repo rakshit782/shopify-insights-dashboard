@@ -75,9 +75,9 @@ export default async function EditProductPage({ params }: { params: { id: string
     <div className="p-4 sm:p-6 lg:p-8">
        <div className="max-w-4xl mx-auto mb-6">
          <Button asChild variant="outline" size="sm">
-            <Link href="/shopify-products">
+            <Link href="/listing-manager">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Products
+                Back to Listing Manager
             </Link>
          </Button>
        </div>

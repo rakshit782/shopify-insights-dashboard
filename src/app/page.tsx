@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
+import { ListTodo } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -18,13 +18,13 @@ export default function Home() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Get started by viewing your products, managing orders, or connecting new sales channels.
+            Get started by managing your listings, viewing orders, or connecting new sales channels.
           </p>
         </CardContent>
         <CardContent>
            <Button asChild>
-              <Link href="/shopify-products">
-                <ShoppingCart className="mr-2 h-4 w-4" /> View Products
+              <Link href="/listing-manager">
+                <ListTodo className="mr-2 h-4 w-4" /> Go to Listing Manager
               </Link>
             </Button>
         </CardContent>
