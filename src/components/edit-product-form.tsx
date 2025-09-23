@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Wand2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { handleUpdateProduct } from '@/app/actions';
+import { handleUpdateProduct, handleOptimizeListing } from '@/app/actions';
 import type { ShopifyProduct, ShopifyProductUpdate, ShopifyVariantUpdate } from '@/lib/types';
 import { RichTextEditor } from './rich-text-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -45,6 +45,7 @@ export function EditProductForm({ product }: EditProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -67,6 +68,40 @@ export function EditProductForm({ product }: EditProductFormProps) {
     control: form.control,
     name: 'variants'
   });
+
+  const onOptimize = async () => {
+    setIsOptimizing(true);
+    toast({
+        title: 'Optimizing Listing...',
+        description: 'The AI is working its magic. This may take a moment.',
+    });
+    
+    const currentValues = form.getValues();
+    const result = await handleOptimizeListing({
+        title: currentValues.title,
+        description: currentValues.body_html,
+        vendor: currentValues.vendor,
+        productType: currentValues.product_type,
+        tags: currentValues.tags,
+    });
+
+    if (result.success && result.data) {
+        form.setValue('title', result.data.optimizedTitle, { shouldValidate: true });
+        form.setValue('body_html', result.data.optimizedDescription, { shouldValidate: true });
+        toast({
+            title: 'Optimization Complete',
+            description: 'The product title and description have been updated. Review the changes and save.',
+        });
+    } else {
+        toast({
+            title: 'Optimization Failed',
+            description: result.error,
+            variant: 'destructive',
+        });
+    }
+
+    setIsOptimizing(false);
+  };
 
   const onSubmit = async (values: ProductFormValues) => {
     setIsSubmitting(true);
@@ -111,8 +146,16 @@ export function EditProductForm({ product }: EditProductFormProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
-            <CardTitle>Edit Product</CardTitle>
-            <CardDescription>Update the details for "{product.title}". Changes will be saved to Shopify and your website.</CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <CardTitle>Edit Product</CardTitle>
+                <CardDescription>Update the details for "{product.title}". Changes will be saved to Shopify and your website.</CardDescription>
+              </div>
+              <Button type="button" variant="outline" onClick={onOptimize} disabled={isOptimizing} className="w-full sm:w-auto">
+                {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                Optimize with AI
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-8">
             <FormField

@@ -4,6 +4,7 @@
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
+import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 
 
 export async function handleSyncProducts() {
@@ -143,5 +144,16 @@ export async function handleSaveWayfairCredentials(credentials: WayfairCredentia
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         console.error('Failed to save Wayfair credentials:', errorMessage);
         return { success: false, error: `Failed to save credentials: ${errorMessage}` };
+    }
+}
+
+export async function handleOptimizeListing(input: OptimizeListingInput) {
+    try {
+        const result = await optimizeListing(input);
+        return { success: true, data: result, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during optimization.';
+        console.error('Listing optimization failed:', errorMessage);
+        return { success: false, data: null, error: `Failed to optimize listing: ${errorMessage}` };
     }
 }
