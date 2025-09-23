@@ -26,10 +26,8 @@ export async function signup(formData: FormData) {
     .insert({
       email,
       password_hash: passwordHash,
-      // role defaults to 'sub'
-      // license_status defaults to 'active'
-      // created_at defaults to now()
-      // agency_id stays NULL unless updated later
+      role: 'sub',             // default
+      license_status: 'active' // default
     })
     .select('id')
     .single()
@@ -48,12 +46,11 @@ export async function signup(formData: FormData) {
     user_id: newUser.id,
     first_name: firstName,
     last_name: lastName
-    // business_name, logo_url, address can be added later
   })
 
   if (profileError) {
     console.error('Signup profile error:', profileError)
-    await supabase.from('users').delete().eq('id', newUser.id) // cleanup
+    await supabase.from('users').delete().eq('id', newUser.id) // rollback
     return redirect('/signup?message=Could not create user profile.')
   }
 
@@ -91,14 +88,15 @@ export async function login(formData: FormData) {
     return redirect('/login?message=Invalid credentials.')
   }
 
-  // 4. Set cookie
-  const response = redirect('/')
+  // 4. Set cookie BEFORE redirect
   const cookieStore = cookies()
-  cookieStore.set('user-session', user.id.toString(), {
+  cookieStore.set({
+    name: 'user-session',
+    value: user.id.toString(),
     httpOnly: true,
     path: '/',
     maxAge: 60 * 60 * 24 // 24h
   })
 
-  return response
+  return redirect('/')
 }
