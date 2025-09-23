@@ -19,6 +19,7 @@ interface BusinessProfileFormProps {
     profile: BusinessProfile | null;
     onProfileCreated: (profile: BusinessProfile) => void;
     onProfileUpdated: (profile: BusinessProfile) => void;
+    onCancel: () => void;
 }
 
 const formSchema = z.object({
@@ -29,7 +30,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function BusinessProfileForm({ profile, onProfileCreated, onProfileUpdated }: BusinessProfileFormProps) {
+export function BusinessProfileForm({ profile, onProfileCreated, onProfileUpdated, onCancel }: BusinessProfileFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
     const isNewProfile = !profile;
@@ -47,7 +48,7 @@ export function BusinessProfileForm({ profile, onProfileCreated, onProfileUpdate
         setIsSubmitting(true);
         
         const profileData: BusinessProfileCreation = {
-            id: profile?.id || uuidv4(),
+            id: profile?.id, // Let Supabase handle the UUID generation if it's a new profile
             ...values,
         };
 
@@ -126,7 +127,10 @@ export function BusinessProfileForm({ profile, onProfileCreated, onProfileUpdate
                             )}
                         />
                     </CardContent>
-                    <CardFooter className="flex justify-end">
+                    <CardFooter className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={onCancel}>
+                            Cancel
+                        </Button>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Profile

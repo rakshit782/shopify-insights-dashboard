@@ -1,12 +1,11 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { BusinessProfileForm } from '@/components/business-profile-form';
 import { handleGetBusinessProfiles } from '@/app/actions';
 import type { BusinessProfile } from '@/lib/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Settings, Check, X, Edit, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -34,7 +33,7 @@ export function SettingsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
 
-    const fetchProfiles = async () => {
+    const fetchProfiles = useCallback(async () => {
         setIsLoading(true);
         const result = await handleGetBusinessProfiles();
         if (result.success && result.profiles) {
@@ -44,11 +43,11 @@ export function SettingsPage() {
             }
         }
         setIsLoading(false);
-    };
+    }, [view, selectedProfileId]);
 
     useEffect(() => {
         fetchProfiles();
-    }, []);
+    }, [fetchProfiles]);
 
     const handleProfileCreated = (newProfile: BusinessProfile) => {
         setProfiles(prev => [...prev, newProfile]);
@@ -153,16 +152,16 @@ export function SettingsPage() {
                     <CardContent>
                          <div className="space-y-4">
                             {profiles.map(profile => (
-                                <div key={profile.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                                <div key={profile.id} className={cn("flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer", selectedProfileId === profile.id && "bg-muted/50 ring-2 ring-primary")} onClick={() => setSelectedProfileId(profile.id)}>
                                     <div>
                                         <p className="font-semibold">{profile.profile_name}</p>
                                         <p className="text-sm text-muted-foreground">{profile.store_url}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => { setSelectedProfileId(profile.id); setView('form'); }}>
+                                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedProfileId(profile.id); setView('form'); }}>
                                             <Edit className="h-4 w-4" />
                                         </Button>
-                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>

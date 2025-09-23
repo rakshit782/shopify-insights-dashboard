@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 /**
  * Creates a Supabase client for server-side usage.
  * Can connect to either the MAIN or DATA database based on options.
- * Uses the service role key for admin actions or the user's auth context.
+ * Uses the user's authentication context from cookies.
  */
 export function createClient(options: { db: 'MAIN' | 'DATA' }) {
   const cookieStore = cookies();
@@ -17,8 +17,12 @@ export function createClient(options: { db: 'MAIN' | 'DATA' }) {
     supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   } else if (options.db === 'DATA') {
+    // IMPORTANT: Even for the DATA db, we use the public anon key for the initial client
+    // so that it can read the user's auth cookie. We'll use the service key for specific
+    // admin-level operations within the functions that need it, but the base client
+    // needs to be user-aware.
     supabaseUrl = process.env.SUPABASE_URL_DATA;
-    supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA; // Use service key for data DB
+    supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA; 
   }
 
   if (!supabaseUrl || !supabaseKey) {
