@@ -43,7 +43,7 @@ function ChannelHealthCard({ status }: { status: ChannelStatus }) {
                     <span>{status.connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
             </CardHeader>
-            <CardContent className="flex-grow space-y-4">
+            <CardContent className="flex-grow space-y-4 pt-6">
                 <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="mr-2 h-4 w-4" />
                     <span>
@@ -57,13 +57,6 @@ function ChannelHealthCard({ status }: { status: ChannelStatus }) {
                     </span>
                 </div>
             </CardContent>
-            <div className="p-6 pt-0">
-                <Button asChild variant="outline" className="w-full">
-                    <Link href="/connections">
-                        Manage Connection
-                    </Link>
-                </Button>
-            </div>
         </Card>
     );
 }
@@ -114,7 +107,7 @@ export function ChannelHealthDashboard() {
             {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Array.from({ length: 6 }).map((_, i) => (
-                        <Card key={i}><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent className="space-y-4"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-2/3" /></CardContent><div className="p-6 pt-0"><Skeleton className="h-10 w-full" /></div></Card>
+                        <Card key={i}><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent className="space-y-4 pt-6"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-2/3" /></CardContent></Card>
                     ))}
                 </div>
             ) : (
