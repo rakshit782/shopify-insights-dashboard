@@ -1,8 +1,26 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package } from 'lucide-react';
+import { MultiPlatformOrdersDashboard } from '@/components/multi-platform-orders-dashboard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 export default function OrdersPage() {
+    const supabaseUrl = process.env.SUPABASE_URL_MAIN;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+
+    if (!supabaseUrl || !supabaseKey) {
+        return (
+          <div className="flex h-screen items-center justify-center p-8">
+            <Alert variant="destructive" className="max-w-2xl">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Configuration Error</AlertTitle>
+              <AlertDescription>
+                Your Supabase credentials are not configured correctly. Please add `SUPABASE_URL_MAIN` and `SUPABASE_SERVICE_ROLE_KEY_MAIN` to your `.env` file and restart the server to view orders.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+    }
+    
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <div className="mb-8">
@@ -11,22 +29,7 @@ export default function OrdersPage() {
                     A unified view of all your orders across every channel.
                 </p>
             </div>
-
-            <Card className="min-h-[60vh]">
-                <CardHeader>
-                    <CardTitle>Coming Soon</CardTitle>
-                    <CardDescription>
-                        This section will house the unified order and fulfillment hub.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-16">
-                    <Package className="h-16 w-16 mb-4" />
-                    <p className="text-lg font-semibold">The unified order inbox is on its way.</p>
-                    <p className="mt-2 max-w-md">
-                        You'll soon be able to manage orders, purchase shipping labels, and handle fulfillment from a single dashboard.
-                    </p>
-                </CardContent>
-            </Card>
+            <MultiPlatformOrdersDashboard />
         </div>
     );
 }

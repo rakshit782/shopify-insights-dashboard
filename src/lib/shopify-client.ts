@@ -368,6 +368,34 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
     }
 }
 
+export async function getShopifyOrders(): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+  const logs: string[] = [];
+  try {
+    const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
+    const url = `${storeUrl}/admin/api/${apiVersion}/orders.json?status=any&limit=50`;
+
+    logs.push('Fetching Shopify orders...');
+    const response = await safeFetch(url, {
+      headers: { 'X-Shopify-Access-Token': accessToken },
+    }, logs);
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      logs.push(`Shopify API Error fetching orders: ${response.status} - ${errorBody}`);
+      throw new Error(`Failed to fetch Shopify orders: ${response.statusText}`);
+    }
+
+    const data: { orders: ShopifyOrder[] } = await response.json() as any;
+    logs.push(`Successfully fetched ${data.orders.length} orders from Shopify.`);
+    return { orders: data.orders, logs };
+  } catch (error) {
+    if (error instanceof Error) {
+      logs.push(`Error in getShopifyOrders: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
 
 // ============================================
 // External Platform Functions
@@ -396,6 +424,106 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
 // ============================================
 // Walmart Helpers
 // ============================================
+
+async function getWalmartConfig(logs: string[]): Promise<{ clientId: string; clientSecret: string; }> {
+    const supabase = await createClient({ db: 'MAIN' });
+    
+    logs.push("Attempting to fetch Walmart credentials from Supabase...");
+    const { data, error } = await supabase
+        .from('walmart_credentials')
+        .select('client_id, client_secret')
+        .limit(1);
+
+    if (error) {
+        logs.push(`Supabase error fetching Walmart credentials: ${error.message}`);
+        throw new Error('Could not fetch Walmart credentials from the database.');
+    }
+    if (!data || data.length === 0) {
+        logs.push('Walmart credentials not found in the database.');
+        throw new Error('Walmart credentials have not been configured.');
+    }
+    
+    const { client_id, client_secret } = data[0];
+    logs.push(`Successfully fetched Walmart credentials.`);
+
+    return { clientId: client_id, clientSecret: client_secret };
+}
+
+
+async function getWalmartAccessToken(clientId: string, clientSecret: string, logs: string[]): Promise<string> {
+    const url = 'https://marketplace.walmartapis.com/v3/token';
+    const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const correlationId = uuidv4();
+
+    logs.push('Requesting Walmart access token...');
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'WM_QOS.CORRELATION_ID': correlationId,
+            'WM_SVC.NAME': 'Walmart-Marketplace-Api'
+        },
+        body: 'grant_type=client_credentials'
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        logs.push(`Walmart Token API Error: ${response.status} - ${errorBody}`);
+        throw new Error('Failed to get Walmart access token.');
+    }
+
+    const data: any = await response.json();
+    logs.push('Successfully retrieved Walmart access token.');
+    return data.access_token;
+}
+
+
+export async function getWalmartOrders(): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+  const logs: string[] = [];
+  try {
+    const { clientId, clientSecret } = await getWalmartConfig(logs);
+    const accessToken = await getWalmartAccessToken(clientId, clientSecret, logs);
+    
+    const correlationId = uuidv4();
+    // Get orders created in the last 7 days as an example
+    const createdStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const url = `https://marketplace.walmartapis.com/v3/orders?createdStartDate=${createdStartDate}`;
+
+    logs.push('Fetching Walmart orders...');
+    const response = await fetch(url, {
+      headers: {
+        'WM_SEC.ACCESS_TOKEN': accessToken,
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'WM_QOS.CORRELATION_ID': correlationId,
+        'WM_SVC.NAME': 'Walmart-Marketplace-Api',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      logs.push(`Walmart Orders API Error: ${response.status} - ${errorBody}`);
+      throw new Error(`Failed to fetch Walmart orders.`);
+    }
+
+    const data: { list?: { elements?: { order: WalmartOrder[] } } } = await response.json() as any;
+    const walmartOrders = data.list?.elements?.order || [];
+    logs.push(`Successfully fetched ${walmartOrders.length} orders from Walmart.`);
+
+    const mappedOrders = walmartOrders.map(mapWalmartOrderToShopifyOrder);
+
+    return { orders: mappedOrders, logs };
+
+  } catch (error) {
+    if (error instanceof Error) {
+      logs.push(`Error in getWalmartOrders: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
 
 function getWalmartSignature(
   consumerId: string,
@@ -479,6 +607,3 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
-
-
-    
