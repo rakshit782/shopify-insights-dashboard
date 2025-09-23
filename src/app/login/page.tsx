@@ -25,7 +25,7 @@ const formSchema = z.object({
 
 // Refine the schema to make names required for sign-up
 const refinedSchema = formSchema.superRefine((data, ctx) => {
-    if (data.isSignUp) {
+    if ((data as any).isSignUp) {
         if (!data.firstName || data.firstName.length < 1) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
