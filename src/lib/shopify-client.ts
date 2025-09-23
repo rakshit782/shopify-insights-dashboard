@@ -163,6 +163,7 @@ export async function saveWayfairCredentials(credentials: WayfairCredentials) {
 async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; accessToken: string, apiVersion: string }> {
     const supabase = await getSupabaseClient(logs);
     
+    logs.push("Attempting to fetch Shopify credentials from Supabase...");
     const { data, error } = await supabase
         .from('shopify_credentials')
         .select('store_name, access_token, api_version')
@@ -177,12 +178,11 @@ async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; acc
         throw new Error('Shopify credentials have not been configured. Please add them in the Connections settings.');
     }
     
-    logs.push("Successfully fetched Shopify credentials.");
     const { store_name, access_token, api_version } = data[0];
     const storeUrl = getStoreUrl(store_name);
     
     const apiVersion = api_version || '2025-07';
-    logs.push(`Using Shopify API version: ${apiVersion}`);
+    logs.push(`Successfully fetched credentials. Store: ${storeUrl}, API Version: ${apiVersion}`);
 
     return { storeUrl, accessToken: access_token, apiVersion };
 }
@@ -234,7 +234,7 @@ export async function getShopifyProducts(options: { countOnly?: boolean } = {}):
         const endpoint = options.countOnly ? 'products/count.json' : 'products.json?limit=250';
         const url = `${storeUrl}/admin/api/${apiVersion}/${endpoint}`;
         
-        logs.push(`Fetching from: ${url}`);
+        logs.push(`Fetching Shopify data from endpoint: ${endpoint}`);
         const response = await safeFetch(url, {
             headers: { 'X-Shopify-Access-Token': accessToken }
         }, logs);
@@ -248,7 +248,7 @@ export async function getShopifyProducts(options: { countOnly?: boolean } = {}):
         const data: any = await response.json();
 
         if (options.countOnly) {
-            logs.push(`Product count: ${data.count}`);
+            logs.push(`Successfully fetched product count: ${data.count}`);
             return { rawProducts: [], count: data.count, logs };
         }
         
