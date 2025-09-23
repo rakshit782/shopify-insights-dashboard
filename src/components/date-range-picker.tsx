@@ -29,17 +29,16 @@ interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
 export function DateRangePicker({ className, onUpdate }: DateRangePickerProps) {
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
   const [preset, setPreset] = React.useState<string>('7');
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // Set initial date on client-side to avoid hydration mismatch
-    if (date === undefined) {
-        const initialDate = {
-            from: subDays(new Date(), 6),
-            to: new Date(),
-        };
-        setDate(initialDate);
-        onUpdate(initialDate);
-    }
+      setIsMounted(true);
+      const initialDate = {
+          from: subDays(new Date(), 6),
+          to: new Date(),
+      };
+      setDate(initialDate);
+      onUpdate(initialDate);
   // We only want this to run once on mount, so we pass an empty dependency array.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -71,6 +70,18 @@ export function DateRangePicker({ className, onUpdate }: DateRangePickerProps) {
           // A custom date range was selected, so clear the preset
           setPreset('custom');
       }
+  }
+
+  if (!isMounted) {
+      // Render a placeholder or skeleton on the server and during initial client render
+      return (
+        <div className={cn('grid gap-2', className)}>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-[180px] bg-muted rounded-md animate-pulse"></div>
+            <div className="h-10 w-[300px] bg-muted rounded-md animate-pulse"></div>
+          </div>
+        </div>
+      );
   }
 
   return (
