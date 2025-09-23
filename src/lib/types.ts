@@ -128,6 +128,8 @@ export interface AmazonCredentials {
     client_id: string;
     client_secret: string;
     refresh_token: string;
+    seller_id: string;
+    marketplace_id: string;
 }
 
 export interface WalmartCredentials {

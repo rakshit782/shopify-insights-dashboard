@@ -45,6 +45,8 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
       clientSecret: z.string().min(1, 'Client Secret is required.'),
       refreshToken: z.string().min(1, 'Refresh Token is required.'),
       profileId: z.string().min(1, 'Profile ID is required.'),
+      sellerId: z.string().min(1, 'Seller ID is required.'),
+      marketplaceId: z.string().min(1, 'Marketplace ID is required.'),
     }),
   },
   walmart: {
@@ -93,7 +95,7 @@ const actionMap: { [key: string]: (data: any) => Promise<any> } = {
 
 const defaultValuesMap: { [key: string]: any } = {
     shopify: { storeName: '', accessToken: '' },
-    amazon: { clientId: '', clientSecret: '', refreshToken: '', profileId: ''},
+    amazon: { clientId: '', clientSecret: '', refreshToken: '', profileId: '', sellerId: '', marketplaceId: ''},
     walmart: { clientId: '', clientSecret: '' },
     ebay: { appId: '', certId: '', devId: '', oauthToken: '' },
     etsy: { keystring: '' },
@@ -167,6 +169,8 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
                 {renderField("accessToken", "Admin API Access Token", true)}
              </>}
              {platform === 'amazon' && <>
+                {renderField("sellerId", "Seller ID")}
+                {renderField("marketplaceId", "Marketplace ID")}
                 {renderField("profileId", "Profile ID")}
                 {renderField("clientId", "Client ID")}
                 {renderField("clientSecret", "Client Secret", true)}

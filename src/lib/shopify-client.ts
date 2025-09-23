@@ -113,7 +113,16 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
 
 export async function saveAmazonCredentials(credentials: AmazonCredentials) {
   const supabase = await createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'amazon_credentials', credentials, 'client_id');
+  // In a real app, you would likely encrypt the client_secret and refresh_token
+  const credsToSave = {
+      profile_id: credentials.profile_id,
+      client_id: credentials.client_id,
+      client_secret: credentials.client_secret,
+      refresh_token: credentials.refresh_token,
+      seller_id: credentials.seller_id,
+      marketplace_id: credentials.marketplace_id,
+  };
+  await upsertCredential(supabase, 'amazon_credentials', credsToSave, 'client_id');
 }
 
 export async function saveWalmartCredentials(credentials: WalmartCredentials) {
