@@ -3,7 +3,7 @@
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getPlatformProductCounts } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder, BusinessProfile, BusinessProfileCreation } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder, BusinessProfile, BusinessProfileCreation, Agency } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
@@ -320,7 +320,7 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
         // For each profile, fetch the credential statuses
         const profilesWithStatuses = await Promise.all(
             (profiles || []).map(async (profile) => {
-                const statuses = await getCredentialStatuses(profile.id);
+                const { statuses } = await handleGetCredentialStatuses(profile.id);
                 return { ...profile, credential_statuses: statuses };
             })
         );
@@ -332,7 +332,36 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
         return { success: false, profiles: [], error: errorMessage };
     }
 }
-    
+
+export async function handleGetUserAgency(): Promise<{ success: boolean; email: string | null; agency: Agency | null; error: string | null; }> {
+    try {
+        const supabase = createClient({ db: 'MAIN' });
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return { success: false, email: null, agency: null, error: 'User not authenticated.' };
+        }
+
+        const { data: agency, error } = await supabase
+            .from('agencies')
+            .select('agency_id, name')
+            .eq('user_id', user.id)
+            .single();
+
+        if (error) {
+             if (error.code === 'PGRST116') { // "PostgREST error 116: The result contains 0 rows"
+                return { success: true, email: user.email || null, agency: null, error: null };
+            }
+            console.error('Error fetching agency:', error);
+            return { success: false, email: user.email || null, agency: null, error: error.message };
+        }
+
+        return { success: true, email: user.email || null, agency, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, email: null, agency: null, error: errorMessage };
+    }
+}
     
     
 

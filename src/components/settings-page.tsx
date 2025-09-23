@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { BusinessProfileForm } from '@/components/business-profile-form';
 import { handleGetBusinessProfiles } from '@/app/actions';
@@ -13,6 +13,7 @@ import { Button } from './ui/button';
 import { ConnectionsDialog } from './connections-dialog';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { UserProfileCard, UserProfileCardSkeleton } from './user-profile-card';
 
 const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } = {
     'shopify': { name: 'Shopify', icon: <Image src="/shopify.svg" alt="Shopify" width={24} height={24} unoptimized /> },
@@ -115,7 +116,6 @@ export function SettingsPage() {
         if (view === 'form') {
             return (
                  <BusinessProfileForm 
-                    key={selectedProfile?.id || 'new'}
                     profile={selectedProfile} 
                     onProfileCreated={handleProfileCreated}
                     onProfileUpdated={handleProfileUpdated}
@@ -180,8 +180,12 @@ export function SettingsPage() {
         <div className="p-4 sm:p-6 lg:p-8 space-y-8">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
-                <p className="text-muted-foreground">Manage your business profiles and application settings.</p>
+                <p className="text-muted-foreground">Manage your account, business profiles, and application settings.</p>
             </div>
+            
+            <Suspense fallback={<UserProfileCardSkeleton />}>
+                <UserProfileCard />
+            </Suspense>
 
             {renderContent()}
 
@@ -196,5 +200,3 @@ export function SettingsPage() {
         </div>
     );
 }
-
-    

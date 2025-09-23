@@ -282,4 +282,8 @@ export interface BusinessProfile {
 
 export type BusinessProfileCreation = Omit<BusinessProfile, 'id' | 'credential_statuses'> & { id?: string };
 
+export interface Agency {
+    agency_id: string;
+    name: string;
+}
     
