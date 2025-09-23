@@ -368,33 +368,6 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
     }
 }
 
-export async function getShopifyOrders(options: { createdAtMin?: string, createdAtMax?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
-    const logs: string[] = [];
-    try {
-        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
-        const params = new URLSearchParams({
-            status: 'any',
-            limit: '250',
-            ...(options.createdAtMin && { created_at_min: options.createdAtMin }),
-            ...(options.createdAtMax && { created_at_max: options.createdAtMax }),
-        });
-
-        const url = `${storeUrl}/admin/api/${apiVersion}/orders.json?${params.toString()}`;
-        logs.push(`Fetching orders from: ${url}`);
-        
-        const response = await safeFetch(url, { headers: { 'X-Shopify-Access-Token': accessToken } }, logs);
-
-        if (!response.ok) throw new Error(`Failed to fetch Shopify orders: ${response.statusText}`);
-
-        const data: { orders: ShopifyOrder[] } = await response.json() as any;
-        logs.push(`Successfully fetched ${data.orders.length} orders.`);
-        return { orders: data.orders, logs };
-    } catch (e) {
-        logs.push(`Error in getShopifyOrders: ${e instanceof Error ? e.message : 'Unknown error'}`);
-        throw e;
-    }
-}
-
 
 // ============================================
 // External Platform Functions
@@ -419,65 +392,6 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
     }
     return counts;
 }
-
-export async function getWalmartOrders(options: { createdStartDate?: string, limit?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
-    const logs: string[] = [];
-    const supabase = await createClient({ db: 'MAIN' });
-
-    try {
-        const { data: credsData, error: credsError } = await supabase.from('walmart_credentials').select('client_id, client_secret').limit(1);
-
-        if (credsError) throw new Error(`Supabase error fetching Walmart credentials: ${credsError.message}`);
-        if (!credsData || credsData.length === 0) throw new Error('Walmart credentials not configured.');
-        
-        const { client_id: consumerId, client_secret: privateKey } = credsData[0];
-        const baseUrl = 'https://marketplace.walmartapis.com/v3/orders';
-        const timestamp = Date.now().toString();
-        const correlationId = uuidv4();
-
-        const params = new URLSearchParams({
-            limit: options.limit || '100',
-            ...(options.createdStartDate && { createdStartDate: options.createdStartDate }),
-        });
-        const requestUrl = `${baseUrl}?${params.toString()}`;
-        
-        const signature = getWalmartSignature(consumerId, privateKey, requestUrl, 'GET', timestamp);
-
-        logs.push('Fetching Walmart orders...');
-        const response = await fetch(requestUrl, {
-            method: 'GET',
-            headers: {
-                'WM_SEC.ACCESS_TOKEN': signature,
-                'WM_QOS.CORRELATION_ID': correlationId,
-                'WM_SVC.NAME': 'Walmart Marketplace',
-                'WM_CONSUMER.ID': consumerId,
-                'WM_SEC.TIMESTAMP': timestamp,
-                'Accept': 'application/json',
-            },
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch Walmart orders: ${response.statusText} - ${errorText}`);
-        }
-
-        const data: { list: { elements: { order: WalmartOrder[] } } } = await response.json() as any;
-        
-        if (!data.list || !data.list.elements || !data.list.elements.order) {
-            logs.push('No orders found in Walmart response.');
-            return { orders: [], logs };
-        }
-        
-        const mappedOrders = data.list.elements.order.map(mapWalmartOrderToShopifyOrder);
-        logs.push(`Successfully fetched and mapped ${mappedOrders.length} Walmart orders.`);
-        return { orders: mappedOrders, logs };
-
-    } catch(e) {
-        logs.push(`Error in getWalmartOrders: ${e instanceof Error ? e.message : 'Unknown error'}`);
-        throw e;
-    }
-}
-
 
 // ============================================
 // Walmart Helpers

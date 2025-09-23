@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, Users } from 'lucide-react';
+import { Settings, ShoppingCart, ListTodo, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -48,18 +48,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link href="/listing-manager">
                   <ListTodo className="h-5 w-5" />
                   <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Listing Manager</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/orders'}
-                tooltip={{ children: 'Orders' }}
-              >
-                <Link href="/orders">
-                  <Truck className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Orders</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

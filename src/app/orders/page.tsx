@@ -1,32 +1,19 @@
 
-import { Suspense } from 'react';
-import { DashboardSkeleton } from '@/components/dashboard-skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
-import 'dotenv/config';
-import { MultiPlatformOrdersDashboard } from '@/components/multi-platform-orders-dashboard';
+'use client';
 
-export default async function OrdersPage() {
-  const supabaseUrl = process.env.SUPABASE_URL_MAIN;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-  if (!supabaseUrl || !supabaseKey ) {
-    return (
-      <div className="flex h-screen items-center justify-center p-8">
-        <Alert variant="destructive" className="max-w-2xl">
-          <Terminal className="h-4 w-4" />
-          <AlertTitle>Configuration Error</AlertTitle>
-          <AlertDescription>
-            Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL_MAIN` and `SUPABASE_SERVICE_ROLE_KEY_MAIN` to the `.env` file in the root of the project and ensure your server is restarted.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+export default function OrdersPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/');
+  }, [router]);
 
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <MultiPlatformOrdersDashboard />
-    </Suspense>
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <p className="text-muted-foreground">Redirecting...</p>
+    </div>
   );
 }
