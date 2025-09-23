@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, Users } from 'lucide-react';
+import { Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -39,18 +39,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/'}
-                tooltip={{ children: 'Analytics' }}
-              >
-                <Link href="/">
-                  <BarChartHorizontal className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Analytics</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
@@ -90,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === '/shopify-products'}
+                isActive={pathname === '/shopify-products' || pathname === '/'}
                 tooltip={{ children: 'Shopify Products' }}
               >
                 <Link href="/shopify-products">
@@ -154,5 +142,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
-    
