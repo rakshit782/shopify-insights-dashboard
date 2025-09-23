@@ -1,4 +1,5 @@
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -252,4 +253,11 @@ export interface WalmartOrder {
   };
 }
 
-    
+export interface BusinessProfile {
+    id: string; // uuid
+    profile_name: string;
+    store_url: string;
+    contact_email: string;
+}
+
+export type BusinessProfileCreation = Omit<BusinessProfile, ''>;

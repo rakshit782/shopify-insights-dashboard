@@ -16,7 +16,7 @@ import {
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List, Database } from 'lucide-react';
+import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List, Database, Settings } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
@@ -219,6 +219,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link href="/channel-health">
                   <ShieldCheck className="h-5 w-5" />
                   <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Channel Health</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/settings'}
+                tooltip={{ children: 'Settings' }}
+              >
+                <Link href="/settings">
+                  <Settings className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Settings</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

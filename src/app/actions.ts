@@ -3,7 +3,7 @@
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getWebsiteProducts, getPlatformProductCounts, getWebsiteProductCount } from '@/lib/shopify-client';
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder, BusinessProfile, BusinessProfileCreation } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
@@ -273,4 +273,23 @@ export async function getDashboardStats(dateRange?: DateRange) {
             error: `Failed to load dashboard stats: ${errorMessage}`
         };
     }
+}
+
+// Settings Actions
+export async function handleSaveBusinessProfile(profileData: BusinessProfileCreation): Promise<{ success: boolean, profile: BusinessProfile | null, error: string | null }> {
+    console.log('Saving business profile (simulated):', profileData);
+    // In a real app, this would save to Supabase.
+    await new Promise(res => setTimeout(res, 500));
+    const profile = { ...profileData };
+    return { success: true, profile, error: null };
+}
+
+export async function handleGetBusinessProfiles(): Promise<{ success: boolean, profiles: BusinessProfile[], error: string | null }> {
+    console.log('Fetching business profiles (simulated)');
+    // In a real app, this would fetch from Supabase.
+    const mockProfiles: BusinessProfile[] = [
+        { id: '1', profile_name: 'Default Profile', store_url: 'https://mock.myshopify.com', contact_email: 'contact@mock.com' }
+    ];
+    await new Promise(res => setTimeout(res, 500));
+    return { success: true, profiles: mockProfiles, error: null };
 }
