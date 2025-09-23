@@ -25,6 +25,8 @@ export interface PlatformProductCount {
   count: number;
 }
 
+const apiVerson = '2025-07';
+
 // ============================================
 // Supabase Client
 // ============================================
@@ -119,7 +121,7 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
   await upsertCredential(
     supabase,
     'shopify_credentials',
-    { store_name: storeName, access_token: accessToken },
+    { store_name: storeName, access_token: accessToken, api_version: apiVerson },
     'store_name'
   );
 }
@@ -161,37 +163,26 @@ export async function saveWayfairCredentials(credentials: WayfairCredentials) {
 async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; accessToken: string, apiVersion: string }> {
     const supabase = await getSupabaseClient(logs);
     
-    // Fetch credentials and settings in parallel
-    const [credentialResult, settingsResult] = await Promise.all([
-        supabase.from('shopify_credentials').select('store_name, access_token').limit(1),
-        supabase.from('app_settings').select('value').eq('key', 'shopify_api_version').limit(1)
-    ]);
+    const { data, error } = await supabase
+        .from('shopify_credentials')
+        .select('store_name, access_token, api_version')
+        .limit(1);
 
-    const { data: credentialData, error: credentialError } = credentialResult;
-    const { data: settingsData, error: settingsError } = settingsResult;
-
-    if (credentialError) {
-        logs.push(`Supabase error fetching Shopify credentials: ${credentialError.message}`);
+    if (error) {
+        logs.push(`Supabase error fetching Shopify credentials: ${error.message}`);
         throw new Error('Could not fetch Shopify credentials from the database.');
     }
-    if (!credentialData || credentialData.length === 0) {
+    if (!data || data.length === 0) {
         logs.push('Shopify credentials not found in the database.');
         throw new Error('Shopify credentials have not been configured. Please add them in the Connections settings.');
     }
     
     logs.push("Successfully fetched Shopify credentials.");
-    const { store_name, access_token } = credentialData[0];
+    const { store_name, access_token, api_version } = data[0];
     const storeUrl = getStoreUrl(store_name);
-
-    let apiVersion = '2025-07'; // Default version
-    if (settingsError) {
-        logs.push(`Could not fetch API version from app_settings, using default: ${apiVersion}. Error: ${settingsError.message}`);
-    } else if (settingsData && settingsData.length > 0) {
-        apiVersion = settingsData[0].value;
-        logs.push(`Using Shopify API version from settings: ${apiVersion}`);
-    } else {
-        logs.push(`Shopify API version not set in app_settings, using default: ${apiVersion}`);
-    }
+    
+    const apiVersion = api_version || '2025-07';
+    logs.push(`Using Shopify API version: ${apiVersion}`);
 
     return { storeUrl, accessToken: access_token, apiVersion };
 }
@@ -595,3 +586,6 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
+
+
+    
