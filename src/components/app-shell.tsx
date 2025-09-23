@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Settings, ShoppingCart, ListTodo, ShieldCheck, Users } from 'lucide-react';
+import { ShoppingCart, ListTodo, ShieldCheck, Users, Link as LinkIcon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === '/listing-manager'}
+                isActive={pathname.startsWith('/listing-manager')}
                 tooltip={{ children: 'Listing Manager' }}
               >
                 <Link href="/listing-manager">
@@ -83,11 +83,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/connections'}
-                tooltip={{ children: 'Connections & Settings' }}
+                tooltip={{ children: 'Connections' }}
               >
                 <Link href="/connections">
-                  <Settings className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Settings</span>
+                  <LinkIcon className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Connections</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
