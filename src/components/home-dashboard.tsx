@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDashboardStats, handleGetBusinessProfiles } from '@/app/actions';
 import type { PlatformProductCount } from '@/lib/shopify-client';
@@ -196,5 +196,3 @@ export function HomeDashboard() {
         </div>
     );
 }
-
-    
