@@ -3,13 +3,15 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
+  // The middleware needs the public URL and anon key to create a client
+  // that can read the user's auth cookie.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase credentials are not set in environment variables.');
-    // Potentially return a different response or redirect to an error page
-    return NextResponse.next();
+    console.error('Supabase public credentials are not set in environment variables for middleware.');
+    // This response will be shown if the app is not configured correctly.
+    return new NextResponse('Internal Server Error: Application is not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your .env file.', { status: 500 });
   }
 
   const { supabase, response } = createClient(request, supabaseUrl, supabaseAnonKey);

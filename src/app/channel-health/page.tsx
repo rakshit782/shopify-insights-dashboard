@@ -4,8 +4,8 @@ import { Terminal } from 'lucide-react';
 import { ChannelHealthDashboard } from '@/components/channel-health-dashboard';
 
 export default async function ChannelHealthPage() {
-    const supabaseUrl = process.env.SUPABASE_URL_MAIN;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
         return (
@@ -14,7 +14,7 @@ export default async function ChannelHealthPage() {
               <Terminal className="h-4 w-4" />
               <AlertTitle>Configuration Error</AlertTitle>
               <AlertDescription>
-                Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL_MAIN` and `SUPABASE_SERVICE_ROLE_KEY_MAIN` to the `.env` file in the root of the project and ensure your server is restarted.
+                Your Supabase credentials for the main database are not configured correctly. Please add your `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the `.env` file in the root of the project and ensure your server is restarted.
               </AlertDescription>
             </Alert>
           </div>

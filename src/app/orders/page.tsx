@@ -4,8 +4,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 
 export default function OrdersPage() {
-    const supabaseUrl = process.env.SUPABASE_URL_MAIN;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
         return (
@@ -14,7 +14,7 @@ export default function OrdersPage() {
               <Terminal className="h-4 w-4" />
               <AlertTitle>Configuration Error</AlertTitle>
               <AlertDescription>
-                Your Supabase credentials are not configured correctly. Please add `SUPABASE_URL_MAIN` and `SUPABASE_SERVICE_ROLE_KEY_MAIN` to your `.env` file and restart the server to view orders.
+                Your Supabase credentials are not configured correctly. Please add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to your `.env` file and restart the server to view orders.
               </AlertDescription>
             </Alert>
           </div>
