@@ -1,19 +1,12 @@
 
 import 'dotenv/config';
 import type { ShopifyProduct } from './types';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 const BATCH_SIZE = 50;
 
 export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise<void> {
-    const supabaseUrl = process.env.SUPABASE_URL_DATA;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
-
-    if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Website Supabase URL or Service Role Key is not configured.');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = await createClient({ db: 'DATA' });
 
     const productsToUpsert = products.map(p => ({
         id: p.admin_graphql_api_id, // Use the GraphQL API ID as the primary key
@@ -52,16 +45,9 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
 
 export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
     const logs: string[] = [];
-    const supabaseUrl = process.env.SUPABASE_URL_DATA;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
-
-    if (!supabaseUrl || !supabaseKey) {
-        logs.push('Website Supabase URL or key is not configured.');
-        throw new Error('Website Supabase credentials are not configured.');
-    }
-
+    
     logs.push('Creating website Supabase client...');
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = await createClient({ db: 'DATA' });
 
     logs.push("Fetching products from 'products' table...");
     // Select all the individual columns
@@ -105,3 +91,5 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
 
     return { rawProducts: products, logs };
 }
+
+    

@@ -15,7 +15,7 @@ import type {
   AppSettings,
 } from './types';
 import { PlaceHolderImages } from './placeholder-images';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import forge from 'node-forge';
@@ -26,21 +26,6 @@ export interface PlatformProductCount {
 }
 
 const apiVersionDefault = '2025-07';
-
-// ============================================
-// Supabase Client
-// ============================================
-
-async function getSupabaseClient(logs: string[]): Promise<any> {
-  const supabaseUrl = process.env.SUPABASE_URL_MAIN;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
-
-  if (!supabaseUrl) throw new Error('Missing SUPABASE_URL_MAIN in environment variables.');
-  if (!supabaseKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY_MAIN in environment variables.');
-
-  logs.push('Creating Supabase client...');
-  return createClient(supabaseUrl, supabaseKey);
-}
 
 // ============================================
 // Credential Management
@@ -100,7 +85,7 @@ async function checkCredentialExists(
 
 export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
   const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   const statuses: Record<string, boolean> = {};
 
   const platforms = ['shopify', 'amazon', 'walmart', 'ebay', 'etsy', 'wayfair'];
@@ -116,8 +101,7 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
 // Individual save functions
 
 export async function saveShopifyCredentials(storeName: string, accessToken: string) {
-  const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   await upsertCredential(
     supabase,
     'shopify_credentials',
@@ -127,32 +111,27 @@ export async function saveShopifyCredentials(storeName: string, accessToken: str
 }
 
 export async function saveAmazonCredentials(credentials: AmazonCredentials) {
-  const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'amazon_credentials', credentials, 'client_id');
 }
 
 export async function saveWalmartCredentials(credentials: WalmartCredentials) {
-  const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'walmart_credentials', credentials, 'client_id');
 }
 
 export async function saveEbayCredentials(credentials: EbayCredentials) {
-  const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'ebay_credentials', credentials, 'app_id');
 }
 
 export async function saveEtsyCredentials(credentials: EtsyCredentials) {
-  const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy'}, 'client_id');
 }
 
 export async function saveWayfairCredentials(credentials: WayfairCredentials) {
-  const logs: string[] = [];
-  const supabase = await getSupabaseClient(logs);
+  const supabase = await createClient({ db: 'MAIN' });
   await upsertCredential(supabase, 'wayfair_credentials', credentials, 'client_id');
 }
 
@@ -161,7 +140,7 @@ export async function saveWayfairCredentials(credentials: WayfairCredentials) {
 // ============================================
 
 async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; accessToken: string, apiVersion: string }> {
-    const supabase = await getSupabaseClient(logs);
+    const supabase = await createClient({ db: 'MAIN' });
     
     logs.push("Attempting to fetch Shopify credentials from Supabase...");
     const { data, error } = await supabase
@@ -421,7 +400,7 @@ export async function getShopifyOrders(options: { createdAtMin?: string, created
 // External Platform Functions
 // ============================================
 export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
-    const supabase = await getSupabaseClient(logs);
+    const supabase = await createClient({ db: 'MAIN' });
     const counts: PlatformProductCount[] = [];
 
     // Mocking counts for now
@@ -443,7 +422,7 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
 
 export async function getWalmartOrders(options: { createdStartDate?: string, limit?: string }): Promise<{ orders: ShopifyOrder[], logs: string[] }> {
     const logs: string[] = [];
-    const supabase = await getSupabaseClient(logs);
+    const supabase = await createClient({ db: 'MAIN' });
 
     try {
         const { data: credsData, error: credsError } = await supabase.from('walmart_credentials').select('client_id, client_secret').limit(1);
@@ -586,3 +565,6 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
+
+
+    
