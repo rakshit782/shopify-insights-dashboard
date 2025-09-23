@@ -3,6 +3,8 @@
 import { Suspense } from 'react'
 import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { Terminal } from 'lucide-react'
 
 function AnalyticsSkeleton() {
   return (
@@ -27,11 +29,17 @@ export default async function Home() {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      '❌ Supabase credentials are missing. ' +
-      'Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env file, ' +
-      'then restart the Next.js server.'
-    )
+     return (
+          <div className="flex h-screen items-center justify-center p-8">
+            <Alert variant="destructive" className="max-w-2xl">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Configuration Error</AlertTitle>
+              <AlertDescription>
+                Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the `.env` file in the root of the project and ensure your server is restarted.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
   }
 
   // ✅ Render dashboard wrapped in Suspense

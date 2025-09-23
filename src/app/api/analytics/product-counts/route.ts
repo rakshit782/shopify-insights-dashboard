@@ -9,57 +9,58 @@ export async function GET() {
   try {
     const logs: string[] = [];
     const allCounts: PlatformProductCount[] = [];
+    const requiredPlatforms = ['Shopify', 'Website DB', 'Amazon', 'Walmart', 'eBay', 'Etsy', 'Wayfair'];
 
-    // Fetch counts from Shopify and Website DB concurrently
+    // Initialize all platforms with 0
+    const platformCountMap = new Map<string, number>();
+    requiredPlatforms.forEach(p => platformCountMap.set(p, 0));
+
+    // Fetch counts from Shopify, Website DB, and other external platforms concurrently
     const [shopifyResult, websiteResult, externalCountsResult] = await Promise.allSettled([
       getShopifyProducts({ countOnly: true }),
       getWebsiteProducts(),
       getPlatformProductCounts(logs),
     ]);
 
+    // Process Shopify results
     if (shopifyResult.status === 'fulfilled' && shopifyResult.value.count !== undefined) {
-      allCounts.push({ platform: 'Shopify', count: shopifyResult.value.count });
-    } else {
-      if (shopifyResult.status === 'rejected') {
-        console.error('Shopify API Error:', shopifyResult.reason);
-      }
-      // Ensure a placeholder is added on failure so the frontend doesn't break
-      allCounts.push({ platform: 'Shopify', count: 0 });
+      platformCountMap.set('Shopify', shopifyResult.value.count);
+      logs.push(...shopifyResult.value.logs);
+    } else if (shopifyResult.status === 'rejected') {
+      console.error('Shopify API Error:', shopifyResult.reason);
+      logs.push(`Shopify API Error: ${shopifyResult.reason instanceof Error ? shopifyResult.reason.message : String(shopifyResult.reason)}`);
     }
 
+    // Process Website DB results
     if (websiteResult.status === 'fulfilled') {
-      allCounts.push({ platform: 'Website DB', count: websiteResult.value.rawProducts.length });
-    } else {
+      platformCountMap.set('Website DB', websiteResult.value.rawProducts.length);
+       logs.push(...websiteResult.value.logs);
+    } else if (websiteResult.status === 'rejected') {
       console.error('Website DB Error:', websiteResult.reason);
-      allCounts.push({ platform: 'Website DB', count: 0 });
+       logs.push(`Website DB Error: ${websiteResult.reason instanceof Error ? websiteResult.reason.message : String(websiteResult.reason)}`);
     }
     
+    // Process other external platform counts
     if (externalCountsResult.status === 'fulfilled') {
-        // We need to merge these with any existing placeholders if necessary
-        const existingPlatforms = new Set(allCounts.map(c => c.platform));
         externalCountsResult.value.forEach(extCount => {
-            if (!existingPlatforms.has(extCount.platform)) {
-                allCounts.push(extCount);
+            if (platformCountMap.has(extCount.platform)) {
+                platformCountMap.set(extCount.platform, extCount.count);
             }
         });
-    } else {
+    } else if (externalCountsResult.status === 'rejected') {
          console.error('External Platform Counts Error:', externalCountsResult.reason);
+         logs.push(`External Platform Counts Error: ${externalCountsResult.reason instanceof Error ? externalCountsResult.reason.message : String(externalCountsResult.reason)}`);
     }
-    
-    // Ensure all requested platforms are present, even if their fetch failed or they have no data
-    const requiredPlatforms = ['Amazon', 'Walmart', 'eBay', 'Etsy', 'Wayfair'];
-    requiredPlatforms.forEach(p => {
-        if (!allCounts.some(c => c.platform === p)) {
-            allCounts.push({ platform: p, count: 0 });
-        }
-    })
+
+    // Convert map back to array in the desired order
+    requiredPlatforms.forEach(platform => {
+      allCounts.push({ platform, count: platformCountMap.get(platform) || 0 });
+    });
 
     return NextResponse.json({ counts: allCounts, logs });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('API Error in product-counts:', error);
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: errorMessage, counts: [], logs: [errorMessage] }, { status: 500 });
   }
 }
-
-    

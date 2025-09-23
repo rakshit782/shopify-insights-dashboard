@@ -41,15 +41,10 @@ export function AnalyticsDashboard() {
                     throw new Error(errorData.error || 'Failed to fetch product counts.');
                 }
 
-                const data = await res.json();
+                const data: { counts: ProductCount[], logs: string[] } = await res.json();
                 
-                // Ensure a specific order and that all platforms are present
-                const sortedCounts = platformOrder.map(platform => {
-                    const found = data.counts.find((c: ProductCount) => c.platform === platform);
-                    return found || { platform, count: 0 };
-                });
-
-                setProductCounts(sortedCounts);
+                // The API now returns data in the correct order with fallbacks.
+                setProductCounts(data.counts);
 
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -67,7 +62,7 @@ export function AnalyticsDashboard() {
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {platformOrder.map((platform) => (
-                         <Card key={platform} className="animate-pulse">
+                         <Card key={platform}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                                 <Skeleton className="h-6 w-1/2" />
                                 <Skeleton className="h-6 w-6 rounded-sm" />
@@ -85,7 +80,7 @@ export function AnalyticsDashboard() {
         }
 
         return (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {productCounts.map(({ platform, count }) => {
                     const Icon = platformIcons[platform] || Box;
                     return (
