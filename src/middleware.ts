@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
     return new NextResponse('Internal Server Error: Application is not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your .env file.', { status: 500 });
   }
 
-  const { supabase, response } = createClient(request, supabaseUrl, supabaseAnonKey);
+  const { supabase, response } = createClient(request);
 
   // Refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware

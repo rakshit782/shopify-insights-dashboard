@@ -3,7 +3,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // The 'createClient' function for middleware is now simplified to just accept the URL and anon key.
-export function createClient(request: NextRequest, supabaseUrl: string, supabaseAnonKey: string) {
+export function createClient(request: NextRequest) {
   // Create an unmodified response
   let response = NextResponse.next({
     request: {
@@ -11,13 +11,9 @@ export function createClient(request: NextRequest, supabaseUrl: string, supabase
     },
   })
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase URL and Anon Key are required for middleware.');
-  }
-
   const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
