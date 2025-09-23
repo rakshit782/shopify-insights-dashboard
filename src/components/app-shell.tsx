@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, Users } from 'lucide-react';
+import { Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -95,11 +95,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/connections'}
-                tooltip={{ children: 'Connections' }}
+                tooltip={{ children: 'Connections & Settings' }}
               >
                 <Link href="/connections">
                   <Settings className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Connections</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Settings</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
