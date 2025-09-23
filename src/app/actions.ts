@@ -8,6 +8,7 @@ import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
+import { createClient } from '@/lib/supabase/server';
 
 
 export async function handleSyncProducts(profileId: string) {
