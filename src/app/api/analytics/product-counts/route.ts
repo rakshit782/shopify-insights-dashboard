@@ -21,7 +21,7 @@ export async function GET() {
       allCounts.push({ platform: 'Shopify', count: shopifyResult.value.count as number });
     } else {
       console.error('Shopify API Error:', shopifyResult.reason);
-      // Optionally add a placeholder or error indicator
+      // Ensure a placeholder is added on failure so the frontend doesn't break
       allCounts.push({ platform: 'Shopify', count: 0 });
     }
 
