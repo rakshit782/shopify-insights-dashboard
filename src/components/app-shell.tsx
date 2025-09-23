@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck } from 'lucide-react';
+import { BarChartHorizontal, Globe, Settings, ShoppingCart, Truck, ListTodo, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -72,6 +72,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link href="/orders">
                   <Truck className="h-5 w-5" />
                   <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Orders</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/competitors'}
+                tooltip={{ children: 'Competitors' }}
+              >
+                <Link href="/competitors">
+                  <Users className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Competitors</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
