@@ -5,6 +5,7 @@ import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShop
 import { syncProductsToWebsite } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
+import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 
 
 export async function handleSyncProducts() {
@@ -155,5 +156,16 @@ export async function handleOptimizeListing(input: OptimizeListingInput) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during optimization.';
         console.error('Listing optimization failed:', errorMessage);
         return { success: false, data: null, error: `Failed to optimize listing: ${errorMessage}` };
+    }
+}
+
+export async function handleOptimizeContent(input: OptimizeContentInput) {
+    try {
+        const result = await optimizeContent(input);
+        return { success: true, data: result, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during content optimization.';
+        console.error('Content optimization failed:', errorMessage);
+        return { success: false, data: null, error: `Failed to optimize content: ${errorMessage}` };
     }
 }

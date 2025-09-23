@@ -13,15 +13,19 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart } from 'lucide-react';
+import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // In a real app, this would come from a context or a server fetch
   const businessLogo = null; // Placeholder
+  const [isAmazonOpen, setIsAmazonOpen] = useState(false);
 
   return (
     <>
@@ -65,18 +69,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             
-            <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/amazon-products')}
-                    tooltip={{ children: 'Amazon Products' }}
-                >
-                    <Link href="/amazon-products/us">
-                        <Image src="/amazon.svg" alt="Amazon" width={20} height={20} className="h-5 w-5" />
-                        <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Amazon Products</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+            <Collapsible open={isAmazonOpen} onOpenChange={setIsAmazonOpen}>
+              <SidebarMenuItem>
+                 <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                        isActive={pathname.startsWith('/amazon-products')}
+                        tooltip={{children: 'Amazon Products'}}
+                        className="justify-between w-full"
+                    >
+                        <div className="flex items-center gap-3">
+                           <Image src="/amazon.svg" alt="Amazon" width={20} height={20} className="h-5 w-5" />
+                           <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Amazon Products</span>
+                        </div>
+                        <ChevronDown className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[collapsible=icon]:opacity-0",
+                            isAmazonOpen && "rotate-180"
+                        )} />
+                    </SidebarMenuButton>
+                 </CollapsibleTrigger>
+              </SidebarMenuItem>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <Link href="/amazon-products/us">
+                            <SidebarMenuSubButton isActive={pathname === '/amazon-products/us'}>
+                                <span>US Marketplace</span>
+                            </SidebarMenuSubButton>
+                        </Link>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                         <Link href="/amazon-products/uk">
+                            <SidebarMenuSubButton isActive={pathname === '/amazon-products/uk'}>
+                                <span>UK Marketplace</span>
+                            </SidebarMenuSubButton>
+                        </Link>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                         <Link href="/amazon-products/other">
+                            <SidebarMenuSubButton isActive={pathname === '/amazon-products/other'}>
+                                <span>Other Marketplaces</span>
+                            </SidebarMenuSubButton>
+                        </Link>
+                    </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+
 
              <SidebarMenuItem>
               <SidebarMenuButton
@@ -120,12 +158,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith('/listing-manager')}
-                tooltip={{ children: 'Listing Manager' }}
+                isActive={pathname.startsWith('/cataloging-manager')}
+                tooltip={{ children: 'Cataloging Manager' }}
               >
-                <Link href="/listing-manager">
+                <Link href="/cataloging-manager">
                   <ListTodo className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Listing Manager</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Cataloging Manager</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

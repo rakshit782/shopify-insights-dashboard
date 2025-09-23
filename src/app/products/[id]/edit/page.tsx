@@ -75,9 +75,9 @@ export default async function EditProductPage({ params }: { params: { id: string
     <div className="p-4 sm:p-6 lg:p-8">
        <div className="max-w-4xl mx-auto mb-6">
          <Button asChild variant="outline" size="sm">
-            <Link href="/listing-manager">
+            <Link href="/cataloging-manager">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Listing Manager
+                Back to Cataloging Manager
             </Link>
          </Button>
        </div>

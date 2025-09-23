@@ -16,8 +16,8 @@ export default function Home() {
         </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">
            <Button asChild>
-              <Link href="/listing-manager">
-                <ListTodo className="mr-2 h-4 w-4" /> Go to Listing Manager
+              <Link href="/cataloging-manager">
+                <ListTodo className="mr-2 h-4 w-4" /> Go to Cataloging Manager
               </Link>
             </Button>
             <Button asChild variant="ghost">
