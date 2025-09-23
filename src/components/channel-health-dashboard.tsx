@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { handleGetCredentialStatuses, handleGetBusinessProfiles } from '@/app/actions';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Settings } from 'lucide-react';
@@ -197,4 +197,3 @@ export function ChannelHealthDashboard() {
     );
 }
 
-    
