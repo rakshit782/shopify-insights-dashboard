@@ -1,32 +1,10 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart } from 'lucide-react';
+import { HomeDashboard } from '@/components/home-dashboard';
 
 export default function AnalyticsPage() {
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
-                <p className="text-muted-foreground">
-                    Insights and performance metrics across all your channels.
-                </p>
-            </div>
-
-            <Card className="min-h-[60vh]">
-                <CardHeader>
-                    <CardTitle>Coming Soon</CardTitle>
-                    <CardDescription>
-                        This section will house the analytics dashboard.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-16">
-                    <LineChart className="h-16 w-16 mb-4" />
-                    <p className="text-lg font-semibold">The analytics dashboard is on the way.</p>
-                    <p className="mt-2 max-w-md">
-                        You'll soon be able to view sales, orders, units by channel, and profitability insights.
-                    </p>
-                </CardContent>
-            </Card>
+            <HomeDashboard />
         </div>
     );
 }
