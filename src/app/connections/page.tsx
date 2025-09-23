@@ -16,8 +16,7 @@ export default async function ConnectionsPage() {
               <AlertTitle>Configuration Error</AlertTitle>
               <AlertDescription>
                 Your Supabase credentials are not configured correctly. Please add your `SUPABASE_URL_MAIN` and `SUPABASE_SERVICE_ROLE_KEY_MAIN` to the `.env` file in the root of the project and ensure your server is restarted.
-              </Aler
-tDescription>
+              </AlertDescription>
             </Alert>
           </div>
         );
