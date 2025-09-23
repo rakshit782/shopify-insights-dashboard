@@ -8,9 +8,8 @@ import { cookies } from 'next/headers'
  * Can connect to either the MAIN or DATA database based on options.
  * Uses the service role key — make sure this is never exposed to the client/browser.
  */
-export async function createClient(options: { db: 'MAIN' | 'DATA' }) {
-  // handle both sync and async cookies() depending on Next.js version
-  const cookieStore = await Promise.resolve(cookies())
+export function createClient(options: { db: 'MAIN' | 'DATA' }) {
+  const cookieStore = cookies();
 
   let supabaseUrl: string | undefined;
   let supabaseKey: string | undefined;
@@ -53,5 +52,3 @@ export async function createClient(options: { db: 'MAIN' | 'DATA' }) {
     }
   )
 }
-
-    
