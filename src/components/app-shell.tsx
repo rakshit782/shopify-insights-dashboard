@@ -11,6 +11,9 @@ import {
   SidebarTrigger,
   SidebarInset,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List } from 'lucide-react';
