@@ -13,13 +13,38 @@ import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { login, signup } from '@/app/auth/actions';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// Refine the schema to make names required for sign-up
+const refinedSchema = formSchema.superRefine((data, ctx) => {
+    if (data.isSignUp) {
+        if (!data.firstName || data.firstName.length < 1) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'First name is required.',
+                path: ['firstName'],
+            });
+        }
+        if (!data.lastName || data.lastName.length < 1) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Last name is required.',
+                path: ['lastName'],
+            });
+        }
+    }
+});
+
+
+type FormValues = z.infer<typeof refinedSchema> & { isSignUp?: boolean };
+
 
 export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,8 +52,10 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(refinedSchema),
     defaultValues: {
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
     },
@@ -39,14 +66,23 @@ export default function LoginPage() {
 
     try {
         if (isSignUp) {
-            const result = await signup(values);
+            const result = await signup({
+                email: values.email,
+                password: values.password,
+                firstName: values.firstName!,
+                lastName: values.lastName!,
+            });
             if (result?.error) throw new Error(result.error);
             toast({
                 title: 'Check your email',
                 description: 'A confirmation link has been sent to your email address.',
             });
+             setIsSignUp(false); // Switch back to login view
         } else {
-            const result = await login(values);
+            const result = await login({
+                email: values.email,
+                password: values.password,
+            });
              if (result?.error) throw new Error(result.error);
         }
     } catch (error) {
@@ -75,7 +111,35 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit((data) => onSubmit({...data, isSignUp}))} className="space-y-4">
+                     <div className={cn("grid grid-cols-2 gap-4 transition-all duration-300", isSignUp ? "opacity-100" : "opacity-0 h-0 overflow-hidden")}>
+                            <FormField
+                                control={form.control}
+                                name="firstName"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>First Name</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="John" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="lastName"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Last Name</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="Doe" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
                     <FormField
                         control={form.control}
                         name="email"

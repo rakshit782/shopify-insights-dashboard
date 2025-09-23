@@ -11,6 +11,13 @@ const loginSchema = z.object({
   password: z.string().min(6),
 })
 
+const signupSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    firstName: z.string().min(1, 'First name is required.'),
+    lastName: z.string().min(1, 'Last name is required.'),
+});
+
 export async function login(formData: z.infer<typeof loginSchema>) {
   const origin = headers().get('origin')
   const validatedData = loginSchema.safeParse(formData)
@@ -37,15 +44,15 @@ export async function login(formData: z.infer<typeof loginSchema>) {
   return redirect('/')
 }
 
-export async function signup(formData: z.infer<typeof loginSchema>) {
+export async function signup(formData: z.infer<typeof signupSchema>) {
   const origin = headers().get('origin')
-  const validatedData = loginSchema.safeParse(formData)
+  const validatedData = signupSchema.safeParse(formData)
 
   if (!validatedData.success) {
     return { error: 'Invalid form data.' }
   }
 
-  const { email, password } = validatedData.data
+  const { email, password, firstName, lastName } = validatedData.data
   const supabase = createClient({ db: 'MAIN' })
 
   const { error } = await supabase.auth.signUp({
@@ -53,6 +60,10 @@ export async function signup(formData: z.infer<typeof loginSchema>) {
     password,
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
+      data: {
+          first_name: firstName,
+          last_name: lastName,
+      }
     },
   })
 
