@@ -1,104 +1,95 @@
 
 import { login } from '@/app/auth/actions'
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from 'next/link'
-import Image from 'next/image'
-import { PlaceHolderImages } from '@/lib/placeholder-images'
-import { ChromeIcon, GithubIcon } from 'lucide-react'
+import { ChromeIcon, GithubIcon, SlackIcon, ShoppingCart } from 'lucide-react'
 
 export default function LoginPage() {
-    const loginImage = PlaceHolderImages.find(p => p.id === 'login-background');
-
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12">
-        <Card className="mx-auto max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>
-              Enter your email below to login to your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form>
-                <div className="grid gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    />
-                </div>
-                <div className="grid gap-2">
-                    <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                    <Link
-                        href="#"
-                        className="ml-auto inline-block text-sm underline"
-                    >
-                        Forgot your password?
-                    </Link>
-                    </div>
-                    <Input id="password" name="password" type="password" required />
-                </div>
-                <Button formAction={login} className="w-full">
-                    Login
-                </Button>
-                </div>
-            </form>
-            <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                    </span>
-                </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#233C8B] to-[#121E45] p-4 flex items-center justify-center relative overflow-hidden">
+        {/* Abstract Shapes */}
+        <div className="absolute top-[-50px] left-[-50px] h-64 w-64 bg-white/5 rounded-full filter blur-3xl opacity-50 animate-blob"></div>
+        <div className="absolute bottom-[-50px] right-[-50px] h-72 w-72 bg-blue-400/5 rounded-full filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/4 h-56 w-56 bg-indigo-400/5 rounded-full filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
+
+
+      <div className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg p-8 text-white z-10">
+        <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 mb-2">
+                 <ShoppingCart className="h-6 w-6" />
+                 <h1 className="text-xl font-bold">Your Logo</h1>
             </div>
-             <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline">
-                    <GithubIcon className="mr-2 h-4 w-4" />
-                    GitHub
-                </Button>
-                <Button variant="outline">
-                    <ChromeIcon className="mr-2 h-4 w-4" />
-                    Google
-                </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="underline">
-                Sign up
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-       <div className="hidden bg-muted lg:block relative">
-            {loginImage && (
-                <Image
-                    src={loginImage.imageUrl}
-                    alt={loginImage.description}
-                    fill
-                    unoptimized
-                    className="object-cover dark:brightness-[0.3] dark:grayscale"
-                    data-ai-hint={loginImage.imageHint}
-                />
-            )}
+            <h2 className="text-3xl font-bold">Login</h2>
         </div>
+        
+        <form>
+            <div className="grid gap-6">
+            <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="username@gmail.com"
+                required
+                className="bg-white/10 border-white/20 placeholder:text-gray-300 text-white focus:ring-white"
+                />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    required 
+                    placeholder="Password"
+                    className="bg-white/10 border-white/20 placeholder:text-gray-300 text-white focus:ring-white"
+                />
+                 <Link
+                    href="#"
+                    className="ml-auto inline-block text-sm text-gray-300 hover:text-white"
+                >
+                    Forgot Password?
+                </Link>
+            </div>
+            <Button formAction={login} className="w-full bg-[#121E45] hover:bg-opacity-90 text-white font-bold text-base h-11">
+                Sign in
+            </Button>
+            </div>
+        </form>
+
+        <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/20" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-[#233C8B] bg-opacity-50 backdrop-blur-sm px-2 text-gray-300">
+                    or continue with
+                </span>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+            <Button variant="outline" className="bg-white/90 text-gray-800 hover:bg-white">
+                <ChromeIcon className="h-5 w-5" />
+            </Button>
+            <Button variant="outline" className="bg-white/90 text-gray-800 hover:bg-white">
+                <GithubIcon className="h-5 w-5" />
+            </Button>
+            <Button variant="outline" className="bg-white/90 text-gray-800 hover:bg-white">
+                <SlackIcon className="h-5 w-5" />
+            </Button>
+        </div>
+
+        <div className="mt-6 text-center text-sm">
+            Don't have an account?{" "}
+            <Link href="/signup" className="font-bold underline">
+            Register for free
+            </Link>
+        </div>
+      </div>
     </div>
   )
 }
