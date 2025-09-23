@@ -22,12 +22,15 @@ export async function login(formData: z.infer<typeof loginSchema>) {
   const { email, password } = validatedData.data
   const supabase = createClient({ db: 'MAIN' })
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
   if (error) {
+     if (error.message.includes('Email not confirmed')) {
+      return { error: 'Email not confirmed. Please check your inbox for a confirmation link.' };
+    }
     return { error: error.message }
   }
 
