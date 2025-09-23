@@ -242,18 +242,18 @@ async function getSalesData(profileId: string | null, dateRange?: DateRange): Pr
 }
 
 export async function getDashboardStats(profileId: string | null, dateRange?: DateRange) {
-    const defaultRange: DateRange = { from: subDays(new Date(), 6), to: new Date() };
-    const range = dateRange || defaultRange;
-
-    if (!profileId) {
-        return {
-            success: true,
-            stats: { totalSales: 0, platformCounts: [], websiteProductCount: 0 },
-            error: null,
-        };
-    }
-
     try {
+        const defaultRange: DateRange = { from: subDays(new Date(), 6), to: new Date() };
+        const range = dateRange || defaultRange;
+
+        if (!profileId) {
+            return {
+                success: true,
+                stats: { totalSales: 0, platformCounts: [], websiteProductCount: 0 },
+                error: null,
+            };
+        }
+    
         const [
             totalSales,
             platformCounts,

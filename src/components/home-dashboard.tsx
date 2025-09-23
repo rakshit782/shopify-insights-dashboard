@@ -81,10 +81,12 @@ export function HomeDashboard() {
     }, []);
 
     useEffect(() => {
-        if (dateRange || selectedProfileId) {
+        // We only fetch stats if a profile is selected to avoid unnecessary calls.
+        if (selectedProfileId) {
             fetchStats(selectedProfileId, dateRange);
         }
     }, [dateRange, selectedProfileId, fetchStats]);
+
 
     const handleDateUpdate = useCallback((range?: DateRange) => {
         setDateRange(range);
