@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MoreHorizontal, ShoppingCart, Package, DollarSign, XCircle, RefreshCw, Truck } from 'lucide-react';
+import { MoreHorizontal, ShoppingCart, Truck, RefreshCw, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { ShopifyOrder } from '@/lib/types';
@@ -23,18 +23,17 @@ import { OrderDetailsDialog } from './order-details-dialog';
 import { PaginationControls } from './pagination-controls';
 import { ExportOrdersButton } from './export-orders-button';
 
-const ORDERS_PER_PAGE = 10;
-
 export function OrderTable({ orders, platform }: { orders: ShopifyOrder[], platform: string }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [ordersPerPage, setOrdersPerPage] = useState(10);
   const [selectedOrder, setSelectedOrder] = useState<ShopifyOrder | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
 
-  const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
+  const totalPages = Math.ceil(orders.length / ordersPerPage);
   const currentOrders = orders.slice(
-    (currentPage - 1) * ORDERS_PER_PAGE,
-    currentPage * ORDERS_PER_PAGE
+    (currentPage - 1) * ordersPerPage,
+    currentPage * ordersPerPage
   );
 
   const handleAction = async (
@@ -84,6 +83,11 @@ export function OrderTable({ orders, platform }: { orders: ShopifyOrder[], platf
     }
   };
 
+  const handlePageSizeChange = (value: string) => {
+      setOrdersPerPage(Number(value));
+      setCurrentPage(1); // Reset to first page
+  }
+
   if (orders.length === 0) {
     return (
        <Card className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
@@ -104,7 +108,7 @@ export function OrderTable({ orders, platform }: { orders: ShopifyOrder[], platf
                 <div>
                     <CardTitle>Recent Orders</CardTitle>
                     <CardDescription>
-                        Displaying {Math.min(ORDERS_PER_PAGE, orders.length)} of {orders.length} orders from {platform}.
+                        Showing {Math.min(ordersPerPage, currentOrders.length)} of {orders.length} orders from {platform}.
                     </CardDescription>
                 </div>
                 <ExportOrdersButton orders={orders} platform={platform} />
@@ -168,6 +172,8 @@ export function OrderTable({ orders, platform }: { orders: ShopifyOrder[], platf
          currentPage={currentPage}
          totalPages={totalPages}
          onPageChange={setCurrentPage}
+         pageSize={ordersPerPage}
+         onPageSizeChange={handlePageSizeChange}
          className="mt-4"
       />
       <OrderDetailsDialog 

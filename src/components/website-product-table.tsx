@@ -20,15 +20,14 @@ import { formatDistanceToNow } from 'date-fns';
 import type { ShopifyProduct } from '@/lib/types';
 import { PaginationControls } from './pagination-controls';
 
-const PRODUCTS_PER_PAGE = 10;
-
 export function WebsiteProductTable({ products }: { products: ShopifyProduct[] }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(10);
 
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const totalPages = Math.ceil(products.length / productsPerPage);
   const currentProducts = products.slice(
-    (currentPage - 1) * PRODUCTS_PER_PAGE,
-    currentPage * PRODUCTS_PER_PAGE
+    (currentPage - 1) * productsPerPage,
+    currentPage * productsPerPage
   );
   
   const getStatusVariant = (status: string) => {
@@ -38,6 +37,11 @@ export function WebsiteProductTable({ products }: { products: ShopifyProduct[] }
       case 'archived': return 'outline';
       default: return 'outline';
     }
+  };
+
+  const handlePageSizeChange = (value: string) => {
+      setProductsPerPage(Number(value));
+      setCurrentPage(1); // Reset to first page
   };
 
   if (products.length === 0) {
@@ -58,7 +62,7 @@ export function WebsiteProductTable({ products }: { products: ShopifyProduct[] }
          <CardHeader>
             <CardTitle>Synced Products</CardTitle>
             <CardDescription>
-                Displaying {Math.min(PRODUCTS_PER_PAGE, products.length)} of {products.length} products from your database.
+                Showing {Math.min(productsPerPage, currentProducts.length)} of {products.length} products from your database.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,6 +117,8 @@ export function WebsiteProductTable({ products }: { products: ShopifyProduct[] }
          currentPage={currentPage}
          totalPages={totalPages}
          onPageChange={setCurrentPage}
+         pageSize={productsPerPage}
+         onPageSizeChange={handlePageSizeChange}
          className="mt-4"
       />
     </>
