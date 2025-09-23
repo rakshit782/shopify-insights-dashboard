@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface EditProductFormProps {
   product: ShopifyProduct;
+  profileId: string;
 }
 
 const variantSchema = z.object({
@@ -41,7 +42,7 @@ const formSchema = z.object({
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-export function EditProductForm({ product }: EditProductFormProps) {
+export function EditProductForm({ product, profileId }: EditProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,14 +122,14 @@ export function EditProductForm({ product }: EditProductFormProps) {
         })) as ShopifyVariantUpdate[],
     };
 
-    const result = await handleUpdateProduct(productData);
+    const result = await handleUpdateProduct(profileId, productData);
 
     if (result.success) {
       toast({
         title: 'Product Updated',
         description: `"${result.product?.title}" has been successfully updated.`,
       });
-      router.push('/shopify-products'); // Redirect to product list after successful update
+      router.push('/cataloging-manager'); // Redirect to product list after successful update
       router.refresh(); // Force a refresh of the page data
     } else {
       toast({
@@ -306,3 +307,5 @@ export function EditProductForm({ product }: EditProductFormProps) {
     </Card>
   );
 }
+
+    

@@ -52,8 +52,9 @@ function EditProductSkeleton() {
     )
 }
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
+export default async function EditProductPage({ params, searchParams }: { params: { id: string }, searchParams: { profileId: string } }) {
   const productId = Number(params.id);
+  const profileId = searchParams.profileId;
 
   if (isNaN(productId)) {
     return (
@@ -69,7 +70,21 @@ export default async function EditProductPage({ params }: { params: { id: string
     );
   }
 
-  const { product, error } = await handleGetProduct(productId);
+  if (!profileId) {
+     return (
+        <div className="flex h-screen items-center justify-center">
+            <Alert variant="destructive" className="max-w-md">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Missing Profile ID</AlertTitle>
+                <AlertDescription>
+                A business profile ID is required to edit a product.
+                </AlertDescription>
+            </Alert>
+        </div>
+    );
+  }
+
+  const { product, error } = await handleGetProduct(profileId, productId);
   
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -89,8 +104,10 @@ export default async function EditProductPage({ params }: { params: { id: string
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}
-        {product && <EditProductForm product={product} />}
+        {product && <EditProductForm product={product} profileId={profileId} />}
       </Suspense>
     </div>
   );
 }
+
+    

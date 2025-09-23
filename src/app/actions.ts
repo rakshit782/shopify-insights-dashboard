@@ -10,10 +10,10 @@ import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
 
 
-export async function handleSyncProducts() {
+export async function handleSyncProducts(profileId: string) {
   try {
     // We now get the rawProducts array from the API response
-    const { rawProducts } = await getShopifyProducts();
+    const { rawProducts } = await getShopifyProducts({ profileId });
     if (!rawProducts || rawProducts.length === 0) {
       return { success: false, error: 'No products found to sync.' };
     }
@@ -27,10 +27,10 @@ export async function handleSyncProducts() {
   }
 }
 
-export async function handleCreateProduct(productData: ShopifyProductCreation) {
+export async function handleCreateProduct(profileId: string, productData: ShopifyProductCreation) {
   try {
     // Create product in Shopify
-    const { product: newShopifyProduct } = await createShopifyProduct(productData);
+    const { product: newShopifyProduct } = await createShopifyProduct(profileId, productData);
     
     // Sync the newly created product to our website's Supabase
     await syncProductsToWebsite([newShopifyProduct]);
@@ -43,10 +43,10 @@ export async function handleCreateProduct(productData: ShopifyProductCreation) {
   }
 }
 
-export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
+export async function handleUpdateProduct(profileId: string, productData: ShopifyProductUpdate) {
   try {
     // Update product in Shopify
-    const { product: updatedShopifyProduct } = await updateShopifyProduct(productData);
+    const { product: updatedShopifyProduct } = await updateShopifyProduct(profileId, productData);
 
     // Re-sync the updated product to our website's Supabase
     await syncProductsToWebsite([updatedShopifyProduct]);
@@ -59,9 +59,9 @@ export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
   }
 }
 
-export async function handleGetProduct(id: number) {
+export async function handleGetProduct(profileId: string, id: number) {
   try {
-    const { product } = await getShopifyProduct(id);
+    const { product } = await getShopifyProduct(profileId, id);
     if (!product) {
       return { product: null, error: `Product with ID ${id} not found.`};
     }
@@ -73,9 +73,9 @@ export async function handleGetProduct(id: number) {
   }
 }
 
-export async function handleGetCredentialStatuses() {
+export async function handleGetCredentialStatuses(profileId: string) {
     try {
-        const statuses = await getCredentialStatuses();
+        const statuses = await getCredentialStatuses(profileId);
         return { success: true, statuses, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -84,9 +84,9 @@ export async function handleGetCredentialStatuses() {
     }
 }
 
-export async function handleSaveShopifyCredentials(storeName: string, accessToken: string) {
+export async function handleSaveShopifyCredentials(profileId: string, storeName: string, accessToken: string) {
     try {
-        await saveShopifyCredentials(storeName, accessToken);
+        await saveShopifyCredentials(profileId, storeName, accessToken);
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -95,9 +95,9 @@ export async function handleSaveShopifyCredentials(storeName: string, accessToke
     }
 }
 
-export async function handleSaveAmazonCredentials(credentials: AmazonCredentials) {
+export async function handleSaveAmazonCredentials(profileId: string, credentials: AmazonCredentials) {
     try {
-        await saveAmazonCredentials(credentials);
+        await saveAmazonCredentials(profileId, credentials);
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -106,9 +106,9 @@ export async function handleSaveAmazonCredentials(credentials: AmazonCredentials
     }
 }
 
-export async function handleSaveWalmartCredentials(credentials: WalmartCredentials) {
+export async function handleSaveWalmartCredentials(profileId: string, credentials: WalmartCredentials) {
     try {
-        await saveWalmartCredentials(credentials);
+        await saveWalmartCredentials(profileId, credentials);
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -117,9 +117,9 @@ export async function handleSaveWalmartCredentials(credentials: WalmartCredentia
     }
 }
 
-export async function handleSaveEbayCredentials(credentials: EbayCredentials) {
+export async function handleSaveEbayCredentials(profileId: string, credentials: EbayCredentials) {
     try {
-        await saveEbayCredentials(credentials);
+        await saveEbayCredentials(profileId, credentials);
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -128,9 +128,9 @@ export async function handleSaveEbayCredentials(credentials: EbayCredentials) {
     }
 }
 
-export async function handleSaveEtsyCredentials(credentials: EtsyCredentials) {
+export async function handleSaveEtsyCredentials(profileId: string, credentials: EtsyCredentials) {
     try {
-        await saveEtsyCredentials(credentials);
+        await saveEtsyCredentials(profileId, credentials);
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -139,9 +139,9 @@ export async function handleSaveEtsyCredentials(credentials: EtsyCredentials) {
     }
 }
 
-export async function handleSaveWayfairCredentials(credentials: WayfairCredentials) {
+export async function handleSaveWayfairCredentials(profileId: string, credentials: WayfairCredentials) {
     try {
-        await saveWayfairCredentials(credentials);
+        await saveWayfairCredentials(profileId, credentials);
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -172,9 +172,9 @@ export async function handleOptimizeContent(input: OptimizeContentInput) {
     }
 }
 
-export async function handleGetShopifyOrders(dateRange?: DateRange) {
+export async function handleGetShopifyOrders(profileId: string, dateRange?: DateRange) {
   try {
-    const { orders } = await getShopifyOrders(dateRange);
+    const { orders } = await getShopifyOrders({ profileId, dateRange });
     return { success: true, orders, error: null };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -182,9 +182,9 @@ export async function handleGetShopifyOrders(dateRange?: DateRange) {
   }
 }
 
-export async function handleGetWalmartOrders() {
+export async function handleGetWalmartOrders(profileId: string) {
   try {
-    const { orders } = await getWalmartOrders();
+    const { orders } = await getWalmartOrders(profileId);
     return { success: true, orders, error: null };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -227,11 +227,12 @@ export async function handleGetWebsiteProducts() {
 
 
 // Dashboard Actions
-async function getSalesData(dateRange?: DateRange): Promise<number> {
-    // In a real app, you would fetch orders from all connected platforms.
+async function getSalesData(profileId: string | null, dateRange?: DateRange): Promise<number> {
+    if (!profileId) return 0;
+    // In a real app, you would fetch orders from all connected platforms for the given profile.
     // For now, we'll just use Shopify as the source.
     try {
-        const { orders } = await getShopifyOrders(dateRange);
+        const { orders } = await getShopifyOrders({ profileId, dateRange });
         return orders.reduce((sum, order) => sum + parseFloat(order.total_price), 0);
     } catch (error) {
         console.error("Failed to fetch sales data:", error);
@@ -239,9 +240,17 @@ async function getSalesData(dateRange?: DateRange): Promise<number> {
     }
 }
 
-export async function getDashboardStats(dateRange?: DateRange) {
+export async function getDashboardStats(profileId: string | null, dateRange?: DateRange) {
     const defaultRange: DateRange = { from: subDays(new Date(), 6), to: new Date() };
     const range = dateRange || defaultRange;
+
+    if (!profileId) {
+        return {
+            success: true,
+            stats: { totalSales: 0, platformCounts: [], websiteProductCount: 0 },
+            error: null,
+        };
+    }
 
     try {
         const [
@@ -249,8 +258,8 @@ export async function getDashboardStats(dateRange?: DateRange) {
             platformCounts,
             websiteProductCount
         ] = await Promise.all([
-            getSalesData(range),
-            getPlatformProductCounts([]),
+            getSalesData(profileId, range),
+            getPlatformProductCounts(profileId, []),
             getWebsiteProductCount([])
         ]);
 
@@ -277,19 +286,44 @@ export async function getDashboardStats(dateRange?: DateRange) {
 
 // Settings Actions
 export async function handleSaveBusinessProfile(profileData: BusinessProfileCreation): Promise<{ success: boolean, profile: BusinessProfile | null, error: string | null }> {
-    console.log('Saving business profile (simulated):', profileData);
-    // In a real app, this would save to Supabase.
-    await new Promise(res => setTimeout(res, 500));
-    const profile = { ...profileData };
-    return { success: true, profile, error: null };
+    const supabase = createClient({ db: 'MAIN' });
+    
+    // Upsert the profile
+    const { data, error } = await supabase
+        .from('business_profiles')
+        .upsert({ ...profileData, id: profileData.id || undefined }) // let db create id if it's new
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error saving business profile:', error);
+        return { success: false, profile: null, error: error.message };
+    }
+
+    return { success: true, profile: data, error: null };
 }
 
 export async function handleGetBusinessProfiles(): Promise<{ success: boolean, profiles: BusinessProfile[], error: string | null }> {
-    console.log('Fetching business profiles (simulated)');
-    // In a real app, this would fetch from Supabase.
-    const mockProfiles: BusinessProfile[] = [
-        { id: '1', profile_name: 'Default Profile', store_url: 'https://mock.myshopify.com', contact_email: 'contact@mock.com' }
-    ];
-    await new Promise(res => setTimeout(res, 500));
-    return { success: true, profiles: mockProfiles, error: null };
+    const supabase = createClient({ db: 'MAIN' });
+
+    const { data: profiles, error } = await supabase
+        .from('business_profiles')
+        .select('*');
+
+    if (error) {
+        console.error('Error fetching business profiles:', error);
+        return { success: false, profiles: [], error: error.message };
+    }
+
+    // For each profile, fetch the credential statuses
+    const profilesWithStatuses = await Promise.all(
+        profiles.map(async (profile) => {
+            const statuses = await getCredentialStatuses(profile.id);
+            return { ...profile, credential_statuses: statuses };
+        })
+    );
+    
+    return { success: true, profiles: profilesWithStatuses, error: null };
 }
+
+    

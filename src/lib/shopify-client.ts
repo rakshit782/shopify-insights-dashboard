@@ -13,6 +13,7 @@ import type {
   WayfairCredentials,
   WalmartOrder,
   AppSettings,
+  ShopifyCredentials,
 } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { createClient } from '@/lib/supabase/server';
@@ -36,47 +37,22 @@ async function upsertCredential(
   supabase: any,
   tableName: string,
   data: any,
-  uniqueField: string
 ) {
-  const { data: existing, error: selectError } = await supabase
-    .from(tableName)
-    .select('id')
-    .eq(uniqueField, data[uniqueField])
-    .limit(1);
-
-  if (selectError) {
+  const { error } = await supabase.from(tableName).upsert(data, { onConflict: 'profile_id, name' });
+  if (error) {
     throw new Error(
-      `Failed checking existing credentials in ${tableName}: ${selectError.message}`
+      `Failed upserting credentials in ${tableName}: ${error.message}`
     );
-  }
-
-  if (existing && existing.length > 0) {
-    const { error: updateError } = await supabase
-      .from(tableName)
-      .update(data)
-      .eq('id', existing[0].id);
-
-    if (updateError) {
-      throw new Error(
-        `Failed updating credentials in ${tableName}: ${updateError.message}`
-      );
-    }
-  } else {
-    const { error: insertError } = await supabase.from(tableName).insert(data);
-    if (insertError) {
-      throw new Error(
-        `Failed inserting credentials into ${tableName}: ${insertError.message}`
-      );
-    }
   }
 }
 
 async function checkCredentialExists(
   supabase: any,
   tableName: string,
+  profileId: string,
   logs: string[]
 ): Promise<boolean> {
-  const { data, error } = await supabase.from(tableName).select('id').limit(1);
+  const { data, error } = await supabase.from(tableName).select('id').eq('profile_id', profileId).limit(1);
   if (error) {
     logs.push(`Error checking ${tableName}: ${error.message}`);
     return false;
@@ -84,7 +60,7 @@ async function checkCredentialExists(
   return data && data.length > 0;
 }
 
-export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
+export async function getCredentialStatuses(profileId: string): Promise<Record<string, boolean>> {
   const logs: string[] = [];
   const supabase = createClient({ db: 'MAIN' });
   const statuses: Record<string, boolean> = {};
@@ -93,7 +69,7 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
 
   for (const platform of platforms) {
     const tableName = `${platform}_credentials`;
-    statuses[platform] = await checkCredentialExists(supabase, tableName, logs);
+    statuses[platform] = await checkCredentialExists(supabase, tableName, profileId, logs);
   }
 
   return statuses;
@@ -101,79 +77,79 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
 
 // Individual save functions
 
-export async function saveShopifyCredentials(storeName: string, accessToken: string) {
+export async function saveShopifyCredentials(profileId: string, storeName: string, accessToken: string) {
   const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(
     supabase,
     'shopify_credentials',
-    { store_name: storeName, access_token: accessToken, api_version: apiVersionDefault },
-    'store_name'
+    { profile_id: profileId, name: 'shopify', store_name: storeName, access_token: accessToken, api_version: apiVersionDefault },
   );
 }
 
-export async function saveAmazonCredentials(credentials: AmazonCredentials) {
+export async function saveAmazonCredentials(profileId: string, credentials: AmazonCredentials) {
   const supabase = createClient({ db: 'MAIN' });
   // In a real app, you would likely encrypt the client_secret and refresh_token
   const credsToSave = {
-      profile_id: credentials.profile_id,
+      profile_id: profileId,
+      name: 'amazon',
+      profile_id_amazon: credentials.profile_id,
       client_id: credentials.client_id,
       client_secret: credentials.client_secret,
       refresh_token: credentials.refresh_token,
       seller_id: credentials.seller_id,
       marketplace_id: credentials.marketplace_id,
   };
-  await upsertCredential(supabase, 'amazon_credentials', credsToSave, 'client_id');
+  await upsertCredential(supabase, 'amazon_credentials', credsToSave);
 }
 
-export async function saveWalmartCredentials(credentials: WalmartCredentials) {
+export async function saveWalmartCredentials(profileId: string, credentials: WalmartCredentials) {
   const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'walmart_credentials', credentials, 'client_id');
+  await upsertCredential(supabase, 'walmart_credentials', { ...credentials, profile_id: profileId, name: 'walmart'});
 }
 
-export async function saveEbayCredentials(credentials: EbayCredentials) {
+export async function saveEbayCredentials(profileId: string, credentials: EbayCredentials) {
   const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'ebay_credentials', credentials, 'app_id');
+  await upsertCredential(supabase, 'ebay_credentials', { ...credentials, profile_id: profileId, name: 'ebay'});
 }
 
-export async function saveEtsyCredentials(credentials: EtsyCredentials) {
+export async function saveEtsyCredentials(profileId: string, credentials: EtsyCredentials) {
   const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy'}, 'client_id');
+  await upsertCredential(supabase, 'etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy', profile_id: profileId, name: 'etsy'});
 }
 
-export async function saveWayfairCredentials(credentials: WayfairCredentials) {
+export async function saveWayfairCredentials(profileId: string, credentials: WayfairCredentials) {
   const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'wayfair_credentials', credentials, 'client_id');
+  await upsertCredential(supabase, 'wayfair_credentials', { ...credentials, profile_id: profileId, name: 'wayfair' });
 }
+
 
 // ============================================
 // Shopify Helpers
 // ============================================
 
-async function getShopifyConfig(logs: string[]): Promise<{ storeUrl: string; accessToken: string, apiVersion: string }> {
+async function getShopifyConfig(profileId: string, logs: string[]): Promise<ShopifyCredentials> {
     const supabase = createClient({ db: 'MAIN' });
     
     logs.push("Attempting to fetch Shopify credentials from Supabase...");
     const { data, error } = await supabase
         .from('shopify_credentials')
-        .select('store_name, access_token, api_version')
-        .limit(1);
+        .select('id, store_name, access_token, api_version')
+        .eq('profile_id', profileId)
+        .limit(1)
+        .single();
 
-    if (error) {
-        logs.push(`Supabase error fetching Shopify credentials: ${error.message}`);
-        throw new Error('Could not fetch Shopify credentials from the database.');
-    }
-    if (!data || data.length === 0) {
-        logs.push('Shopify credentials not found in the database.');
-        throw new Error('Shopify credentials have not been configured. Please add them in the Connections settings.');
+    if (error || !data) {
+        logs.push(`Supabase error fetching Shopify credentials: ${error?.message || 'Not found'}`);
+        throw new Error('Could not fetch Shopify credentials for this profile.');
     }
     
-    const { store_name, access_token, api_version } = data[0];
+    const { id, store_name, access_token, api_version } = data;
     const storeUrl = getStoreUrl(store_name);
-    
     const apiVersion = api_version || apiVersionDefault;
+
     logs.push(`Successfully fetched credentials. Store: ${storeUrl}, API Version: ${apiVersion}`);
 
-    return { storeUrl, accessToken: access_token, apiVersion };
+    return { id, profile_id: profileId, store_name, access_token, api_version: apiVersion };
 }
 
 
@@ -216,16 +192,17 @@ async function safeFetch(url: string, options: any, logs: string[], retries = 3)
   throw new Error(`Exceeded retry attempts for ${url}`);
 }
 
-export async function getShopifyProducts(options: { countOnly?: boolean } = {}): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
+export async function getShopifyProducts(options: { profileId: string, countOnly?: boolean }): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
+        const config = await getShopifyConfig(options.profileId, logs);
+        const storeUrl = getStoreUrl(config.store_name);
         const endpoint = options.countOnly ? 'products/count.json' : 'products.json?limit=250';
-        const url = `${storeUrl}/admin/api/${apiVersion}/${endpoint}`;
+        const url = `${storeUrl}/admin/api/${config.api_version}/${endpoint}`;
         
         logs.push(`Fetching Shopify data from endpoint: ${endpoint}`);
         const response = await safeFetch(url, {
-            headers: { 'X-Shopify-Access-Token': accessToken }
+            headers: { 'X-Shopify-Access-Token': config.access_token }
         }, logs);
 
         if (!response.ok) {
@@ -256,11 +233,12 @@ export async function getShopifyProducts(options: { countOnly?: boolean } = {}):
 }
 
 
-export async function createShopifyProduct(productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct, logs: string[] }> {
+export async function createShopifyProduct(profileId: string, productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
-        const url = `${storeUrl}/admin/api/${apiVersion}/products.json`;
+        const config = await getShopifyConfig(profileId, logs);
+        const storeUrl = getStoreUrl(config.store_name);
+        const url = `${storeUrl}/admin/api/${config.api_version}/products.json`;
 
         const body = JSON.stringify({
             product: {
@@ -284,7 +262,7 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
         const response = await safeFetch(url, {
             method: 'POST',
             headers: {
-                'X-Shopify-Access-Token': accessToken,
+                'X-Shopify-Access-Token': config.access_token,
                 'Content-Type': 'application/json'
             },
             body: body
@@ -308,11 +286,12 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
     }
 }
 
-export async function updateShopifyProduct(productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct, logs: string[] }> {
+export async function updateShopifyProduct(profileId: string, productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
-        const url = `${storeUrl}/admin/api/${apiVersion}/products/${productData.id}.json`;
+        const config = await getShopifyConfig(profileId, logs);
+        const storeUrl = getStoreUrl(config.store_name);
+        const url = `${storeUrl}/admin/api/${config.api_version}/products/${productData.id}.json`;
 
         const body = JSON.stringify({ product: productData });
         
@@ -321,7 +300,7 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
         const response = await safeFetch(url, {
             method: 'PUT',
             headers: {
-                'X-Shopify-Access-Token': accessToken,
+                'X-Shopify-Access-Token': config.access_token,
                 'Content-Type': 'application/json'
             },
             body: body
@@ -345,15 +324,16 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
     }
 }
 
-export async function getShopifyProduct(id: number): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
+export async function getShopifyProduct(profileId: string, id: number): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
-        const url = `${storeUrl}/admin/api/${apiVersion}/products/${id}.json`;
+        const config = await getShopifyConfig(profileId, logs);
+        const storeUrl = getStoreUrl(config.store_name);
+        const url = `${storeUrl}/admin/api/${config.api_version}/products/${id}.json`;
         
         logs.push(`Fetching product with ID: ${id}`);
         const response = await safeFetch(url, {
-            headers: { 'X-Shopify-Access-Token': accessToken }
+            headers: { 'X-Shopify-Access-Token': config.access_token }
         }, logs);
 
         if (!response.ok) {
@@ -378,28 +358,29 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
     }
 }
 
-export async function getShopifyOrders(dateRange?: DateRange): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+export async function getShopifyOrders(options: { profileId: string, dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
-    const { storeUrl, accessToken, apiVersion } = await getShopifyConfig(logs);
+    const config = await getShopifyConfig(options.profileId, logs);
+    const storeUrl = getStoreUrl(config.store_name);
     
     const params = new URLSearchParams({
         status: 'any',
         limit: '250',
     });
 
-    if (dateRange?.from) {
-        params.append('created_at_min', dateRange.from.toISOString());
+    if (options.dateRange?.from) {
+        params.append('created_at_min', options.dateRange.from.toISOString());
     }
-    if (dateRange?.to) {
-        params.append('created_at_max', dateRange.to.toISOString());
+    if (options.dateRange?.to) {
+        params.append('created_at_max', options.dateRange.to.toISOString());
     }
 
-    const url = `${storeUrl}/admin/api/${apiVersion}/orders.json?${params.toString()}`;
+    const url = `${storeUrl}/admin/api/${config.api_version}/orders.json?${params.toString()}`;
 
     logs.push(`Fetching Shopify orders from ${url}`);
     const response = await safeFetch(url, {
-      headers: { 'X-Shopify-Access-Token': accessToken },
+      headers: { 'X-Shopify-Access-Token': config.access_token },
     }, logs);
 
     if (!response.ok) {
@@ -423,7 +404,7 @@ export async function getShopifyOrders(dateRange?: DateRange): Promise<{ orders:
 // ============================================
 // External Platform Functions
 // ============================================
-export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
+export async function getPlatformProductCounts(profileId: string, logs: string[]): Promise<PlatformProductCount[]> {
     const supabase = createClient({ db: 'MAIN' });
     const counts: PlatformProductCount[] = [];
 
@@ -431,13 +412,13 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
     const platforms = ['Shopify', 'Amazon', 'Walmart', 'eBay', 'Etsy'];
     for (const platform of platforms) {
         const tableName = `${platform.toLowerCase()}_credentials`;
-        const connected = await checkCredentialExists(supabase, tableName, logs);
+        const connected = await checkCredentialExists(supabase, tableName, profileId, logs);
         if (connected) {
             logs.push(`Fetching count for connected platform: ${platform}`);
             // In a real scenario, you'd make an API call to the platform
             // For now, we return a mock count if connected.
             if (platform === 'Shopify') {
-                 const { count } = await getShopifyProducts({ countOnly: true });
+                 const { count } = await getShopifyProducts({ profileId, countOnly: true });
                  counts.push({ platform, count: count || 0 });
             } else {
                 counts.push({ platform, count: Math.floor(Math.random() * 5000) });
@@ -451,25 +432,23 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
 // Walmart Helpers
 // ============================================
 
-async function getWalmartConfig(logs: string[]): Promise<{ clientId: string; clientSecret: string; }> {
+async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ clientId: string; clientSecret: string; }> {
     const supabase = createClient({ db: 'MAIN' });
     
     logs.push("Attempting to fetch Walmart credentials from Supabase...");
     const { data, error } = await supabase
         .from('walmart_credentials')
         .select('client_id, client_secret')
-        .limit(1);
+        .eq('profile_id', profileId)
+        .limit(1)
+        .single();
 
-    if (error) {
-        logs.push(`Supabase error fetching Walmart credentials: ${error.message}`);
-        throw new Error('Could not fetch Walmart credentials from the database.');
-    }
-    if (!data || data.length === 0) {
-        logs.push('Walmart credentials not found in the database.');
-        throw new Error('Walmart credentials have not been configured.');
+    if (error || !data) {
+        logs.push(`Supabase error fetching Walmart credentials: ${error?.message || 'Not found'}`);
+        throw new Error('Could not fetch Walmart credentials for this profile.');
     }
     
-    const { client_id, client_secret } = data[0];
+    const { client_id, client_secret } = data;
     logs.push(`Successfully fetched Walmart credentials.`);
 
     return { clientId: client_id, clientSecret: client_secret };
@@ -505,10 +484,10 @@ async function getWalmartAccessToken(clientId: string, clientSecret: string, log
 }
 
 
-export async function getWalmartOrders(): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+export async function getWalmartOrders(profileId: string): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
-    const { clientId, clientSecret } = await getWalmartConfig(logs);
+    const { clientId, clientSecret } = await getWalmartConfig(profileId, logs);
     const accessToken = await getWalmartAccessToken(clientId, clientSecret, logs);
     
     const correlationId = uuidv4();
@@ -633,3 +612,5 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
+
+    

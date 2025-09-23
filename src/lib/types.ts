@@ -123,7 +123,16 @@ export interface ShopifyProductUpdate {
   variants?: ShopifyVariantUpdate[];
 }
 
+export interface ShopifyCredentials {
+    id: number;
+    profile_id: string;
+    store_name: string;
+    access_token: string;
+    api_version: string;
+}
+
 export interface AmazonCredentials {
+    id?: number;
     profile_id: string;
     client_id: string;
     client_secret: string;
@@ -133,11 +142,15 @@ export interface AmazonCredentials {
 }
 
 export interface WalmartCredentials {
+    id?: number;
+    profile_id: string;
     client_id: string;
     client_secret: string;
 }
 
 export interface EbayCredentials {
+    id?: number;
+    profile_id: string;
     app_id: string;
     cert_id: string;
     dev_id: string;
@@ -145,10 +158,14 @@ export interface EbayCredentials {
 }
 
 export interface EtsyCredentials {
+    id?: number;
+    profile_id: string;
     keystring: string;
 }
 
 export interface WayfairCredentials {
+    id?: number;
+    profile_id: string;
     client_id: string;
     client_secret: string;
 }
@@ -260,6 +277,9 @@ export interface BusinessProfile {
     profile_name: string;
     store_url: string;
     contact_email: string;
+    credential_statuses?: Record<string, boolean>;
 }
 
-export type BusinessProfileCreation = Omit<BusinessProfile, ''>;
+export type BusinessProfileCreation = Omit<BusinessProfile, 'id' | 'credential_statuses'> & { id?: string };
+
+    

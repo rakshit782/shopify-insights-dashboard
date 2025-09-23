@@ -24,6 +24,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 interface ConnectionsDialogProps {
+  profileId: string;
   platform: string;
   isOpen: boolean;
   onClose: (credentialsSaved: boolean) => void;
@@ -91,8 +92,8 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode; sche
   },
 };
 
-const actionMap: { [key: string]: (data: any) => Promise<any> } = {
-  shopify: (data) => handleSaveShopifyCredentials(data.storeName, data.accessToken),
+const actionMap: { [key: string]: (profileId: string, data: any) => Promise<any> } = {
+  shopify: (profileId, data) => handleSaveShopifyCredentials(profileId, data.storeName, data.accessToken),
   amazon: handleSaveAmazonCredentials,
   walmart: handleSaveWalmartCredentials,
   ebay: handleSaveEbayCredentials,
@@ -109,7 +110,7 @@ const defaultValuesMap: { [key: string]: any } = {
     wayfair: { clientId: '', clientSecret: '' },
 }
 
-export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDialogProps) {
+export function ConnectionsDialog({ profileId, platform, isOpen, onClose }: ConnectionsDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const platformInfo = platformMeta[platform];
@@ -123,12 +124,12 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
     setIsSubmitting(true);
     
     const saveAction = actionMap[platform];
-    const result = await saveAction(values);
+    const result = await saveAction(profileId, values);
 
     if (result.success) {
       toast({
         title: 'Credentials Saved',
-        description: `Your ${platformInfo.name} credentials have been successfully saved.`,
+        description: `Your ${platformInfo.name} credentials have been successfully saved for this profile.`,
       });
       onClose(true);
     } else {
@@ -166,7 +167,7 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
              Connect to {platformInfo.name}
           </DialogTitle>
           <DialogDescription className="space-y-2">
-            <span>Enter your API credentials to connect your {platformInfo.name} store.</span>
+            <span>Enter your API credentials for this business profile.</span>
              <Link href={platformInfo.helpLink} target="_blank" rel="noopener noreferrer" className="flex items-center text-sm text-blue-500 hover:underline">
                 <LinkIcon className="mr-1 h-3 w-3" />
                 Need help finding these?
@@ -220,3 +221,5 @@ export function ConnectionsDialog({ platform, isOpen, onClose }: ConnectionsDial
     </Dialog>
   );
 }
+
+    

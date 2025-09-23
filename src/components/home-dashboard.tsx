@@ -4,12 +4,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getDashboardStats } from '@/app/actions';
+import { getDashboardStats, handleGetBusinessProfiles } from '@/app/actions';
 import type { PlatformProductCount } from '@/lib/shopify-client';
 import { DateRangePicker } from './date-range-picker';
 import { DateRange } from 'react-day-picker';
-import { DollarSign, List, Database } from 'lucide-react';
+import { DollarSign, List, Database, Settings } from 'lucide-react';
 import Image from 'next/image';
+import type { BusinessProfile } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Button } from './ui/button';
+import Link from 'next/link';
 
 interface DashboardStats {
     totalSales: number;
@@ -42,31 +46,63 @@ function StatCardSkeleton() {
 }
 
 export function HomeDashboard() {
+    const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
+    const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-    const fetchStats = useCallback(async (range?: DateRange) => {
+    const fetchProfiles = useCallback(async () => {
         setIsLoading(true);
-        const result = await getDashboardStats(range);
+        const result = await handleGetBusinessProfiles();
+        if (result.success && result.profiles.length > 0) {
+            setProfiles(result.profiles);
+            setSelectedProfileId(result.profiles[0].id);
+        } else {
+            setProfiles([]);
+            setIsLoading(false);
+        }
+    }, []);
+    
+    useEffect(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
+
+
+    const fetchStats = useCallback(async (profileId: string | null, range?: DateRange) => {
+        setIsLoading(true);
+        const result = await getDashboardStats(profileId, range);
         if (result.success && result.stats) {
             setStats(result.stats);
         } else {
-            // TODO: Handle error state
             console.error(result.error);
         }
         setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        if (dateRange) {
-            fetchStats(dateRange);
+        if (dateRange || selectedProfileId) {
+            fetchStats(selectedProfileId, dateRange);
         }
-    }, [dateRange, fetchStats]);
+    }, [dateRange, selectedProfileId, fetchStats]);
 
     const handleDateUpdate = useCallback((range?: DateRange) => {
         setDateRange(range);
     }, []);
+
+    const NoProfilesState = () => (
+        <Card className="col-span-full flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
+            <CardTitle>Welcome to Shopify Insights</CardTitle>
+            <CardDescription className="mt-2 max-w-md">
+                To get started, create a business profile. This will let you connect your marketplace accounts and see your data.
+            </CardDescription>
+            <Button asChild className="mt-4">
+                <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" /> Go to Settings
+                </Link>
+            </Button>
+        </Card>
+    );
 
     return (
         <div>
@@ -77,7 +113,19 @@ export function HomeDashboard() {
                         Your central hub for e-commerce operations.
                     </p>
                 </div>
-                <DateRangePicker onUpdate={handleDateUpdate} />
+                 <div className="flex flex-col sm:flex-row gap-2">
+                    {profiles.length > 0 && (
+                        <Select value={selectedProfileId || ''} onValueChange={setSelectedProfileId}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Select Profile" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.profile_name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    <DateRangePicker onUpdate={handleDateUpdate} />
+                </div>
             </div>
 
             {isLoading && !stats ? (
@@ -86,6 +134,8 @@ export function HomeDashboard() {
                     <StatCardSkeleton />
                     <StatCardSkeleton />
                 </div>
+            ) : !selectedProfileId ? (
+                 <NoProfilesState />
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <Card>
@@ -100,7 +150,7 @@ export function HomeDashboard() {
                                 </div>
                             }
                             <p className="text-xs text-muted-foreground">
-                                Across all connected channels
+                                For the selected profile and period
                             </p>
                         </CardContent>
                     </Card>
@@ -146,3 +196,5 @@ export function HomeDashboard() {
         </div>
     );
 }
+
+    
