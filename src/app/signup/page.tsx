@@ -1,14 +1,16 @@
 
+
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+// This page is no longer used for sign-up, logic is in /login
 export default function SignupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/');
+    router.replace('/login?signup=true');
   }, [router]);
 
   return (
