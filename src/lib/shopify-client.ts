@@ -12,6 +12,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -381,7 +382,8 @@ export async function getShopifyOrders(options: { dateRange?: DateRange }): Prom
 // ============================================
 // External Platform Functions
 // ============================================
-export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
+export async function getPlatformProductCounts(logs?: string[]): Promise<PlatformProductCount[]> {
+    const internalLogs = logs || [];
     const counts: PlatformProductCount[] = [];
     const statuses = await getCredentialStatuses();
 
@@ -390,12 +392,12 @@ export async function getPlatformProductCounts(logs: string[]): Promise<Platform
     for (const platform of platforms) {
         const platformKey = platform.toLowerCase();
         if (statuses[platformKey]) {
-            logs.push(`Fetching count for connected platform: ${platform}`);
+            internalLogs.push(`Fetching count for connected platform: ${platform}`);
             // In a real scenario, you'd make an API call to the platform
             // For now, we return a mock count if connected.
             if (platform === 'Shopify') {
-                 const { count } = await getShopifyProducts({ countOnly: true });
-                 counts.push({ platform, count: count || 0 });
+                 // const { count } = await getShopifyProducts({ countOnly: true });
+                 // counts.push({ platform, count: count || 0 });
             } else {
                 counts.push({ platform, count: Math.floor(Math.random() * 5000) });
             }
@@ -818,5 +820,6 @@ export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; l
     
 
     
+
 
 
