@@ -8,7 +8,7 @@ export default async function ProductDatabasePage() {
     const supabaseDataUrl = process.env.SUPABASE_URL_DATA;
     const supabaseDataKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
     
-    if (!supabaseDataUrl || !supabaseDataKey) {
+    if (!supabaseDataUrl || !supabaseDataKey || supabaseDataUrl === "your-supabase-data-url") {
         return (
           <div className="flex h-screen items-center justify-center p-8">
             <Alert variant="destructive" className="max-w-2xl">
