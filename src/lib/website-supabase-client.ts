@@ -1,5 +1,4 @@
 
-import 'dotenv/config';
 import type { ShopifyProduct } from './types';
 import { createSupabaseServerClient } from './supabase/server';
 

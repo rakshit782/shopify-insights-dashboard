@@ -1,7 +1,6 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import 'dotenv/config';
 
 // This function creates a Supabase client that can be used in Server Components,
 // Server Actions, and Route Handlers. It is essential for server-side operations
