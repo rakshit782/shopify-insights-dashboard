@@ -609,11 +609,10 @@ async function getAmazonAccessToken(logs: string[]): Promise<string | null> {
 export async function getAmazonOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
     const logs: string[] = [];
     const accessToken = await getAmazonAccessToken(logs);
-    const sellerId = process.env.AMAZON_SELLER_ID;
     const marketplaceId = process.env.AMAZON_MARKETPLACE_ID;
 
-    if (!accessToken || !sellerId || !marketplaceId) {
-        logs.push("Amazon credentials, Seller ID, or Marketplace ID not configured properly.");
+    if (!accessToken || !marketplaceId) {
+        logs.push("Amazon credentials or Marketplace ID not configured properly.");
         return { orders: [], logs };
     }
 
@@ -712,6 +711,12 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
         totalTax += parseFloat(item.ItemTax?.Amount || '0');
         totalDiscounts += parseFloat(item.PromotionDiscount?.Amount || '0');
     });
+    
+    const shippingAddress = amazonOrder.ShippingAddress;
+    const nameParts = shippingAddress?.Name ? shippingAddress.Name.split(' ') : [];
+    const firstName = nameParts[0] || null;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+
 
     return {
         id: amazonOrder.AmazonOrderId,
@@ -730,21 +735,21 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
         customer: {
             id: null,
             email: amazonOrder.BuyerInfo?.BuyerEmail || null,
-            first_name: amazonOrder.ShippingAddress?.Name.split(' ')[0] || null,
-            last_name: amazonOrder.ShippingAddress?.Name.split(' ').slice(1).join(' ') || null,
-            phone: amazonOrder.ShippingAddress?.Phone || null,
+            first_name: firstName,
+            last_name: lastName,
+            phone: shippingAddress?.Phone || null,
         },
-        shipping_address: amazonOrder.ShippingAddress ? {
-            first_name: amazonOrder.ShippingAddress.Name.split(' ')[0],
-            last_name: amazonOrder.ShippingAddress.Name.split(' ').slice(1).join(' '),
-            address1: amazonOrder.ShippingAddress.AddressLine1,
-            address2: amazonOrder.ShippingAddress.AddressLine2,
-            city: amazonOrder.ShippingAddress.City,
-            province: amazonOrder.ShippingAddress.StateOrRegion,
-            country: amazonOrder.ShippingAddress.CountryCode,
-            zip: amazonOrder.ShippingAddress.PostalCode,
-            phone: amazonOrder.ShippingAddress.Phone,
-            country_code: amazonOrder.ShippingAddress.CountryCode,
+        shipping_address: shippingAddress ? {
+            first_name: firstName,
+            last_name: lastName,
+            address1: shippingAddress.AddressLine1 || null,
+            address2: shippingAddress.AddressLine2,
+            city: shippingAddress.City || null,
+            province: shippingAddress.StateOrRegion || null,
+            country: shippingAddress.CountryCode || null,
+            zip: shippingAddress.PostalCode || null,
+            phone: shippingAddress.Phone,
+            country_code: shippingAddress.CountryCode,
         } : null,
         line_items: items.map(item => ({
             id: item.OrderItemId,
