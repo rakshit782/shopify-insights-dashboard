@@ -1,4 +1,5 @@
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -476,29 +477,33 @@ export async function getWalmartOrders(options: { dateRange?: DateRange }): Prom
 }
 
 function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder {
-  const orderTotal = walmartOrder.orderLines.orderLine.reduce((total, line) => {
-    return (
-      total +
-      line.charges.charge.reduce((lineTotal, charge) => {
+  let subtotal = 0;
+  let totalTax = 0;
+  let totalShipping = 0;
+
+  walmartOrder.orderLines.orderLine.forEach(line => {
+    line.charges.charge.forEach(charge => {
         const chargeAmount = Number(charge.chargeAmount?.amount || 0);
         const taxAmount = Number(charge.tax?.taxAmount?.amount || 0);
-        return lineTotal + chargeAmount + taxAmount;
-      }, 0)
-    );
-  }, 0);
+        totalTax += taxAmount;
+        if (charge.chargeType === 'PRODUCT') {
+            subtotal += chargeAmount;
+        } else if (charge.chargeType === 'SHIPPING') {
+            totalShipping += chargeAmount;
+        }
+    });
+  });
+
+  const orderTotal = subtotal + totalTax + totalShipping;
 
   const nameParts = walmartOrder.shippingInfo.postalAddress.name.split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  // Get the most recent status from all line items.
   const latestStatusLine = walmartOrder.orderLines.orderLine.reduce((latest, current) => {
-    // This assumes there's a statusDate or similar, which isn't in the type.
-    // Let's just take the status from the first line for now and add a TODO to improve.
-    // A better approach would be to sort by a lastUpdated timestamp on the line item if available.
-    return current; // Simple approach, can be improved.
-  }, walmartOrder.orderLines.orderLine[0]);
-
+    return (current.statusDate > latest.statusDate) ? current : latest;
+  });
+  
   const fulfillmentStatus = latestStatusLine.status;
 
   return {
@@ -506,8 +511,11 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     admin_graphql_api_id: `gid://walmart/Order/${walmartOrder.purchaseOrderId}`,
     name: walmartOrder.purchaseOrderId,
     created_at: new Date(walmartOrder.orderDate).toISOString(),
-    updated_at: new Date(walmartOrder.orderDate).toISOString(),
+    updated_at: new Date(latestStatusLine.statusDate).toISOString(),
     total_price: orderTotal.toFixed(2),
+    subtotal_price: subtotal.toFixed(2),
+    total_tax: totalTax.toFixed(2),
+    total_shipping: totalShipping.toFixed(2),
     currency:
       walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency ||
       'USD',
@@ -538,13 +546,11 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
       quantity: line.orderLineQuantity
         ? parseInt(line.orderLineQuantity.amount, 10)
         : 0,
-      price: Number(line.charges.charge[0]?.chargeAmount.amount || 0).toFixed(2),
+      price: line.charges.charge.find(c => c.chargeType === 'PRODUCT')?.chargeAmount.amount.toFixed(2) || '0.00',
       sku: line.item.sku,
       vendor: 'Walmart',
     })),
     processed_at: new Date(walmartOrder.orderDate).toISOString(),
-    subtotal_price: null,
-    total_tax: null,
   };
 }
 
@@ -652,6 +658,18 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrderItem[]): ShopifyOrder {
     const financialStatus = amazonOrder.OrderStatus === 'Pending' ? 'pending' : 'paid';
 
+    let subtotal = 0;
+    let totalShipping = 0;
+    let totalTax = 0;
+    let totalDiscounts = 0;
+
+    items.forEach(item => {
+        subtotal += parseFloat(item.ItemPrice?.Amount || '0') * item.QuantityOrdered;
+        totalShipping += parseFloat(item.ShippingPrice?.Amount || '0');
+        totalTax += parseFloat(item.ItemTax?.Amount || '0');
+        totalDiscounts += parseFloat(item.PromotionDiscount?.Amount || '0');
+    });
+
     return {
         id: amazonOrder.AmazonOrderId,
         admin_graphql_api_id: `gid://amazon/Order/${amazonOrder.AmazonOrderId}`,
@@ -659,6 +677,10 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
         created_at: amazonOrder.PurchaseDate,
         updated_at: amazonOrder.LastUpdateDate,
         total_price: amazonOrder.OrderTotal?.Amount || '0.00',
+        subtotal_price: subtotal.toFixed(2),
+        total_tax: totalTax.toFixed(2),
+        total_shipping: totalShipping.toFixed(2),
+        total_discounts: totalDiscounts.toFixed(2),
         currency: amazonOrder.OrderTotal?.CurrencyCode || 'USD',
         financial_status: financialStatus,
         fulfillment_status: amazonOrder.OrderStatus,

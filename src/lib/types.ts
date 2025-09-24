@@ -136,7 +136,7 @@ export interface AppSettings {
 
 // Represents the possible fulfillment statuses from Walmart
 export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
-export type AmazonFulfillmentStatus = 'Shipped' | 'Unshipped' | 'PartiallyShipped' | 'Canceled' | 'Unfulfillable';
+export type AmazonFulfillmentStatus = 'Shipped' | 'Unshipped' | 'PartiallyShipped' | 'Canceled' | 'Unfulfillable' | 'Pending' | 'InvoiceUnconfirmed';
 
 // Corresponds to the Order object from Shopify Admin API, adapted for multiple platforms
 export interface ShopifyOrder {
@@ -149,9 +149,11 @@ export interface ShopifyOrder {
     total_price: string;
     subtotal_price?: string | null; // Optional for other platforms
     total_tax?: string | null; // Optional for other platforms
+    total_shipping?: string | null; // Added for shipping costs
+    total_discounts?: string | null; // Added for discounts
     currency: string;
     financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided';
-    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | WalmartFulfillmentStatus | AmazonFulfillmentStatus | null;
+    fulfillment_status: WalmartFulfillmentStatus | AmazonFulfillmentStatus | 'fulfilled' | 'unfulfilled' | 'partial' | null;
     customer: {
         id?: number | string | null;
         email?: string | null;
@@ -228,6 +230,7 @@ export interface WalmartOrder {
         amount: string;
       };
       status: WalmartFulfillmentStatus;
+      statusDate: number;
     }[];
   };
 }
@@ -237,7 +240,7 @@ export interface AmazonOrder {
     AmazonOrderId: string;
     PurchaseDate: string; // ISO 8601 format
     LastUpdateDate: string; // ISO 8601 format
-    OrderStatus: 'Pending' | 'Unshipped' | 'PartiallyShipped' | 'Shipped' | 'Canceled' | 'Unfulfillable';
+    OrderStatus: 'Pending' | 'Unshipped' | 'PartiallyShipped' | 'Shipped' | 'Canceled' | 'Unfulfillable' | 'InvoiceUnconfirmed';
     FulfillmentChannel: 'AFN' | 'MFN';
     SalesChannel: string;
     OrderTotal: {
@@ -256,7 +259,8 @@ export interface AmazonOrder {
     };
     BuyerInfo?: {
       BuyerEmail?: string;
-    }
+    };
+    ShipmentServiceLevelCategory?: string;
 }
 
 export interface AmazonOrderItem {
@@ -264,10 +268,22 @@ export interface AmazonOrderItem {
     SellerSKU: string;
     Title: string;
     QuantityOrdered: number;
-    ItemPrice: {
+    ItemPrice?: {
         CurrencyCode: string;
         Amount: string;
-    }
+    };
+     ShippingPrice?: {
+        CurrencyCode: string;
+        Amount: string;
+    };
+    ItemTax?: {
+        CurrencyCode: string;
+        Amount: string;
+    };
+    PromotionDiscount?: {
+        CurrencyCode: string;
+        Amount: string;
+    };
 }
 
 export interface Agency {

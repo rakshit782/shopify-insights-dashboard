@@ -48,8 +48,10 @@ export function OrderDetailsDialog({ isOpen, onOpenChange, order }: OrderDetails
 
   const customerName = `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim() || 'N/A';
   
-  const subtotal = order.subtotal_price ? parseFloat(order.subtotal_price) : (parseFloat(order.total_price) - parseFloat(order.total_tax || '0'));
-  const tax = order.total_tax ? parseFloat(order.total_tax) : 0;
+  const subtotal = parseFloat(order.subtotal_price || '0');
+  const shipping = parseFloat(order.total_shipping || '0');
+  const tax = parseFloat(order.total_tax || '0');
+  const discounts = parseFloat(order.total_discounts || '0');
   const total = parseFloat(order.total_price);
 
   return (
@@ -113,10 +115,20 @@ export function OrderDetailsDialog({ isOpen, onOpenChange, order }: OrderDetails
                       <span>${subtotal.toFixed(2)}</span>
                   </div>
                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Shipping</span>
+                      <span>${shipping.toFixed(2)}</span>
+                  </div>
+                   <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tax</span>
                       <span>${tax.toFixed(2)}</span>
                   </div>
-                   <div className="flex justify-between font-bold text-lg">
+                  {discounts > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                        <span className="text-muted-foreground">Discounts</span>
+                        <span>-${discounts.toFixed(2)}</span>
+                    </div>
+                  )}
+                   <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
                       <span>Total</span>
                       <span>${total.toFixed(2)}</span>
                   </div>
