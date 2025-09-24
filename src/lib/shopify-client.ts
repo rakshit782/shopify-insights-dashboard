@@ -609,10 +609,11 @@ async function getAmazonAccessToken(logs: string[]): Promise<string | null> {
 export async function getAmazonOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
     const logs: string[] = [];
     const accessToken = await getAmazonAccessToken(logs);
+    const sellerId = process.env.AMAZON_SELLER_ID;
     const marketplaceId = process.env.AMAZON_MARKETPLACE_ID;
 
-    if (!accessToken || !marketplaceId) {
-        logs.push("Amazon credentials or Marketplace ID not configured properly.");
+    if (!accessToken || !sellerId || !marketplaceId) {
+        logs.push("Amazon credentials, Seller ID, or Marketplace ID not configured properly.");
         return { orders: [], logs };
     }
 
@@ -620,11 +621,9 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
         const allAmazonOrders: AmazonOrder[] = [];
         let nextToken: string | undefined = undefined;
 
-        const baseParams = {
+        const baseParams: any = {
             MarketplaceIds: marketplaceId,
-            OrderStatuses: 'Pending,Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Canceled,Unfulfillable',
             CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString(),
-            ...(options.dateRange?.to && { CreatedBefore: options.dateRange.to.toISOString() }),
         };
 
         logs.push('Starting to fetch Amazon orders...');
