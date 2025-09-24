@@ -130,7 +130,6 @@ export async function handleGetWalmartOrders(dateRange?: DateRange) {
 export async function handleGetAmazonOrders(dateRange?: DateRange) {
     try {
         const { orders, logs } = await getAmazonOrders({ dateRange });
-        const error = orders.length === 0 ? "No orders found. Check logs for details." : null;
         return { success: true, orders, error: null, logs };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -294,5 +293,3 @@ export async function handleGetOrCreateUser(): Promise<{ success: boolean; user:
         return { success: false, user: null, profile: null, agency: null, error: `Database operation failed: ${errorMessage}` };
     }
 }
-
-    
