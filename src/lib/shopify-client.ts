@@ -1,6 +1,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -626,6 +627,10 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             MarketplaceIds: marketplaceId,
             CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString(),
         };
+        
+        if (options.dateRange?.to) {
+            baseParams.CreatedBefore = options.dateRange.to.toISOString();
+        }
 
         logs.push(`Starting to fetch Amazon orders with params: ${JSON.stringify(baseParams)}`);
 
@@ -633,6 +638,10 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             const params = new URLSearchParams(baseParams);
             if (nextToken) {
                 params.set('NextToken', nextToken);
+                // The API does not allow combining NextToken with other filter parameters
+                params.delete('MarketplaceIds');
+                params.delete('CreatedAfter');
+                params.delete('CreatedBefore');
             }
             
             const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
@@ -771,17 +780,281 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
 // Product Fetching Stubs
 // ============================================
 
+function findValueInAttributes(attributes: any[], key: string): string | undefined {
+    const attribute = attributes.find(attr => attr.id === key);
+    return attribute?.values?.[0]?.value;
+}
+
+function mapAmazonListingToShopifyProduct(listing: any): ShopifyProduct {
+    const attributes = listing.attributes?.attributes || [];
+    const price = listing.offers?.[0]?.price?.amount;
+    const summaries = listing.summaries?.find((s: any) => s.marketplaceId === process.env.AMAZON_MARKETPLACE_ID) || {};
+
+    return {
+        id: listing.sku,
+        admin_graphql_api_id: `gid://amazon/Product/${listing.sku}`,
+        title: findValueInAttributes(attributes, 'item_name') || listing.sku,
+        body_html: findValueInAttributes(attributes, 'product_description') || '',
+        vendor: findValueInAttributes(attributes, 'brand') || 'Amazon',
+        product_type: summaries.productType || 'Unknown',
+        created_at: summaries.createdDate,
+        handle: listing.sku,
+        updated_at: summaries.lastUpdatedDate,
+        published_at: summaries.lastUpdatedDate,
+        template_suffix: '',
+        published_scope: 'global',
+        tags: '',
+        status: summaries.status?.[0]?.toLowerCase() || 'draft',
+        variants: [{
+            id: listing.sku,
+            product_id: listing.sku,
+            title: 'Default Title',
+            price: price ? price.toString() : '0.00',
+            sku: listing.sku,
+            position: 1,
+            inventory_policy: 'deny',
+            compare_at_price: null,
+            fulfillment_service: 'amazon',
+            inventory_management: 'amazon',
+            option1: 'Default Title',
+            option2: null,
+            option3: null,
+            created_at: summaries.createdDate,
+            updated_at: summaries.lastUpdatedDate,
+            taxable: true,
+            barcode: '',
+            grams: 0,
+            image_id: null,
+            weight: 0,
+            weight_unit: 'lb',
+            inventory_item_id: 0,
+            inventory_quantity: summaries.fnSkuQuantities?.totalAvailableQuantity || 0,
+            old_inventory_quantity: 0,
+            requires_shipping: true,
+            admin_graphql_api_id: `gid://amazon/ProductVariant/${listing.sku}`,
+        }],
+        options: [],
+        images: summaries.mainImage ? [{
+            id: summaries.mainImage.id,
+            src: summaries.mainImage.link,
+            product_id: listing.sku,
+            position: 1,
+            created_at: summaries.createdDate,
+            updated_at: summaries.lastUpdatedDate,
+            alt: null,
+            width: summaries.mainImage.width,
+            height: summaries.mainImage.height,
+            variant_ids: [],
+            admin_graphql_api_id: `gid://amazon/ProductImage/${summaries.mainImage.id}`
+        }] : [],
+        image: summaries.mainImage ? {
+             id: summaries.mainImage.id,
+            src: summaries.mainImage.link,
+            product_id: listing.sku,
+            position: 1,
+            created_at: summaries.createdDate,
+            updated_at: summaries.lastUpdatedDate,
+            alt: null,
+            width: summaries.mainImage.width,
+            height: summaries.mainImage.height,
+            variant_ids: [],
+            admin_graphql_api_id: `gid://amazon/ProductImage/${summaries.mainImage.id}`
+        } : null
+    };
+}
+
+
 export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
-    const logs: string[] = ["Amazon product fetching is not implemented yet. Returning mock data."];
-    // In a real app, you would fetch products from the Amazon SP-API.
-    return { products: [], logs };
+    const logs: string[] = [];
+    const accessToken = await getAmazonAccessToken(logs);
+    const marketplaceId = process.env.AMAZON_MARKETPLACE_ID;
+    const sellerId = process.env.AMAZON_SELLER_ID;
+
+    if (!accessToken || !marketplaceId || !sellerId) {
+        logs.push("Amazon credentials, Marketplace ID, or Seller ID not configured.");
+        return { products: [], logs };
+    }
+
+    try {
+        const allListings: any[] = [];
+        let pageToken: string | undefined = undefined;
+
+        const baseParams: any = {
+            sellerId: sellerId,
+            marketplaceIds: marketplaceId,
+            pageSize: '250',
+            includedData: 'summaries,attributes,offers'
+        };
+        
+        logs.push(`Starting to fetch Amazon listings with params: ${JSON.stringify(baseParams)}`);
+
+        do {
+            const params = new URLSearchParams(baseParams);
+            if (pageToken) {
+                params.set('pageToken', pageToken);
+            }
+            
+            const url = `https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items?${params.toString()}`;
+            
+            logs.push(`Fetching Amazon listings page from: ${url}`);
+            const response = await fetch(url, {
+                headers: { 'x-amz-access-token': accessToken }
+            });
+
+            const data: any = await response.json();
+            
+            if (!response.ok) {
+                logs.push(`Amazon Listings API Error: ${response.status} - ${JSON.stringify(data)}`);
+                break;
+            }
+
+            const newListings = data.items || [];
+            allListings.push(...newListings);
+            logs.push(`Fetched ${newListings.length} listings. Total fetched so far: ${allListings.length}.`);
+
+            pageToken = data.pagination?.nextToken;
+            if (pageToken) {
+                logs.push(`Received pageToken, will fetch next page.`);
+            }
+
+        } while (pageToken);
+        
+        logs.push(`Finished fetching all ${allListings.length} Amazon listings.`);
+        
+        if (allListings.length === 0) {
+            return { products: [], logs };
+        }
+
+        const mappedProducts = allListings.map(mapAmazonListingToShopifyProduct);
+        return { products: mappedProducts, logs };
+
+    } catch (e) {
+        if (e instanceof Error) {
+            logs.push(`Error in getAmazonProducts: ${e.message}`);
+        }
+        return { products: [], logs };
+    }
+}
+
+
+function mapWalmartItemToShopifyProduct(item: any): ShopifyProduct {
+    return {
+        id: item.sku,
+        admin_graphql_api_id: `gid://walmart/Product/${item.sku}`,
+        title: item.productName || item.sku,
+        body_html: '', // Not available in item list view
+        vendor: 'Walmart',
+        product_type: item.gtin || 'Unknown',
+        created_at: new Date().toISOString(), // Not available in item list view
+        handle: item.sku,
+        updated_at: new Date().toISOString(), // Not available in item list view
+        published_at: new Date().toISOString(),
+        template_suffix: '',
+        published_scope: 'global',
+        tags: '',
+        status: item.publishedStatus.toLowerCase(),
+        variants: [{
+            id: item.sku,
+            product_id: item.sku,
+            title: 'Default Title',
+            price: item.price.toString(),
+            sku: item.sku,
+            position: 1,
+            inventory_policy: 'deny',
+            compare_at_price: null,
+            fulfillment_service: 'walmart',
+            inventory_management: 'walmart',
+            option1: 'Default Title',
+            option2: null,
+            option3: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            taxable: true,
+            barcode: item.upc,
+            grams: 0,
+            image_id: null,
+            weight: 0,
+            weight_unit: 'lb',
+            inventory_item_id: 0,
+            inventory_quantity: 0, // Not available in item list view
+            old_inventory_quantity: 0,
+            requires_shipping: true,
+            admin_graphql_api_id: `gid://walmart/ProductVariant/${item.sku}`,
+        }],
+        options: [],
+        images: [],
+        image: null
+    };
 }
 
 export async function getWalmartProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
-    const logs: string[] = ["Walmart product fetching is not implemented yet. Returning mock data."];
-     // In a real app, you would fetch products from the Walmart Marketplace API.
-    return { products: [], logs };
+    const logs: string[] = [];
+    const config = getWalmartConfig(logs);
+    if (!config) {
+        return { products: [], logs };
+    }
+    const accessToken = await getWalmartAccessToken(config.clientId, config.clientSecret, logs);
+    if (!accessToken) {
+        return { products: [], logs };
+    }
+
+    try {
+        const allItems: any[] = [];
+        let nextCursor: string | undefined = undefined;
+
+        logs.push(`Starting to fetch Walmart items...`);
+
+        do {
+            const correlationId = uuidv4();
+            let url = `https://marketplace.walmartapis.com/v3/items?limit=100`;
+            if (nextCursor) {
+                url += `&nextCursor=${encodeURIComponent(nextCursor)}`;
+            }
+            
+            logs.push(`Fetching Walmart items from: ${url}`);
+            const response = await fetch(url, {
+                headers: {
+                    'WM_SEC.ACCESS_TOKEN': accessToken,
+                    'WM_QOS.CORRELATION_ID': correlationId,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data: any = await response.json();
+            
+            if (!response.ok) {
+                logs.push(`Walmart Items API Error: ${response.status} - ${JSON.stringify(data)}`);
+                break;
+            }
+
+            const newItems = data.ItemResponse || [];
+            allItems.push(...newItems);
+            logs.push(`Fetched ${newItems.length} items. Total fetched so far: ${allItems.length}.`);
+
+            nextCursor = data.nextCursor;
+            if (nextCursor) {
+                logs.push(`Received nextCursor, will fetch next page.`);
+            }
+
+        } while (nextCursor);
+        
+        logs.push(`Finished fetching all ${allItems.length} Walmart items.`);
+        
+        if (allItems.length === 0) {
+            return { products: [], logs };
+        }
+
+        const mappedProducts = allItems.map(mapWalmartItemToShopifyProduct);
+        return { products: mappedProducts, logs };
+
+    } catch (e) {
+        if (e instanceof Error) {
+            logs.push(`Error in getWalmartProducts: ${e.message}`);
+        }
+        return { products: [], logs };
+    }
 }
+
 
 export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
     const logs: string[] = ["Etsy product fetching is not implemented yet. Returning mock data."];
