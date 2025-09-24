@@ -65,18 +65,19 @@ export function createSupabaseServerClient(database: 'MAIN' | 'DATA') {
 
 function createDummyClient(database: 'MAIN' | 'DATA' | 'UNKNOWN') {
     const errorMessage = `Supabase for ${database} not configured.`;
-    const errorResponse = { error: { message: errorMessage }, data: null };
+    const errorResponse = { error: { message: errorMessage }, data: null, count: null };
 
-    const dummyQueryBuilder = {
-        select: async () => errorResponse,
-        insert: async () => errorResponse,
-        update: async () => errorResponse,
-        delete: async () => errorResponse,
-        upsert: async () => errorResponse,
-        single: async () => errorResponse,
+    const dummyQueryBuilder: any = {
+        select: () => dummyQueryBuilder,
+        insert: () => dummyQueryBuilder,
+        update: () => dummyQueryBuilder,
+        delete: () => dummyQueryBuilder,
+        upsert: () => dummyQueryBuilder,
         eq: () => dummyQueryBuilder,
         limit: () => dummyQueryBuilder,
         order: () => dummyQueryBuilder,
+        single: async () => ({ ...errorResponse, data: null }), // single returns one object
+        then: (resolve: any) => resolve(errorResponse), // Allow awaiting the query builder
     };
     
     return {
