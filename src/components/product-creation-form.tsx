@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { v4 as uuidv4 } from 'uuid';
 import { Loader2, Trash2, Wand2, Plus, Image as ImageIcon, Video, X, Link as LinkIcon, CheckCircle, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -103,6 +102,9 @@ function UrlUpload({ name, control, label }: { name: any; control: any, label: s
     );
 }
 
+// Simple unique ID generator
+const getUniqueId = () => `${Date.now()}-${Math.random()}`;
+
 export function ProductCreationForm() {
   const { toast } = useToast();
   const router = useRouter();
@@ -116,7 +118,7 @@ export function ProductCreationForm() {
     defaultValues: {
       title: '',
       description: '',
-      bulletPoints: [{ id: uuidv4(), value: '' }],
+      bulletPoints: [{ id: getUniqueId(), value: '' }],
       googleKeywords: '',
       amazonKeywords: '',
       walmartKeywords: '',
@@ -183,7 +185,7 @@ export function ProductCreationForm() {
       
       // Clear existing bullet points and append new ones
       remove(); // Remove all
-      result.data.optimizedBulletPoints.forEach(bp => append({ id: uuidv4(), value: bp }));
+      result.data.optimizedBulletPoints.forEach(bp => append({ id: getUniqueId(), value: bp }));
       
       toast({
         title: 'Optimization Complete',
@@ -299,7 +301,7 @@ export function ProductCreationForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ id: uuidv4(), value: '' })}
+                  onClick={() => append({ id: getUniqueId(), value: '' })}
                   disabled={fields.length >= 5}
                 >
                   <Plus className="mr-2 h-4 w-4" /> Add Bullet Point

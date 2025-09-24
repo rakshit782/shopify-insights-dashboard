@@ -8,11 +8,13 @@ import { getDashboardStats } from '@/app/actions';
 import type { PlatformProductCount } from '@/lib/shopify-client';
 import { DateRangePicker } from './date-range-picker';
 import { DateRange } from 'react-day-picker';
-import { DollarSign, List, Database } from 'lucide-react';
+import { DollarSign, List, Database, RefreshCw, Landmark } from 'lucide-react';
 import Image from 'next/image';
 
 interface DashboardStats {
     totalSales: number;
+    totalRefunds: number;
+    totalTaxes: number;
     platformCounts: PlatformProductCount[];
     websiteProductCount: number;
 }
@@ -66,6 +68,10 @@ export function HomeDashboard() {
         setDateRange(range);
     }, []);
 
+    const formatCurrency = (amount: number) => {
+        return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    }
+
     return (
         <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
@@ -81,13 +87,14 @@ export function HomeDashboard() {
             </div>
 
             {isLoading && !stats ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatCardSkeleton />
                     <StatCardSkeleton />
                     <StatCardSkeleton />
                     <StatCardSkeleton />
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
@@ -96,11 +103,43 @@ export function HomeDashboard() {
                         <CardContent>
                             {isLoading ? <Skeleton className="h-8 w-3/4" /> :
                                 <div className="text-2xl font-bold">
-                                    ${stats?.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                    {formatCurrency(stats?.totalSales || 0)}
                                 </div>
                             }
                             <p className="text-xs text-muted-foreground">
-                                For the selected period across all channels
+                                Gross sales for the selected period
+                            </p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Refunds</CardTitle>
+                            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            {isLoading ? <Skeleton className="h-8 w-3/4" /> :
+                                <div className="text-2xl font-bold">
+                                    {formatCurrency(stats?.totalRefunds || 0)}
+                                </div>
+                            }
+                            <p className="text-xs text-muted-foreground">
+                                Total value of refunded orders
+                            </p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Taxes Collected</CardTitle>
+                            <Landmark className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            {isLoading ? <Skeleton className="h-8 w-3/4" /> :
+                                <div className="text-2xl font-bold">
+                                    {formatCurrency(stats?.totalTaxes || 0)}
+                                </div>
+                            }
+                            <p className="text-xs text-muted-foreground">
+                                Total sales tax collected
                             </p>
                         </CardContent>
                     </Card>
@@ -128,22 +167,7 @@ export function HomeDashboard() {
                              }
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Product Database</CardTitle>
-                             <Database className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                             {isLoading ? <Skeleton className="h-8 w-1/2" /> :
-                                <div className="text-2xl font-bold">
-                                    {stats?.websiteProductCount.toLocaleString() || '0'}
-                                </div>
-                             }
-                            <p className="text-xs text-muted-foreground">
-                                Total unique products in catalog
-                            </p>
-                        </CardContent>
-                    </Card>
+                   
                 </div>
             )}
         </div>

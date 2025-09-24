@@ -177,15 +177,30 @@ export async function handleGetWebsiteProducts() {
 
 
 // Dashboard Actions
-async function getSalesData(dateRange?: DateRange): Promise<number> {
+async function getSalesData(dateRange?: DateRange): Promise<{ totalSales: number, totalRefunds: number, totalTaxes: number }> {
     // In a real app, you would fetch orders from all connected platforms for the given profile.
     // For now, we'll just use Shopify as the source.
     try {
         const { orders } = await getShopifyOrders({ dateRange });
-        return orders.reduce((sum, order) => sum + parseFloat(order.total_price), 0);
+        
+        let totalSales = 0;
+        let totalRefunds = 0;
+        let totalTaxes = 0;
+
+        for (const order of orders) {
+            if (order.financial_status === 'refunded' || order.financial_status === 'partially_refunded') {
+                totalRefunds += parseFloat(order.total_price);
+            } else if (order.financial_status === 'paid' || order.financial_status === 'partially_paid') {
+                 totalSales += parseFloat(order.total_price);
+            }
+            totalTaxes += parseFloat(order.total_tax || '0');
+        }
+
+        return { totalSales, totalRefunds, totalTaxes };
+
     } catch (error) {
         console.error("Failed to fetch sales data:", error);
-        return 0;
+        return { totalSales: 0, totalRefunds: 0, totalTaxes: 0 };
     }
 }
 
@@ -195,7 +210,7 @@ export async function getDashboardStats(dateRange?: DateRange) {
         const range = dateRange || defaultRange;
     
         const [
-            totalSales,
+            { totalSales, totalRefunds, totalTaxes },
             platformCounts,
             websiteProductCount
         ] = await Promise.all([
@@ -208,6 +223,8 @@ export async function getDashboardStats(dateRange?: DateRange) {
             success: true,
             stats: {
                 totalSales,
+                totalRefunds,
+                totalTaxes,
                 platformCounts,
                 websiteProductCount,
             },
