@@ -1,2 +1,137 @@
-// This component is no longer used and has been cleared.
-export {};
+
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Shirt, MoreHorizontal } from 'lucide-react';
+import type { ShopifyProduct } from '@/lib/types';
+import { PaginationControls } from './pagination-controls';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+
+export function ProductTable({ products, platform }: { products: ShopifyProduct[], platform: string }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(10);
+
+  const totalPages = Math.ceil(products.length / productsPerPage);
+  const currentProducts = products.slice(
+    (currentPage - 1) * productsPerPage,
+    currentPage * productsPerPage
+  );
+
+  const getStatusVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active': return 'default';
+      case 'draft': return 'secondary';
+      case 'archived': return 'outline';
+      default: return 'outline';
+    }
+  };
+  
+  const handlePageSizeChange = (value: string) => {
+      setProductsPerPage(Number(value));
+      setCurrentPage(1); // Reset to first page
+  }
+
+  if (products.length === 0) {
+    return (
+       <Card className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
+            <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
+            <CardTitle>No Products Found</CardTitle>
+            <CardDescription className="mt-2 max-w-md">
+                There are no products to display for this marketplace at the moment.
+            </CardDescription>
+        </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+         <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <CardTitle>Product Listings</CardTitle>
+                    <CardDescription>
+                        Showing {Math.min(productsPerPage, currentProducts.length)} of {products.length} products from {platform}.
+                    </CardDescription>
+                </div>
+                {/* Export button could go here */}
+            </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Vendor</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Inventory</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentProducts.map(product => (
+                <TableRow key={product.id}>
+                  <TableCell>
+                     <Image
+                        src={product.image?.src || 'https://placehold.co/400'}
+                        alt={product.title}
+                        width={40}
+                        height={40}
+                        className="rounded-md object-cover"
+                     />
+                  </TableCell>
+                  <TableCell className="font-medium">{product.title}</TableCell>
+                  <TableCell>{product.vendor}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(product.status)}>{product.status}</Badge>
+                  </TableCell>
+                  <TableCell>{product.variants?.[0]?.inventory_quantity ?? 'N/A'}</TableCell>
+                  <TableCell>${product.variants?.[0]?.price ?? 'N/A'}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                         <DropdownMenuItem asChild>
+                            <Link href={`/products/${product.id}/edit`}>Edit Product</Link>
+                         </DropdownMenuItem>
+                         {/* More actions can be added here */}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <PaginationControls
+         currentPage={currentPage}
+         totalPages={totalPages}
+         onPageChange={setCurrentPage}
+         pageSize={productsPerPage}
+         onPageSizeChange={handlePageSizeChange}
+         className="mt-4"
+      />
+    </>
+  );
+}

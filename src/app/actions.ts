@@ -1,7 +1,8 @@
 
+
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getAmazonProducts, getWalmartProducts, getEtsyProducts } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
@@ -109,8 +110,8 @@ export async function handleOptimizeContent(input: OptimizeContentInput) {
 
 export async function handleGetShopifyOrders(dateRange?: DateRange) {
   try {
-    const { orders } = await getShopifyOrders({ dateRange });
-    return { success: true, orders, error: null, logs: [] };
+    const { orders, logs } = await getShopifyOrders({ dateRange });
+    return { success: true, orders, error: null, logs };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     return { success: false, orders: [], error: `Failed to fetch Shopify orders: ${errorMessage}`, logs: [] };
@@ -130,9 +131,14 @@ export async function handleGetWalmartOrders(dateRange?: DateRange) {
 export async function handleGetAmazonOrders(dateRange?: DateRange) {
     try {
         const { orders, logs } = await getAmazonOrders({ dateRange });
+        if (orders.length === 0 && logs.length > 0) {
+            // If there are logs, but no orders, there might be a non-critical issue we want to see.
+            // Don't set an error so the UI shows "No orders" but still shows logs.
+        }
         return { success: true, orders, error: null, logs };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        // A catch block means a definite error occurred.
         return { success: false, orders: [], error: `Failed to fetch Amazon orders: ${errorMessage}`, logs: [errorMessage] };
     }
 }
@@ -291,5 +297,45 @@ export async function handleGetOrCreateUser(): Promise<{ success: boolean; user:
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         console.error('Error in handleGetOrCreateUser:', errorMessage);
         return { success: false, user: null, profile: null, agency: null, error: `Database operation failed: ${errorMessage}` };
+    }
+}
+
+export async function handleGetShopifyProducts() {
+  try {
+    const { rawProducts, logs } = await getShopifyProducts({});
+    return { success: true, products: rawProducts, error: null, logs };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    return { success: false, products: [], error: `Failed to fetch Shopify products: ${errorMessage}`, logs: [] };
+  }
+}
+
+export async function handleGetAmazonProducts() {
+    try {
+        const { products, logs } = await getAmazonProducts();
+        return { success: true, products, error: null, logs };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, products: [], error: `Failed to fetch Amazon products: ${errorMessage}`, logs: [errorMessage] };
+    }
+}
+
+export async function handleGetWalmartProducts() {
+    try {
+        const { products, logs } = await getWalmartProducts();
+        return { success: true, products, error: null, logs };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, products: [], error: `Failed to fetch Walmart products: ${errorMessage}`, logs: [errorMessage] };
+    }
+}
+
+export async function handleGetEtsyProducts() {
+    try {
+        const { products, logs } = await getEtsyProducts();
+        return { success: true, products, error: null, logs };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, products: [], error: `Failed to fetch Etsy products: ${errorMessage}`, logs: [errorMessage] };
     }
 }

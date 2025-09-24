@@ -1,5 +1,6 @@
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -40,11 +41,12 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
       'shopify': checkEnvVar('SHOPIFY_STORE_NAME') && checkEnvVar('SHOPIFY_ACCESS_TOKEN'),
       'amazon': checkEnvVar('AMAZON_REFRESH_TOKEN') && checkEnvVar('AMAZON_SELLER_ID') && checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
       'walmart': checkEnvVar('WALMART_CLIENT_ID') && checkEnvVar('WALMART_CLIENT_SECRET'),
-      'ebay': false,
-      'etsy': false,
+      'ebay': false, // eBay not implemented
+      'etsy': checkEnvVar('ETSY_API_KEY'), // Assuming ETSY_API_KEY for Etsy
       'wayfair': false,
   };
 }
+
 
 // ============================================
 // Shopify Helpers
@@ -625,7 +627,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString(),
         };
 
-        logs.push('Starting to fetch Amazon orders...');
+        logs.push(`Starting to fetch Amazon orders with params: ${JSON.stringify(baseParams)}`);
 
         do {
             const params = new URLSearchParams(baseParams);
@@ -635,7 +637,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             
             const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
             
-            logs.push(`Fetching Amazon orders from: ${orderUrl}`);
+            logs.push(`Fetching Amazon orders page from: ${orderUrl}`);
             const orderResponse = await fetch(orderUrl, {
                 headers: { 'x-amz-access-token': accessToken }
             });
@@ -650,9 +652,12 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 
             const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
             allAmazonOrders.push(...newOrders);
-            logs.push(`Fetched ${newOrders.length} orders. Total fetched: ${allAmazonOrders.length}.`);
+            logs.push(`Fetched ${newOrders.length} orders. Total fetched so far: ${allAmazonOrders.length}.`);
 
             nextToken = orderData.payload?.NextToken;
+            if (nextToken) {
+                logs.push(`Received NextToken, will fetch next page.`);
+            }
 
         } while (nextToken);
         
@@ -690,7 +695,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 
     } catch (e) {
         if (e instanceof Error) {
-            logs.push(`Error in getAmazonOrders: ${e.message}`);
+            logs.push(`[12] Error in getAmazonOrders: ${e.message}`);
         }
         return { orders: [], logs };
     }
@@ -760,4 +765,26 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
             vendor: 'Amazon',
         })),
     };
+}
+
+// ============================================
+// Product Fetching Stubs
+// ============================================
+
+export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
+    const logs: string[] = ["Amazon product fetching is not implemented yet. Returning mock data."];
+    // In a real app, you would fetch products from the Amazon SP-API.
+    return { products: [], logs };
+}
+
+export async function getWalmartProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
+    const logs: string[] = ["Walmart product fetching is not implemented yet. Returning mock data."];
+     // In a real app, you would fetch products from the Walmart Marketplace API.
+    return { products: [], logs };
+}
+
+export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
+    const logs: string[] = ["Etsy product fetching is not implemented yet. Returning mock data."];
+     // In a real app, you would fetch products from the Etsy API.
+    return { products: [], logs };
 }
