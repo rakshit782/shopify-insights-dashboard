@@ -167,11 +167,11 @@ export async function handleShipOrder(orderId: string | number, platform: string
 
 export async function handleGetWebsiteProducts() {
     try {
-        const { rawProducts } = await getWebsiteProducts();
-        return { success: true, products: rawProducts, error: null };
+        const { rawProducts, logs } = await getWebsiteProducts();
+        return { success: true, products: rawProducts, error: null, logs };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        return { success: false, products: [], error: `Failed to fetch website products: ${errorMessage}` };
+        return { success: false, products: [], error: `Failed to fetch website products: ${errorMessage}`, logs: [errorMessage] };
     }
 }
 
@@ -215,7 +215,7 @@ export async function getDashboardStats(dateRange?: DateRange) {
             websiteProductCount
         ] = await Promise.all([
             getSalesData(range),
-            getPlatformProductCounts([]),
+            getPlatformProductCounts(),
             getWebsiteProductCount([])
         ]);
 

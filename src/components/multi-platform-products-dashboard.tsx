@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Shirt, Code, RefreshCw, UploadCloud, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetEtsyProducts, handleSyncProducts } from '@/app/actions';
+import { handleGetCredentialStatuses, handleGetWebsiteProducts, handleGetEtsyProducts, handleSyncProducts } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from './product-table';
 import { ScrollArea } from './ui/scroll-area';
@@ -35,7 +35,7 @@ const platformMeta: {
     'shopify': { 
         name: 'Shopify', 
         icon: <Image src="/shopify.svg" alt="Shopify" width={18} height={18} unoptimized />,
-        fetcher: handleGetShopifyProducts,
+        fetcher: handleGetWebsiteProducts,
         showPushToDb: true,
     },
     'etsy': { 
@@ -99,7 +99,7 @@ function DebugLog({ logs }: { logs: string[] }) {
 }
 
 function PlatformProductView({ platformId, cache, setCache }: { platformId: string, cache: Record<string, CachedProducts>, setCache: Function }) {
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [isPushingToDb, setIsPushingToDb] = useState(false);
     const { toast } = useToast();
     
@@ -108,7 +108,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
     const products = cachedEntry?.data || [];
     const error = cachedEntry?.error || null;
     const logs = cachedEntry?.logs || [];
-    const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 60 * 5); // 5 hours cache
+    const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 5); // 5 minute cache
 
     const fetchProducts = useCallback(async () => {
         setIsLoading(true);
@@ -124,6 +124,14 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         }));
         setIsLoading(false);
     }, [platform.fetcher, platformId, setCache]);
+
+    useEffect(() => {
+        if (!isCacheValid) {
+            fetchProducts();
+        } else {
+            setIsLoading(false);
+        }
+    }, [fetchProducts, isCacheValid]);
     
 
     const handlePushToDb = async () => {
@@ -140,6 +148,8 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                 title: "Sync Successful",
                 description: `${result.count} products have been successfully synced to the database.`
             });
+            // After pushing, refresh the data from the database
+            fetchProducts();
         } else {
             toast({
                 title: "Sync Failed",
@@ -150,7 +160,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         setIsPushingToDb(false);
     }
 
-    if (isLoading) return <ProductsLoadingSkeleton />;
+    if (isLoading && !isCacheValid) return <ProductsLoadingSkeleton />;
     
     if (error) return (
         <>
@@ -188,7 +198,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                         <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
                         <CardTitle>No Products Found</CardTitle>
                         <CardDescription className="mt-2 max-w-md">
-                            Click 'Refresh' to fetch product data from this marketplace.
+                            Click 'Refresh' to fetch product data from your database, or 'Push to DB' to sync from Shopify.
                         </CardDescription>
                     </CardContent>
                 </Card>
@@ -201,7 +211,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         <>
             <ProductTable 
                 products={products} 
-                platform={platformId} 
+                platform={platform.name} 
                 onRefresh={() => fetchProducts()}
                 isLoading={isLoading}
                 onPushToDb={platform.showPushToDb ? handlePushToDb : undefined}
