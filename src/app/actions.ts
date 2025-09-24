@@ -334,10 +334,10 @@ export async function handleGetOrCreateUser(): Promise<{ success: boolean; user:
     const supabase = createSupabaseServerClient('MAIN');
     
     // In a real app, this would come from the actual authenticated user session
-    // For testing, we generate a random user each time
+    // For testing, we use a random Auth0 ID and a fixed email.
     const randomId = Math.random().toString(36).substring(2, 15);
     const mockAuth0Id = `auth0|${randomId}`;
-    const mockEmail = `user-${randomId}@example.com`;
+    const mockEmail = `rakshitvaish@amzadscout.com`;
     const mockAgency = { agency_id: 'agency_123', name: 'Mock Agency' };
 
     try {
