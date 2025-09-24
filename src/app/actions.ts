@@ -332,9 +332,12 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
 
 export async function handleGetOrCreateUser(): Promise<{ success: boolean; user: User | null; profile: Profile | null; agency: Agency | null; error: string | null; }> {
     const supabase = createSupabaseServerClient('MAIN');
+    
     // In a real app, this would come from the actual authenticated user session
-    const mockAuth0Id = 'auth0|66a0186be959f27d91a87474';
-    const mockEmail = 'rvaishjpr@gmail.com';
+    // For testing, we generate a random user each time
+    const randomId = Math.random().toString(36).substring(2, 15);
+    const mockAuth0Id = `auth0|${randomId}`;
+    const mockEmail = `user-${randomId}@example.com`;
     const mockAgency = { agency_id: 'agency_123', name: 'Mock Agency' };
 
     try {
@@ -408,5 +411,7 @@ export async function handleGetOrCreateUser(): Promise<{ success: boolean; user:
 
     
 
+
+    
 
     
