@@ -67,9 +67,9 @@ function UserProfileAndSettingsCard() {
             </CardHeader>
             <CardContent className="space-y-4">
                  {error && <p className="text-sm text-destructive">{error}</p>}
-                <InfoRow icon={Mail} label="Email" value={profile?.email} isLoading={isLoading} />
+                <InfoRow icon={Mail} label="Email" value={profile?.email} isLoading={isLoading && !profile?.email} />
+                <InfoRow icon={Key} label="Auth0 ID" value={user?.auth0_id} isMono isLoading={isLoading && !user?.auth0_id} />
                 <InfoRow icon={Building} label="Agency" value={agency?.name} isLoading={isLoading} />
-                <InfoRow icon={Key} label="Auth0 ID" value={user?.auth0_id} isMono isLoading={isLoading} />
                 <InfoRow icon={Hash} label="User ID" value={user?.id} isMono isLoading={isLoading} />
                 <InfoRow icon={UserIcon} label="Role" value={user?.role} isLoading={isLoading} />
             </CardContent>
