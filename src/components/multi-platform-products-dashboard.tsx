@@ -99,7 +99,7 @@ function DebugLog({ logs }: { logs: string[] }) {
 }
 
 function PlatformProductView({ platformId, cache, setCache }: { platformId: string, cache: Record<string, CachedProducts>, setCache: Function }) {
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [isPushingToDb, setIsPushingToDb] = useState(false);
     const { toast } = useToast();
     
@@ -110,11 +110,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
     const logs = cachedEntry?.logs || [];
     const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 60 * 5); // 5 hours cache
 
-    const fetchProducts = useCallback(async (forceRefresh = false) => {
-        if (isCacheValid && !forceRefresh) {
-            setIsLoading(false);
-            return;
-        }
+    const fetchProducts = useCallback(async () => {
         setIsLoading(true);
         const result = await platform.fetcher();
         setCache((prev: Record<string, CachedProducts>) => ({
@@ -127,11 +123,8 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
             }
         }));
         setIsLoading(false);
-    }, [platform.fetcher, platformId, setCache, isCacheValid]);
+    }, [platform.fetcher, platformId, setCache]);
     
-    useEffect(() => {
-        fetchProducts();
-    }, [fetchProducts]);
 
     const handlePushToDb = async () => {
         setIsPushingToDb(true);
@@ -157,7 +150,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         setIsPushingToDb(false);
     }
 
-    if (isLoading && !isCacheValid) return <ProductsLoadingSkeleton />;
+    if (isLoading) return <ProductsLoadingSkeleton />;
     
     if (error) return (
         <>
@@ -170,7 +163,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         </>
     );
     
-    if (products.length === 0 && !isLoading) {
+    if (products.length === 0) {
        return (
             <>
                 <Card>
@@ -184,7 +177,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                                         Push to DB
                                     </Button>
                                 )}
-                                <Button variant="outline" size="sm" onClick={() => fetchProducts(true)} disabled={isLoading}>
+                                <Button variant="outline" size="sm" onClick={() => fetchProducts()} disabled={isLoading}>
                                     <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                                     Refresh
                                 </Button>
@@ -195,7 +188,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                         <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
                         <CardTitle>No Products Found</CardTitle>
                         <CardDescription className="mt-2 max-w-md">
-                            There are no products to display for this marketplace.
+                            Click 'Refresh' to fetch product data from this marketplace.
                         </CardDescription>
                     </CardContent>
                 </Card>
@@ -209,7 +202,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
             <ProductTable 
                 products={products} 
                 platform={platformId} 
-                onRefresh={() => fetchProducts(true)}
+                onRefresh={() => fetchProducts()}
                 isLoading={isLoading}
                 onPushToDb={platform.showPushToDb ? handlePushToDb : undefined}
                 isPushingToDb={isPushingToDb}
