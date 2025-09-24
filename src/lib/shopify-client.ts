@@ -1,4 +1,5 @@
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -228,7 +229,7 @@ export async function createShopifyProduct(productData: ShopifyProductCreation):
         }
 
         const data: { product: ShopifyProduct } = await response.json() as any;
-        logs.push(`Successfully created product ${data.product.id}`);
+        logs.push(`Successfully created product ${data.id}`);
         return { product: data.product, logs };
 
     } catch (error) {
@@ -247,11 +248,12 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
             throw new Error("Shopify credentials are not configured in .env file.");
         }
         const storeUrl = getStoreUrl(config.store_name);
-        const url = `${storeUrl}/admin/api/${config.api_version}/products/${productData.id}.json`;
+        const numericId = productData.id.split('/').pop();
+        const url = `${storeUrl}/admin/api/${config.api_version}/products/${numericId}.json`;
 
-        const body = JSON.stringify({ product: productData });
+        const body = JSON.stringify({ product: {id: numericId, ...productData} });
         
-        logs.push(`Updating product ${productData.id} with body:`, body);
+        logs.push(`Updating product ${numericId} with body:`, body);
 
         const response = await safeFetch(url, {
             method: 'PUT',
@@ -797,11 +799,35 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
 }
 
 // ============================================
-// Product Fetching Stubs
+// Product Fetching & Update Stubs
 // ============================================
 
 export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
     const logs: string[] = ["Etsy product fetching is not implemented yet. Returning mock data."];
      // In a real app, you would fetch products from the Etsy API.
     return { products: [], logs };
+}
+
+export async function updateEtsyProduct(payload: { sku?: string; price?: number; inventory?: number; }) {
+    console.log('--- SIMULATING ETSY PRODUCT UPDATE ---');
+    console.log(`SKU: ${payload.sku}`);
+    console.log(`New Price: ${payload.price}`);
+    console.log(`New Inventory: ${payload.inventory}`);
+    // In a real app, you would make an API call to Etsy here
+    // using the payload to update the listing identified by the SKU.
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    console.log('--- Etsy update simulation complete. ---');
+    return { success: true };
+}
+
+export async function updateWalmartProduct(payload: { sku?: string; price?: number; inventory?: number; }) {
+    console.log('--- SIMULATING WALMART PRODUCT UPDATE ---');
+    console.log(`SKU: ${payload.sku}`);
+    console.log(`New Price: ${payload.price}`);
+    console.log(`New Inventory: ${payload.inventory}`);
+    // In a real app, you would make an API call to Walmart here
+    // using the payload to update inventory and price for the given SKU.
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    console.log('--- Walmart update simulation complete. ---');
+    return { success: true };
 }

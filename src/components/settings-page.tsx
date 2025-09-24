@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton';
 import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2, CheckCircle, XCircle, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { handleGetOrCreateUser, handleGetCredentialStatuses } from '@/app/actions';
-import type { User, Profile } from '@/lib/types';
+import { handleGetOrCreateUser, handleGetCredentialStatuses, handleSaveSyncSettings, handleGetSyncSettings } from '@/app/actions';
+import type { User, Profile, SyncSettings } from '@/lib/types';
 import { Button } from './ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from './ui/form';
 import { Switch } from './ui/switch';
@@ -149,7 +149,7 @@ function MarketplaceConnectionsCard() {
                         allPlatforms.map(platform => (
                             <div key={platform} className="flex items-center justify-between p-3 border rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <Image src={platformIconMap[platform] || '/placeholder.svg'} alt={platform} width={20} height={20} unoptimized />
+                                    <Image src={platformIconMap[platform] || 'https://placehold.co/400'} alt={platform} width={20} height={20} unoptimized />
                                     <span className="font-medium">{platformNameMap[platform]}</span>
                                 </div>
                                 {statuses[platform] ? (
@@ -209,33 +209,63 @@ function MarketplaceSyncSettings() {
     useEffect(() => {
         async function loadSettings() {
             setIsLoading(true);
-            const statusResult = await handleGetCredentialStatuses();
+            const [statusResult, settingsResult] = await Promise.all([
+                handleGetCredentialStatuses(),
+                handleGetSyncSettings()
+            ]);
+
+            let initialSettings: SyncSettings['marketplaces'] = [];
+
             if (statusResult.success && statusResult.statuses) {
                 const connectedChannels = Object.keys(statusResult.statuses)
-                    .filter(key => statusResult.statuses[key] && platformIconMap[key])
-                    .map(key => ({
+                    .filter(key => statusResult.statuses[key] && platformIconMap[key]);
+                
+                initialSettings = connectedChannels.map(key => {
+                    const savedSetting = settingsResult.settings?.marketplaces.find(s => s.id === key);
+                    if (savedSetting) {
+                        return savedSetting;
+                    }
+                    // Return default values for newly connected marketplaces
+                    return {
                         id: key,
                         name: platformNameMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
-                        syncInventory: key !== 'shopify', // Default to true for non-shopify
-                        syncPrice: key !== 'shopify', // Default to true for non-shopify
+                        syncInventory: key !== 'shopify',
+                        syncPrice: key !== 'shopify',
                         priceAdjustment: 0,
                         autoUpdateInventory: false,
                         defaultInventory: 10,
-                    }));
-                replace(connectedChannels);
+                    };
+                });
             }
+            
+            // Ensure Shopify is always first if it's connected
+            initialSettings.sort((a, b) => {
+                if (a.id === 'shopify') return -1;
+                if (b.id === 'shopify') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            replace(initialSettings);
             setIsLoading(false);
         }
         loadSettings();
     }, [replace]);
 
-    const onSubmit = (data: SyncSettingsFormValues) => {
+    const onSubmit = async (data: SyncSettingsFormValues) => {
         setIsSubmitting(true);
-        console.log('Submitting sync settings:', data);
-        toast({
-            title: 'Settings Saved',
-            description: 'Your marketplace sync settings have been updated.',
-        });
+        const result = await handleSaveSyncSettings(data);
+        if (result.success) {
+            toast({
+                title: 'Settings Saved',
+                description: 'Your marketplace sync settings have been updated.',
+            });
+        } else {
+             toast({
+                title: 'Save Failed',
+                description: result.error,
+                variant: 'destructive',
+            });
+        }
         setIsSubmitting(false);
     };
 
@@ -265,7 +295,7 @@ function MarketplaceSyncSettings() {
                                         <h3 className="text-lg font-semibold">{field.name}</h3>
                                         {isShopify && <Badge variant="outline">Source</Badge>}
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 p-4 border rounded-lg">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 p-4 border rounded-lg">
                                         <FormField
                                             control={form.control}
                                             name={`marketplaces.${index}.syncInventory`}

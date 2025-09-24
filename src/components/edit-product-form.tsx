@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -126,7 +127,7 @@ export function EditProductForm({ product }: EditProductFormProps) {
     if (result.success) {
       toast({
         title: 'Product Updated',
-        description: `"${result.product?.title}" has been successfully updated.`,
+        description: `"${result.product?.title}" has been successfully updated and synced to other marketplaces.`,
       });
       router.push('/cataloging-manager'); // Redirect to product list after successful update
       router.refresh(); // Force a refresh of the page data

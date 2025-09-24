@@ -2,7 +2,7 @@
 
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
-  id: number;
+  id: string; // Changed to string to be consistently admin_graphql_api_id
   admin_graphql_api_id: string;
   title: string;
   body_html: string;
@@ -114,7 +114,7 @@ export interface ShopifyVariantUpdate {
 
 
 export interface ShopifyProductUpdate {
-  id: number;
+  id: string; // Use string for GID
   title?: string;
   body_html?: string;
   vendor?: string;
@@ -309,6 +309,21 @@ export interface Profile {
     address?: string;
     phone?: string;
     country?: string;
+    sync_settings?: SyncSettings; // JSONB column for settings
 }
 
+export interface MarketplaceSyncSetting {
+  id: string;
+  name: string;
+  syncInventory: boolean;
+  syncPrice: boolean;
+  priceAdjustment: number;
+  autoUpdateInventory: boolean;
+  defaultInventory: number;
+}
+
+export interface SyncSettings {
+  marketplaces: MarketplaceSyncSetting[];
+}
     
+

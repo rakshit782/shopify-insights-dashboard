@@ -2,9 +2,9 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, SyncSettings } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
@@ -47,11 +47,77 @@ export async function handleCreateProduct(productData: ShopifyProductCreation) {
 
 export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
   try {
-    // Update product in Shopify
+    // 1. Update product in Shopify (source of truth)
     const { product: updatedShopifyProduct } = await updateShopifyProduct(productData);
 
-    // Re-sync the updated product to our website's Supabase
+    // 2. Re-sync the updated product to our website's Supabase database
     await syncProductsToWebsite([updatedShopifyProduct]);
+
+    // 3. Fetch sync settings
+    const settingsResult = await handleGetSyncSettings();
+    if (!settingsResult.success || !settingsResult.settings) {
+        console.warn("Could not retrieve sync settings. Skipping external marketplace updates.");
+        return { success: true, error: null, product: updatedShopifyProduct };
+    }
+
+    const syncSettings = settingsResult.settings;
+
+    // 4. Iterate through marketplaces and apply updates
+    for (const marketPlaceSetting of syncSettings.marketplaces) {
+        if (marketPlaceSetting.id === 'shopify' || (!marketPlaceSetting.syncInventory && !marketPlaceSetting.syncPrice)) {
+            continue; // Skip Shopify or marketplaces with no sync enabled
+        }
+        
+        console.log(`Processing sync for marketplace: ${marketPlaceSetting.id}`);
+
+        const variant = updatedShopifyProduct.variants[0];
+        if (!variant) continue;
+
+        let newPrice: number | undefined = undefined;
+        if (marketPlaceSetting.syncPrice) {
+            const basePrice = parseFloat(variant.price);
+            const adjustment = marketPlaceSetting.priceAdjustment || 0;
+            newPrice = basePrice * (1 + adjustment / 100);
+        }
+
+        let newInventory: number | undefined = undefined;
+        if (marketPlaceSetting.syncInventory) {
+             if (marketPlaceSetting.autoUpdateInventory) {
+                newInventory = marketPlaceSetting.defaultInventory ?? 0;
+            } else {
+                newInventory = variant.inventory_quantity;
+            }
+        }
+        
+        // Construct payload for the external marketplace
+        const externalUpdatePayload = {
+            sku: variant.sku, // Use SKU to identify product on other platforms
+            price: newPrice,
+            inventory: newInventory,
+        };
+
+        // Call the specific update function for the marketplace
+        try {
+            switch (marketPlaceSetting.id) {
+                case 'etsy':
+                    await updateEtsyProduct(externalUpdatePayload);
+                    console.log(`Successfully triggered update for SKU ${variant.sku} on Etsy.`);
+                    break;
+                case 'walmart':
+                    await updateWalmartProduct(externalUpdatePayload);
+                    console.log(`Successfully triggered update for SKU ${variant.sku} on Walmart.`);
+                    break;
+                // Add cases for other marketplaces like 'amazon', 'ebay'
+                default:
+                    console.log(`Update function for ${marketPlaceSetting.id} is not implemented.`);
+            }
+        } catch (e) {
+             const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+             console.error(`Failed to update product on ${marketPlaceSetting.id}: ${errorMsg}`);
+             // Continue to next marketplace even if one fails
+        }
+    }
+
 
     return { success: true, error: null, product: updatedShopifyProduct };
   } catch (e) {
@@ -61,7 +127,7 @@ export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
   }
 }
 
-export async function handleGetProduct(id: number) {
+export async function handleGetProduct(id: string) {
   try {
     const { product } = await getShopifyProduct(id);
     if (!product) {
@@ -334,5 +400,54 @@ export async function handleGetEtsyProducts() {
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         return { success: false, products: [], error: `Failed to fetch Etsy products: ${errorMessage}`, logs: [errorMessage] };
+    }
+}
+
+export async function handleSaveSyncSettings(settings: SyncSettings): Promise<{ success: boolean; error: string | null; }> {
+    const supabase = createSupabaseServerClient('MAIN');
+    const userResult = await handleGetOrCreateUser(); // This gives us a consistent user/profile to work with
+    if (!userResult.success || !userResult.profile) {
+        return { success: false, error: 'Could not identify user profile to save settings.' };
+    }
+
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ sync_settings: settings })
+            .eq('id', userResult.profile.id);
+
+        if (error) throw error;
+
+        return { success: true, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Error saving sync settings:', errorMessage);
+        return { success: false, error: `Database operation failed: ${errorMessage}` };
+    }
+}
+
+export async function handleGetSyncSettings(): Promise<{ success: boolean; settings: SyncSettings | null; error: string | null; }> {
+    const supabase = createSupabaseServerClient('MAIN');
+    const userResult = await handleGetOrCreateUser();
+    if (!userResult.success || !userResult.profile) {
+        return { success: false, settings: null, error: 'Could not identify user profile to load settings.' };
+    }
+    
+    // The profile is already fetched in handleGetOrCreateUser, but let's re-fetch to be safe
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('sync_settings')
+            .eq('id', userResult.profile.id)
+            .single();
+
+        if (error) throw error;
+
+        return { success: true, settings: profile.sync_settings as SyncSettings | null, error: null };
+
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Error loading sync settings:', errorMessage);
+        return { success: false, settings: null, error: `Database operation failed: ${errorMessage}` };
     }
 }
