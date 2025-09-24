@@ -38,7 +38,7 @@ function checkEnvVar(variableName: string): boolean {
 export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
   return {
       'shopify': checkEnvVar('SHOPIFY_STORE_NAME') && checkEnvVar('SHOPIFY_ACCESS_TOKEN'),
-      'amazon': checkEnvVar('AMAZON_REFRESH_TOKEN') && checkEnvVar('AMAZON_SELLING_PARTNER_ID') && checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
+      'amazon': checkEnvVar('AMAZON_REFRESH_TOKEN') && checkEnvVar('AMAZON_SELLER_ID') && checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
       'walmart': checkEnvVar('WALMART_CLIENT_ID') && checkEnvVar('WALMART_CLIENT_SECRET'),
       'ebay': false,
       'etsy': false,
@@ -566,7 +566,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
 async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
     logs.push("Reading Amazon SP-API credentials from .env file...");
     const refreshToken = process.env.AMAZON_REFRESH_TOKEN;
-    const sellingPartnerId = process.env.AMAZON_SELLING_PARTNER_ID;
+    const sellingPartnerId = process.env.AMAZON_SELLER_ID;
     const clientId = process.env.AMAZON_CLIENT_ID;
     const clientSecret = process.env.AMAZON_CLIENT_SECRET;
 
@@ -701,7 +701,8 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
             address1: amazonOrder.ShippingAddress.AddressLine1,
             address2: amazonOrder.ShippingAddress.AddressLine2,
             city: amazonOrder.ShippingAddress.City,
-            province: amazonOrder.ShippingAddress.StateOrRegion,
+            state: amazonOrder.ShippingAddress.StateOrRegion,
+            postalCode: amazonOrder.ShippingAddress.PostalCode,
             country: amazonOrder.ShippingAddress.CountryCode,
             zip: amazonOrder.ShippingAddress.PostalCode,
             phone: amazonOrder.ShippingAddress.Phone,
