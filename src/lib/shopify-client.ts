@@ -8,6 +8,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -161,9 +162,6 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
             const data: any = await response.json();
             allProducts.push(...data.products);
             logs.push(`Fetched ${data.products.length} products. Total so far: ${allProducts.length}`);
-
-            // Add a 1-second delay between requests
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             const linkHeader = response.headers.get('Link');
             if (linkHeader) {
@@ -1101,5 +1099,7 @@ export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; l
     return { products: [], logs };
 }
 
+
+    
 
     
