@@ -3,7 +3,7 @@
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, saveShopifyCredentials, saveAmazonCredentials, saveWalmartCredentials, saveEbayCredentials, saveEtsyCredentials, saveWayfairCredentials, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getPlatformProductCounts } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder, BusinessProfile, BusinessProfileCreation, Agency } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, AmazonCredentials, WalmartCredentials, EbayCredentials, EtsyCredentials, WayfairCredentials, ShopifyOrder, BusinessProfile, BusinessProfileCreation, Agency, User, Profile } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
@@ -330,9 +330,76 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
     }
 }
 
-export async function handleGetUserAgency(): Promise<{ success: boolean; email: string | null; agency: Agency | null; error: string | null; }> {
-    // This is now a mock function since user auth is removed
-    return { success: true, email: 'rvaishjpr@gmail.com', agency: { agency_id: 'agency_123', name: 'Mock Agency' }, error: null };
+export async function handleGetOrCreateUser(): Promise<{ success: boolean; user: User | null; profile: Profile | null; agency: Agency | null; error: string | null; }> {
+    const supabase = createSupabaseServerClient('MAIN');
+    // In a real app, this would come from the actual authenticated user session
+    const mockAuth0Id = 'auth0|66a0186be959f27d91a87474';
+    const mockEmail = 'rvaishjpr@gmail.com';
+    const mockAgency = { agency_id: 'agency_123', name: 'Mock Agency' };
+
+    try {
+        // 1. Check if user exists
+        const { data: existingUser, error: findError } = await supabase
+            .from('users')
+            .select(`*, profiles(*)`)
+            .eq('auth0_id', mockAuth0Id)
+            .single();
+
+        if (findError && findError.code !== 'PGRST116') { // PGRST116 = no rows found
+            throw findError;
+        }
+
+        if (existingUser) {
+            // User found, return their data
+            return {
+                success: true,
+                user: existingUser as User,
+                profile: existingUser.profiles as Profile,
+                agency: mockAgency,
+                error: null
+            };
+        }
+
+        // 2. User not found, create them
+        const { data: newUser, error: insertUserError } = await supabase
+            .from('users')
+            .insert({
+                auth0_id: mockAuth0Id,
+                username: mockEmail,
+                role: 'sub',
+                status: 'active'
+            })
+            .select()
+            .single();
+
+        if (insertUserError) throw insertUserError;
+        if (!newUser) throw new Error('Failed to create user and retrieve their ID.');
+        
+        // 3. Create their associated profile
+        const { data: newProfile, error: insertProfileError } = await supabase
+            .from('profiles')
+            .insert({
+                id: newUser.id, // Match profile PK to user PK
+                email: mockEmail
+            })
+            .select()
+            .single();
+        
+        if (insertProfileError) throw insertProfileError;
+
+        return {
+            success: true,
+            user: newUser as User,
+            profile: newProfile as Profile,
+            agency: mockAgency,
+            error: null
+        };
+
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Error in handleGetOrCreateUser:', errorMessage);
+        return { success: false, user: null, profile: null, agency: null, error: `Database operation failed: ${errorMessage}` };
+    }
 }
     
     

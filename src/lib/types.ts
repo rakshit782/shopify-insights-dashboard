@@ -1,5 +1,6 @@
 
 
+
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -287,3 +288,22 @@ export interface Agency {
     name: string;
 }
     
+// User and Profile types for Supabase
+export interface User {
+    id: string; // uuid, primary key
+    auth0_id: string; // unique
+    username: string; // email
+    role: 'admin' | 'sub';
+    status: 'active' | 'inactive';
+    created_at: string;
+}
+
+export interface Profile {
+    id: string; // uuid, foreign key to users.id
+    first_name?: string;
+    last_name?: string;
+    email: string; // unique
+    address?: string;
+    phone?: string;
+    country?: string;
+}
