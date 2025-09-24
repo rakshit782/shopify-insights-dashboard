@@ -15,32 +15,28 @@ export function createSupabaseServerClient(database: 'MAIN' | 'DATA') {
 
   let supabaseUrl: string | undefined;
   let supabaseServiceRoleKey: string | undefined;
+  let placeholderUrl: string;
 
   if (database === 'MAIN') {
     supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+    placeholderUrl = "your-supabase-main-url";
   } else if (database === 'DATA') {
     supabaseUrl = process.env.SUPABASE_URL_DATA;
     supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
+    placeholderUrl = "your-supabase-data-url";
+  } else {
+    // Should not happen, but good to have a fallback
+    return createDummyClient('UNKNOWN');
   }
 
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  // Check for missing or placeholder credentials
+  if (!supabaseUrl || !supabaseServiceRoleKey || supabaseUrl === placeholderUrl) {
     if (process.env.NODE_ENV === 'development') {
-      console.error(`Supabase credentials for the ${database} database are not set. Check your .env file.`);
+      console.error(`Supabase credentials for the ${database} database are not set or are placeholders. Check your .env file.`);
     }
-    // We create a "do-nothing" client if credentials are not provided
-    // This avoids hard crashes but operations will fail.
-    // The UI should check for the presence of env vars and show an error state.
-    const dummyClient = {
-        from: () => ({
-            select: async () => ({ error: { message: `Supabase for ${database} not configured.`}, data: null }),
-            insert: async () => ({ error: { message: `Supabase for ${database} not configured.`}, data: null }),
-            update: async () => ({ error: { message: `Supabase for ${database} not configured.`}, data: null }),
-            delete: async () => ({ error: { message: `Supabase for ${database} not configured.`}, data: null }),
-            upsert: async () => ({ error: { message: `Supabase for ${database} not configured.`}, data: null }),
-        }),
-    };
-    return dummyClient as any;
+    // Return a do-nothing client to prevent crashes
+    return createDummyClient(database);
   }
 
   // Create and return a new Supabase client with the service_role key
@@ -67,4 +63,24 @@ export function createSupabaseServerClient(database: 'MAIN' | 'DATA') {
   });
 }
 
+function createDummyClient(database: 'MAIN' | 'DATA' | 'UNKNOWN') {
+    const errorMessage = `Supabase for ${database} not configured.`;
+    const errorResponse = { error: { message: errorMessage }, data: null };
+
+    const dummyQueryBuilder = {
+        select: async () => errorResponse,
+        insert: async () => errorResponse,
+        update: async () => errorResponse,
+        delete: async () => errorResponse,
+        upsert: async () => errorResponse,
+        single: async () => errorResponse,
+        eq: () => dummyQueryBuilder,
+        limit: () => dummyQueryBuilder,
+        order: () => dummyQueryBuilder,
+    };
+    
+    return {
+        from: () => dummyQueryBuilder,
+    } as any;
+}
     
