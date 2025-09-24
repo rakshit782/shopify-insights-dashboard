@@ -6,6 +6,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -122,30 +123,64 @@ export async function getShopifyProducts(options: { countOnly?: boolean }): Prom
             return { rawProducts: [], count: 0, logs };
         }
         const storeUrl = getStoreUrl(config.store_name);
-        const endpoint = options.countOnly ? 'products/count.json' : 'products.json?limit=250';
-        const url = `${storeUrl}/admin/api/${config.api_version}/${endpoint}`;
         
-        logs.push(`Fetching Shopify data from endpoint: ${endpoint}`);
-        const response = await safeFetch(url, {
-            headers: { 'X-Shopify-Access-Token': config.access_token }
-        }, logs);
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            logs.push(`Shopify API Error: ${response.status} ${response.statusText} - ${errorBody}`);
-            // Instead of throwing, return an empty state
-            return { rawProducts: [], count: 0, logs };
-        }
-
-        const data: any = await response.json();
-
         if (options.countOnly) {
+            const endpoint = 'products/count.json';
+            const url = `${storeUrl}/admin/api/${config.api_version}/${endpoint}`;
+            logs.push(`Fetching Shopify data from endpoint: ${endpoint}`);
+            const response = await safeFetch(url, {
+                headers: { 'X-Shopify-Access-Token': config.access_token }
+            }, logs);
+
+             if (!response.ok) {
+                const errorBody = await response.text();
+                logs.push(`Shopify API Error: ${response.status} ${response.statusText} - ${errorBody}`);
+                return { rawProducts: [], count: 0, logs };
+            }
+            const data: any = await response.json();
             logs.push(`Successfully fetched product count: ${data.count}`);
             return { rawProducts: [], count: data.count, logs };
         }
+
+        const allProducts: ShopifyProduct[] = [];
+        let url: string | undefined = `${storeUrl}/admin/api/${config.api_version}/products.json?limit=250`;
+        logs.push(`Fetching initial page of Shopify products...`);
+
+        while (url) {
+            const response = await safeFetch(url, {
+                headers: { 'X-Shopify-Access-Token': config.access_token }
+            }, logs);
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                logs.push(`Shopify API Error: ${response.status} ${response.statusText} - ${errorBody}`);
+                break;
+            }
+
+            const data: any = await response.json();
+            allProducts.push(...data.products);
+            logs.push(`Fetched ${data.products.length} products. Total so far: ${allProducts.length}`);
+
+            // Check for next page link in headers
+            const linkHeader = response.headers.get('Link');
+            if (linkHeader) {
+                const links = linkHeader.split(', ');
+                const nextLink = links.find(link => link.includes('rel="next"'));
+                if (nextLink) {
+                    url = nextLink.substring(nextLink.indexOf('<') + 1, nextLink.indexOf('>'));
+                    logs.push(`Found next page link: ${url}`);
+                } else {
+                    url = undefined;
+                    logs.push('No next page link found. Finished fetching.');
+                }
+            } else {
+                url = undefined;
+                logs.push('No Link header found. Finished fetching.');
+            }
+        }
         
-        logs.push(`Successfully fetched ${data.products.length} products.`);
-        return { rawProducts: data.products, logs };
+        logs.push(`Successfully fetched a total of ${allProducts.length} products.`);
+        return { rawProducts: allProducts, logs };
 
     } catch (error) {
         if (error instanceof Error) {
