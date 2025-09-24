@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Database, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
+import { Database, CheckCircle, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { ShopifyProduct } from '@/lib/types';
 import { PaginationControls } from './pagination-controls';
