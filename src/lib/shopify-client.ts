@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -53,8 +39,8 @@ export async function getCredentialStatuses(): Promise<Record<string, boolean>> 
       'shopify': checkEnvVar('SHOPIFY_STORE_NAME') && checkEnvVar('SHOPIFY_ACCESS_TOKEN'),
       'amazon': checkEnvVar('AMAZON_REFRESH_TOKEN') && checkEnvVar('AMAZON_SELLER_ID') && checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
       'walmart': checkEnvVar('WALMART_CLIENT_ID') && checkEnvVar('WALMART_CLIENT_SECRET'),
-      'ebay': false, // eBay not implemented
-      'etsy': checkEnvVar('ETSY_API_KEY'), // Assuming ETSY_API_KEY for Etsy
+      'ebay': checkEnvVar('EBAY_APP_ID') && checkEnvVar('EBAY_CERT_ID') && checkEnvVar('EBAY_DEV_ID') && checkEnvVar('EBAY_AUTH_TOKEN'),
+      'etsy': checkEnvVar('ETSY_API_KEY'),
       'wayfair': false,
   };
 }
@@ -294,7 +280,7 @@ export async function updateShopifyProduct(productData: ShopifyProductUpdate): P
     }
 }
 
-export async function getShopifyProduct(id: number): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
+export async function getShopifyProduct(id: string): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
     const logs: string[] = [];
     try {
         const config = getShopifyConfig(logs);
@@ -302,16 +288,20 @@ export async function getShopifyProduct(id: number): Promise<{ product: ShopifyP
             throw new Error("Shopify credentials are not configured in .env file.");
         }
         const storeUrl = getStoreUrl(config.store_name);
-        const url = `${storeUrl}/admin/api/${config.api_version}/products/${id}.json`;
+        // The ID from Supabase is the admin_graphql_api_id, but the REST API needs the numeric ID.
+        // For now, we assume the passed ID is the numeric one. This might need adjustment.
+        // A better approach would be a GraphQL query if we consistently use admin_graphql_api_id.
+        const numericId = id.split('/').pop();
+        const url = `${storeUrl}/admin/api/${config.api_version}/products/${numericId}.json`;
         
-        logs.push(`Fetching product with ID: ${id}`);
+        logs.push(`Fetching product with numeric ID: ${numericId}`);
         const response = await safeFetch(url, {
             headers: { 'X-Shopify-Access-Token': config.access_token }
         }, logs);
 
         if (!response.ok) {
              if (response.status === 404) {
-                logs.push(`Product with ID ${id} not found.`);
+                logs.push(`Product with ID ${numericId} not found.`);
                 return { product: null, logs };
             }
             const errorBody = await response.text();
@@ -815,11 +805,3 @@ export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; l
      // In a real app, you would fetch products from the Etsy API.
     return { products: [], logs };
 }
-
-
-    
-
-    
-
-
-
