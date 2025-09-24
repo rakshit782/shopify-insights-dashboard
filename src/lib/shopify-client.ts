@@ -98,16 +98,18 @@ export async function saveWayfairCredentials(profileId: string, credentials: Way
 // Shopify Helpers
 // ============================================
 
-async function getShopifyConfig(profileId: string, logs: string[]): Promise<ShopifyCredentials> {
+async function getShopifyConfig(profileId: string, logs: string[]): Promise<ShopifyCredentials | null> {
     logs.push("[MOCK] Fetching Shopify credentials...");
     if (profileId !== 'mock_profile_1') {
-      throw new Error('Could not fetch Shopify credentials for this profile.');
+      logs.push('Could not fetch Shopify credentials for this profile.');
+      return null;
     }
     const storeName = process.env.SHOPIFY_STORE_NAME;
     const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
 
-    if (!storeName || !accessToken) {
-        throw new Error('Shopify credentials (SHOPIFY_STORE_NAME, SHOPIFY_ACCESS_TOKEN) are not configured in .env');
+    if (!storeName || !accessToken || storeName === 'your-store-name') {
+        logs.push('Shopify credentials (SHOPIFY_STORE_NAME, SHOPIFY_ACCESS_TOKEN) are not configured in .env');
+        return null;
     }
 
     logs.push(`Successfully fetched mock credentials. Store: ${storeName}`);
@@ -158,6 +160,9 @@ export async function getShopifyProducts(options: { profileId: string, countOnly
     const logs: string[] = [];
     try {
         const config = await getShopifyConfig(options.profileId, logs);
+        if (!config) {
+            return { rawProducts: [], count: 0, logs };
+        }
         const storeUrl = getStoreUrl(config.store_name);
         const endpoint = options.countOnly ? 'products/count.json' : 'products.json?limit=250';
         const url = `${storeUrl}/admin/api/${config.api_version}/${endpoint}`;
@@ -170,7 +175,8 @@ export async function getShopifyProducts(options: { profileId: string, countOnly
         if (!response.ok) {
             const errorBody = await response.text();
             logs.push(`Shopify API Error: ${response.status} ${response.statusText} - ${errorBody}`);
-            throw new Error(`Failed to fetch from Shopify: ${response.statusText}`);
+            // Instead of throwing, return an empty state
+            return { rawProducts: [], count: 0, logs };
         }
 
         const data: any = await response.json();
@@ -189,8 +195,8 @@ export async function getShopifyProducts(options: { profileId: string, countOnly
         } else {
             logs.push(`An unknown error occurred in getShopifyProducts.`);
         }
-        // Re-throw the error to be caught by the API route/server action
-        throw error;
+        // Return empty state on error
+        return { rawProducts: [], count: 0, logs };
     }
 }
 
@@ -199,6 +205,9 @@ export async function createShopifyProduct(profileId: string, productData: Shopi
     const logs: string[] = [];
     try {
         const config = await getShopifyConfig(profileId, logs);
+         if (!config) {
+            throw new Error("Shopify credentials are not configured.");
+        }
         const storeUrl = getStoreUrl(config.store_name);
         const url = `${storeUrl}/admin/api/${config.api_version}/products.json`;
 
@@ -252,6 +261,9 @@ export async function updateShopifyProduct(profileId: string, productData: Shopi
     const logs: string[] = [];
     try {
         const config = await getShopifyConfig(profileId, logs);
+        if (!config) {
+            throw new Error("Shopify credentials are not configured.");
+        }
         const storeUrl = getStoreUrl(config.store_name);
         const url = `${storeUrl}/admin/api/${config.api_version}/products/${productData.id}.json`;
 
@@ -290,6 +302,9 @@ export async function getShopifyProduct(profileId: string, id: number): Promise<
     const logs: string[] = [];
     try {
         const config = await getShopifyConfig(profileId, logs);
+        if (!config) {
+            throw new Error("Shopify credentials are not configured.");
+        }
         const storeUrl = getStoreUrl(config.store_name);
         const url = `${storeUrl}/admin/api/${config.api_version}/products/${id}.json`;
         
@@ -324,6 +339,9 @@ export async function getShopifyOrders(options: { profileId: string, dateRange?:
   const logs: string[] = [];
   try {
     const config = await getShopifyConfig(options.profileId, logs);
+    if (!config) {
+        return { orders: [], logs };
+    }
     const storeUrl = getStoreUrl(config.store_name);
     
     const params = new URLSearchParams({
@@ -348,7 +366,8 @@ export async function getShopifyOrders(options: { profileId: string, dateRange?:
     if (!response.ok) {
       const errorBody = await response.text();
       logs.push(`Shopify API Error fetching orders: ${response.status} - ${errorBody}`);
-      throw new Error(`Failed to fetch Shopify orders: ${response.statusText}`);
+      // Instead of throwing, return an empty array
+      return { orders: [], logs };
     }
 
     const data: { orders: ShopifyOrder[] } = await response.json() as any;
@@ -358,7 +377,8 @@ export async function getShopifyOrders(options: { profileId: string, dateRange?:
     if (error instanceof Error) {
       logs.push(`Error in getShopifyOrders: ${error.message}`);
     }
-    throw error;
+    // Return empty state on error
+    return { orders: [], logs };
   }
 }
 
@@ -393,16 +413,18 @@ export async function getPlatformProductCounts(profileId: string, logs: string[]
 // Walmart Helpers
 // ============================================
 
-async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ clientId: string; clientSecret: string; }> {
+async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ clientId: string; clientSecret: string; } | null> {
     logs.push("[MOCK] Fetching Walmart credentials...");
     if (profileId !== 'mock_profile_1') {
-      throw new Error('Could not fetch Walmart credentials for this profile.');
+      logs.push('Could not fetch Walmart credentials for this profile.');
+      return null;
     }
     // In a real app, these would come from a secure source. Here, we'll use env vars for mock.
     const clientId = process.env.WALMART_CLIENT_ID;
     const clientSecret = process.env.WALMART_CLIENT_SECRET;
-     if (!clientId || !clientSecret) {
-        throw new Error('Walmart credentials (WALMART_CLIENT_ID, WALMART_CLIENT_SECRET) are not configured in .env');
+     if (!clientId || !clientSecret || clientId === 'your-walmart-client-id') {
+        logs.push('Walmart credentials (WALMART_CLIENT_ID, WALMART_CLIENT_SECRET) are not configured in .env');
+        return null;
     }
 
     logs.push(`Successfully fetched mock Walmart credentials.`);
@@ -411,40 +433,54 @@ async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ cl
 }
 
 
-async function getWalmartAccessToken(clientId: string, clientSecret: string, logs: string[]): Promise<string> {
+async function getWalmartAccessToken(clientId: string, clientSecret: string, logs: string[]): Promise<string | null> {
     const url = 'https://marketplace.walmartapis.com/v3/token';
     const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const correlationId = uuidv4();
 
     logs.push('Requesting Walmart access token...');
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Basic ${authHeader}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'WM_QOS.CORRELATION_ID': correlationId,
-            'WM_SVC.NAME': 'Walmart-Marketplace-Api'
-        },
-        body: 'grant_type=client_credentials'
-    });
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${authHeader}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'WM_QOS.CORRELATION_ID': correlationId,
+                'WM_SVC.NAME': 'Walmart-Marketplace-Api'
+            },
+            body: 'grant_type=client_credentials'
+        });
 
-    if (!response.ok) {
-        const errorBody = await response.text();
-        logs.push(`Walmart Token API Error: ${response.status} - ${errorBody}`);
-        throw new Error('Failed to get Walmart access token.');
+        if (!response.ok) {
+            const errorBody = await response.text();
+            logs.push(`Walmart Token API Error: ${response.status} - ${errorBody}`);
+            return null;
+        }
+
+        const data: any = await response.json();
+        logs.push('Successfully retrieved Walmart access token.');
+        return data.access_token;
+    } catch(e) {
+        if (e instanceof Error) {
+            logs.push(`Network error fetching Walmart token: ${e.message}`);
+        }
+        return null;
     }
-
-    const data: any = await response.json();
-    logs.push('Successfully retrieved Walmart access token.');
-    return data.access_token;
 }
 
 
 export async function getWalmartOrders(profileId: string): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
-    const { clientId, clientSecret } = await getWalmartConfig(profileId, logs);
-    const accessToken = await getWalmartAccessToken(clientId, clientSecret, logs);
+    const config = await getWalmartConfig(profileId, logs);
+    if (!config) {
+        return { orders: [], logs };
+    }
+    const accessToken = await getWalmartAccessToken(config.clientId, config.clientSecret, logs);
+    if (!accessToken) {
+         return { orders: [], logs };
+    }
     
     const correlationId = uuidv4();
     // Get orders created in the last 7 days as an example
@@ -456,7 +492,7 @@ export async function getWalmartOrders(profileId: string): Promise<{ orders: Sho
     const response = await fetch(url, {
       headers: {
         'WM_SEC.ACCESS_TOKEN': accessToken,
-        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
         'WM_QOS.CORRELATION_ID': correlationId,
         'WM_SVC.NAME': 'Walmart-Marketplace-Api',
         'Accept': 'application/json'
@@ -466,7 +502,7 @@ export async function getWalmartOrders(profileId: string): Promise<{ orders: Sho
     if (!response.ok) {
       const errorBody = await response.text();
       logs.push(`Walmart Orders API Error: ${response.status} - ${errorBody}`);
-      throw new Error(`Failed to fetch Walmart orders.`);
+      return { orders: [], logs };
     }
 
     const data: { list?: { elements?: { order: WalmartOrder[] } } } = await response.json() as any;
@@ -481,7 +517,7 @@ export async function getWalmartOrders(profileId: string): Promise<{ orders: Sho
     if (error instanceof Error) {
       logs.push(`Error in getWalmartOrders: ${error.message}`);
     }
-    throw error;
+    return { orders: [], logs };
   }
 }
 
@@ -546,5 +582,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
+
+    
 
     
