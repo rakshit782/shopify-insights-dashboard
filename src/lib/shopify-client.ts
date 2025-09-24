@@ -2,6 +2,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -628,42 +629,46 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString(),
         };
         
-        if (options.dateRange?.to) {
-            baseParams.CreatedBefore = options.dateRange.to.toISOString();
-        }
-
         logs.push(`Starting to fetch Amazon orders with params: ${JSON.stringify(baseParams)}`);
 
         do {
             const params = new URLSearchParams(baseParams);
             if (nextToken) {
-                params.set('NextToken', nextToken);
-                // The API does not allow combining NextToken with other filter parameters
-                params.delete('MarketplaceIds');
-                params.delete('CreatedAfter');
-                params.delete('CreatedBefore');
+                // NextToken must be used alone for subsequent requests
+                const nextParams = new URLSearchParams({ NextToken: nextToken });
+                const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${nextParams.toString()}`;
+                 logs.push(`Fetching next page of Amazon orders from: ${orderUrl}`);
+                const orderResponse = await fetch(orderUrl, {
+                    headers: { 'x-amz-access-token': accessToken }
+                });
+                const orderData: any = await orderResponse.json();
+                 if (!orderResponse.ok) {
+                    logs.push(`Amazon Orders API Error on next page: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
+                    break;
+                }
+                const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
+                allAmazonOrders.push(...newOrders);
+                logs.push(`Fetched ${newOrders.length} orders from next page. Total fetched: ${allAmazonOrders.length}.`);
+                nextToken = orderData.payload?.NextToken;
+
+            } else {
+                 // First request
+                const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
+                logs.push(`Fetching first page of Amazon orders from: ${orderUrl}`);
+                const orderResponse = await fetch(orderUrl, {
+                    headers: { 'x-amz-access-token': accessToken }
+                });
+                const orderData: any = await orderResponse.json();
+                if (!orderResponse.ok) {
+                    logs.push(`Amazon Orders API Error on first page: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
+                    break;
+                }
+                const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
+                allAmazonOrders.push(...newOrders);
+                logs.push(`Fetched ${newOrders.length} orders from first page. Total fetched: ${allAmazonOrders.length}.`);
+                nextToken = orderData.payload?.NextToken;
             }
-            
-            const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
-            
-            logs.push(`Fetching Amazon orders page from: ${orderUrl}`);
-            const orderResponse = await fetch(orderUrl, {
-                headers: { 'x-amz-access-token': accessToken }
-            });
 
-            const orderData: any = await orderResponse.json();
-            
-            if (!orderResponse.ok) {
-                logs.push(`Amazon Orders API Error: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
-                // Stop fetching if an error occurs
-                break;
-            }
-
-            const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
-            allAmazonOrders.push(...newOrders);
-            logs.push(`Fetched ${newOrders.length} orders. Total fetched so far: ${allAmazonOrders.length}.`);
-
-            nextToken = orderData.payload?.NextToken;
             if (nextToken) {
                 logs.push(`Received NextToken, will fetch next page.`);
             }
@@ -704,7 +709,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 
     } catch (e) {
         if (e instanceof Error) {
-            logs.push(`[12] Error in getAmazonOrders: ${e.message}`);
+            logs.push(`Error in getAmazonOrders: ${e.message}`);
         }
         return { orders: [], logs };
     }
@@ -876,27 +881,41 @@ export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[];
     }
 
     try {
+        // 1. Get SKUs from Shopify
+        logs.push("Fetching Shopify products to get SKUs...");
+        const { rawProducts: shopifyProducts, logs: shopifyLogs } = await getShopifyProducts({});
+        logs.push(...shopifyLogs);
+
+        if (shopifyProducts.length === 0) {
+            logs.push("No Shopify products found, so no SKUs to query on Amazon.");
+            return { products: [], logs };
+        }
+
+        const skus = shopifyProducts.flatMap(p => p.variants.map(v => v.sku).filter(Boolean));
+        if (skus.length === 0) {
+            logs.push("Shopify products found, but none have SKUs.");
+            return { products: [], logs };
+        }
+        logs.push(`Found ${skus.length} SKUs from Shopify to search on Amazon.`);
+
+        // 2. Batch SKUs and query Amazon
         const allListings: any[] = [];
-        let pageToken: string | undefined = undefined;
+        const skuBatchSize = 20; // Max SKUs per request for listings API
 
-        const baseParams: any = {
-            sellerId: sellerId,
-            marketplaceIds: marketplaceId,
-            pageSize: '250',
-            includedData: 'summaries,attributes,offers'
-        };
-        
-        logs.push(`Starting to fetch Amazon listings with params: ${JSON.stringify(baseParams)}`);
-
-        do {
-            const params = new URLSearchParams(baseParams);
-            if (pageToken) {
-                params.set('pageToken', pageToken);
-            }
+        for (let i = 0; i < skus.length; i += skuBatchSize) {
+            const batch = skus.slice(i, i + skuBatchSize);
+            logs.push(`Querying Amazon Listings API with batch of ${batch.length} SKUs.`);
             
+            const params = new URLSearchParams({
+                sellerId: sellerId,
+                marketplaceIds: marketplaceId,
+                includedData: 'summaries,attributes,offers',
+                skus: batch.join(','),
+            });
+
             const url = `https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items?${params.toString()}`;
             
-            logs.push(`Fetching Amazon listings page from: ${url}`);
+            logs.push(`Fetching Amazon listings from: ${url}`);
             const response = await fetch(url, {
                 headers: { 'x-amz-access-token': accessToken }
             });
@@ -904,22 +923,17 @@ export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[];
             const data: any = await response.json();
             
             if (!response.ok) {
-                logs.push(`Amazon Listings API Error: ${response.status} - ${JSON.stringify(data)}`);
-                break;
+                logs.push(`Amazon Listings API Error for batch: ${response.status} - ${JSON.stringify(data)}`);
+                // Continue to next batch even if one fails
+                continue;
             }
 
             const newListings = data.items || [];
             allListings.push(...newListings);
-            logs.push(`Fetched ${newListings.length} listings. Total fetched so far: ${allListings.length}.`);
-
-            pageToken = data.pagination?.nextToken;
-            if (pageToken) {
-                logs.push(`Received pageToken, will fetch next page.`);
-            }
-
-        } while (pageToken);
+            logs.push(`Fetched ${newListings.length} listings in this batch. Total fetched: ${allListings.length}.`);
+        }
         
-        logs.push(`Finished fetching all ${allListings.length} Amazon listings.`);
+        logs.push(`Finished fetching all ${allListings.length} Amazon listings based on Shopify SKUs.`);
         
         if (allListings.length === 0) {
             return { products: [], logs };
