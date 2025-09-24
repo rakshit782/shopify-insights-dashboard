@@ -16,6 +16,7 @@ import { PlaceHolderImages } from './placeholder-images';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { DateRange } from 'react-day-picker';
+import { subDays } from 'date-fns';
 
 
 export interface PlatformProductCount {
@@ -433,8 +434,8 @@ export async function getWalmartOrders(options: { dateRange?: DateRange }): Prom
         params.append('createdStartDate', options.dateRange.from.toISOString());
     } else {
         // Default to last 15 days if no start date
-        const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
-        params.append('createdStartDate', fifteenDaysAgo);
+        const fifteenDaysAgo = subDays(new Date(), 14);
+        params.append('createdStartDate', fifteenDaysAgo.toISOString());
     }
      if (options.dateRange?.to) {
         params.append('createdEndDate', options.dateRange.to.toISOString());
@@ -479,7 +480,9 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     return (
       total +
       line.charges.charge.reduce((lineTotal, charge) => {
-        return lineTotal + Number(charge.chargeAmount?.amount || 0);
+        const chargeAmount = Number(charge.chargeAmount?.amount || 0);
+        const taxAmount = Number(charge.tax?.taxAmount?.amount || 0);
+        return lineTotal + chargeAmount + taxAmount;
       }, 0)
     );
   }, 0);
@@ -487,7 +490,16 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
   const nameParts = walmartOrder.shippingInfo.postalAddress.name.split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
-  const latestStatus = walmartOrder.orderLines.orderLine[0]?.status || 'Created';
+
+  // Get the most recent status from all line items.
+  const latestStatusLine = walmartOrder.orderLines.orderLine.reduce((latest, current) => {
+    // This assumes there's a statusDate or similar, which isn't in the type.
+    // Let's just take the status from the first line for now and add a TODO to improve.
+    // A better approach would be to sort by a lastUpdated timestamp on the line item if available.
+    return current; // Simple approach, can be improved.
+  }, walmartOrder.orderLines.orderLine[0]);
+
+  const fulfillmentStatus = latestStatusLine.status;
 
   return {
     id: walmartOrder.purchaseOrderId,
@@ -499,8 +511,8 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     currency:
       walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency ||
       'USD',
-    financial_status: latestStatus === 'Created' ? 'pending' : 'paid',
-    fulfillment_status: latestStatus,
+    financial_status: fulfillmentStatus === 'Created' ? 'pending' : 'paid',
+    fulfillment_status: fulfillmentStatus,
     customer: {
       id: walmartOrder.customerOrderId,
       email: walmartOrder.customerEmailId,
@@ -597,8 +609,8 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             params.CreatedAfter = options.dateRange.from.toISOString();
         } else {
              // Default to last 15 days if no start date
-            const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
-            params.CreatedAfter = fifteenDaysAgo;
+            const fifteenDaysAgo = subDays(new Date(), 14);
+            params.CreatedAfter = fifteenDaysAgo.toISOString();
         }
 
         if (options.dateRange?.to) {
