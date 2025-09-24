@@ -15,12 +15,22 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Shirt, MoreHorizontal } from 'lucide-react';
+import { Shirt, MoreHorizontal, RefreshCw } from 'lucide-react';
 import type { ShopifyProduct } from '@/lib/types';
 import { PaginationControls } from './pagination-controls';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
-export function ProductTable({ products, platform }: { products: ShopifyProduct[], platform: string }) {
+export function ProductTable({ 
+    products, 
+    platform, 
+    onRefresh, 
+    isLoading 
+}: { 
+    products: ShopifyProduct[], 
+    platform: string, 
+    onRefresh: () => void, 
+    isLoading: boolean 
+}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(10);
 
@@ -67,7 +77,10 @@ export function ProductTable({ products, platform }: { products: ShopifyProduct[
                         Showing {Math.min(productsPerPage, currentProducts.length)} of {products.length} products from {platform}.
                     </CardDescription>
                 </div>
-                {/* Export button could go here */}
+                <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                </Button>
             </div>
         </CardHeader>
         <CardContent>

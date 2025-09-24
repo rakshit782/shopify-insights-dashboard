@@ -3,6 +3,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -626,48 +627,41 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 
         const baseParams: any = {
             MarketplaceIds: marketplaceId,
-            CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString(),
         };
+        if (options.dateRange?.from) {
+             baseParams.CreatedAfter = options.dateRange.from.toISOString()
+        } else {
+             baseParams.CreatedAfter = subDays(new Date(), 15).toISOString();
+        }
         
         logs.push(`Starting to fetch Amazon orders with params: ${JSON.stringify(baseParams)}`);
 
         do {
-            const params = new URLSearchParams(baseParams);
+            let url: string;
             if (nextToken) {
-                // NextToken must be used alone for subsequent requests
                 const nextParams = new URLSearchParams({ NextToken: nextToken });
-                const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${nextParams.toString()}`;
-                 logs.push(`Fetching next page of Amazon orders from: ${orderUrl}`);
-                const orderResponse = await fetch(orderUrl, {
-                    headers: { 'x-amz-access-token': accessToken }
-                });
-                const orderData: any = await orderResponse.json();
-                 if (!orderResponse.ok) {
-                    logs.push(`Amazon Orders API Error on next page: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
-                    break;
-                }
-                const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
-                allAmazonOrders.push(...newOrders);
-                logs.push(`Fetched ${newOrders.length} orders from next page. Total fetched: ${allAmazonOrders.length}.`);
-                nextToken = orderData.payload?.NextToken;
-
+                url = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${nextParams.toString()}`;
+                logs.push(`Fetching next page of Amazon orders from: ${url}`);
             } else {
-                 // First request
-                const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
-                logs.push(`Fetching first page of Amazon orders from: ${orderUrl}`);
-                const orderResponse = await fetch(orderUrl, {
-                    headers: { 'x-amz-access-token': accessToken }
-                });
-                const orderData: any = await orderResponse.json();
-                if (!orderResponse.ok) {
-                    logs.push(`Amazon Orders API Error on first page: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
-                    break;
-                }
-                const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
-                allAmazonOrders.push(...newOrders);
-                logs.push(`Fetched ${newOrders.length} orders from first page. Total fetched: ${allAmazonOrders.length}.`);
-                nextToken = orderData.payload?.NextToken;
+                 const initialParams = new URLSearchParams(baseParams);
+                 url = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${initialParams.toString()}`;
+                 logs.push(`Fetching first page of Amazon orders from: ${url}`);
             }
+
+            const orderResponse = await fetch(url, {
+                headers: { 'x-amz-access-token': accessToken }
+            });
+            const orderData: any = await orderResponse.json();
+
+            if (!orderResponse.ok) {
+                logs.push(`Amazon Orders API Error: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
+                break; // Stop fetching if an error occurs
+            }
+            
+            const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
+            allAmazonOrders.push(...newOrders);
+            logs.push(`Fetched ${newOrders.length} orders. Total fetched: ${allAmazonOrders.length}.`);
+            nextToken = orderData.payload?.NextToken;
 
             if (nextToken) {
                 logs.push(`Received NextToken, will fetch next page.`);
@@ -732,7 +726,7 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
     });
     
     const shippingAddress = amazonOrder.ShippingAddress;
-    const nameParts = shippingAddress?.Name ? shippingAddress.Name.split(' ') : [];
+    const nameParts = shippingAddress?.Name?.split(' ') || [];
     const firstName = nameParts[0] || null;
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
 
@@ -898,24 +892,21 @@ export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[];
         }
         logs.push(`Found ${skus.length} SKUs from Shopify to search on Amazon.`);
 
-        // 2. Batch SKUs and query Amazon
+        // 2. Query Amazon one SKU at a time
         const allListings: any[] = [];
-        const skuBatchSize = 20; // Max SKUs per request for listings API
-
-        for (let i = 0; i < skus.length; i += skuBatchSize) {
-            const batch = skus.slice(i, i + skuBatchSize);
-            logs.push(`Querying Amazon Listings API with batch of ${batch.length} SKUs.`);
+        for (const sku of skus) {
+            logs.push(`Querying Amazon Listings API for SKU: ${sku}.`);
             
             const params = new URLSearchParams({
                 sellerId: sellerId,
                 marketplaceIds: marketplaceId,
                 includedData: 'summaries,attributes,offers',
-                skus: batch.join(','),
+                skus: sku,
             });
 
             const url = `https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items?${params.toString()}`;
             
-            logs.push(`Fetching Amazon listings from: ${url}`);
+            logs.push(`Fetching Amazon listing from: ${url}`);
             const response = await fetch(url, {
                 headers: { 'x-amz-access-token': accessToken }
             });
@@ -923,14 +914,17 @@ export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[];
             const data: any = await response.json();
             
             if (!response.ok) {
-                logs.push(`Amazon Listings API Error for batch: ${response.status} - ${JSON.stringify(data)}`);
-                // Continue to next batch even if one fails
-                continue;
+                logs.push(`Amazon Listings API Error for SKU ${sku}: ${response.status} - ${JSON.stringify(data)}`);
+                continue; // Continue to the next SKU even if one fails
             }
 
             const newListings = data.items || [];
-            allListings.push(...newListings);
-            logs.push(`Fetched ${newListings.length} listings in this batch. Total fetched: ${allListings.length}.`);
+            if (newListings.length > 0) {
+                allListings.push(...newListings);
+                logs.push(`Fetched ${newListings.length} listing for SKU ${sku}.`);
+            } else {
+                logs.push(`No listing found for SKU ${sku}.`);
+            }
         }
         
         logs.push(`Finished fetching all ${allListings.length} Amazon listings based on Shopify SKUs.`);

@@ -6,12 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Shirt, Code } from 'lucide-react';
+import { Terminal, Shirt, Code, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetAmazonProducts, handleGetWalmartProducts, handleGetEtsyProducts } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from './product-table';
 import { ScrollArea } from './ui/scroll-area';
+import { Button } from './ui/button';
 
 type ProductFetcher = () => Promise<{ success: boolean; products: ShopifyProduct[]; error: string | null; logs: string[] }>;
 
@@ -109,29 +110,30 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
     const products = cachedEntry?.data || [];
     const error = cachedEntry?.error || null;
     const logs = cachedEntry?.logs || [];
-    const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 120); // 2 hours
+    const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 60 * 5); // 5 hours cache
 
-    useEffect(() => {
-        async function fetchProducts() {
-            if (isCacheValid) {
-                setIsLoading(false);
-                return;
-            }
-            setIsLoading(true);
-            const result = await platform.fetcher();
-            setCache((prev: Record<string, CachedProducts>) => ({
-                ...prev,
-                [platformId]: {
-                    data: result.products,
-                    timestamp: Date.now(),
-                    error: result.error,
-                    logs: result.logs || [],
-                }
-            }));
+    const fetchProducts = useCallback(async (forceRefresh = false) => {
+        if (isCacheValid && !forceRefresh) {
             setIsLoading(false);
+            return;
         }
-        fetchProducts();
+        setIsLoading(true);
+        const result = await platform.fetcher();
+        setCache((prev: Record<string, CachedProducts>) => ({
+            ...prev,
+            [platformId]: {
+                data: result.products,
+                timestamp: Date.now(),
+                error: result.error,
+                logs: result.logs || [],
+            }
+        }));
+        setIsLoading(false);
     }, [platform.fetcher, platformId, setCache, isCacheValid]);
+    
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
 
     if (isLoading && !isCacheValid) return <ProductsLoadingSkeleton />;
     
@@ -146,15 +148,26 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         </>
     );
     
-    if (products.length === 0) {
+    if (products.length === 0 && !isLoading) {
        return (
             <>
-                <Card className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
-                    <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
-                    <CardTitle>No Products Found</CardTitle>
-                    <CardDescription className="mt-2 max-w-md">
-                        There are no products to display for this marketplace.
-                    </CardDescription>
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Products</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => fetchProducts(true)} disabled={isLoading}>
+                                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
+                        <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
+                        <CardTitle>No Products Found</CardTitle>
+                        <CardDescription className="mt-2 max-w-md">
+                            There are no products to display for this marketplace.
+                        </CardDescription>
+                    </CardContent>
                 </Card>
                  <DebugLog logs={logs} />
             </>
@@ -163,7 +176,12 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
 
     return (
         <>
-            <ProductTable products={products} platform={platformId} />
+            <ProductTable 
+                products={products} 
+                platform={platformId} 
+                onRefresh={() => fetchProducts(true)}
+                isLoading={isLoading}
+            />
             <DebugLog logs={logs} />
         </>
     );
