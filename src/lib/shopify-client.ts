@@ -16,10 +16,8 @@ import type {
   ShopifyCredentials,
 } from './types';
 import { PlaceHolderImages } from './placeholder-images';
-import { createClient } from '@/lib/supabase/server';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
-import forge from 'node-forge';
 import { DateRange } from 'react-day-picker';
 
 export interface PlatformProductCount {
@@ -33,43 +31,24 @@ const apiVersionDefault = '2025-07';
 // Credential Management
 // =_==========================================
 
-async function upsertCredential(
-  supabase: any,
-  tableName: string,
-  data: any,
-) {
-  const { error } = await supabase.from(tableName).upsert(data, { onConflict: 'profile_id, name' });
-  if (error) {
-    throw new Error(
-      `Failed upserting credentials in ${tableName}: ${error.message}`
-    );
-  }
+// Mock implementations since Supabase is removed
+async function upsertCredential(tableName: string, data: any) {
+  console.log(`[MOCK] Upserting to ${tableName}`, data);
 }
-
-async function checkCredentialExists(
-  supabase: any,
-  tableName: string,
-  profileId: string,
-  logs: string[]
-): Promise<boolean> {
-  const { data, error } = await supabase.from(tableName).select('id').eq('profile_id', profileId).limit(1);
-  if (error) {
-    logs.push(`Error checking ${tableName}: ${error.message}`);
-    return false;
-  }
-  return data && data.length > 0;
+async function checkCredentialExists(tableName: string, profileId: string, logs: string[]): Promise<boolean> {
+   console.log(`[MOCK] Checking credentials for ${profileId} in ${tableName}`);
+   // Simulate Shopify being connected for the mock profile
+   return tableName === 'shopify_credentials' && profileId === 'mock_profile_1';
 }
 
 export async function getCredentialStatuses(profileId: string): Promise<Record<string, boolean>> {
   const logs: string[] = [];
-  const supabase = createClient({ db: 'MAIN' });
   const statuses: Record<string, boolean> = {};
-
   const platforms = ['shopify', 'amazon', 'walmart', 'ebay', 'etsy', 'wayfair'];
 
   for (const platform of platforms) {
     const tableName = `${platform}_credentials`;
-    statuses[platform] = await checkCredentialExists(supabase, tableName, profileId, logs);
+    statuses[platform] = await checkCredentialExists(tableName, profileId, logs);
   }
 
   return statuses;
@@ -78,17 +57,13 @@ export async function getCredentialStatuses(profileId: string): Promise<Record<s
 // Individual save functions
 
 export async function saveShopifyCredentials(profileId: string, storeName: string, accessToken: string) {
-  const supabase = createClient({ db: 'MAIN' });
   await upsertCredential(
-    supabase,
     'shopify_credentials',
     { profile_id: profileId, name: 'shopify', store_name: storeName, access_token: accessToken, api_version: apiVersionDefault },
   );
 }
 
 export async function saveAmazonCredentials(profileId: string, credentials: AmazonCredentials) {
-  const supabase = createClient({ db: 'MAIN' });
-  // In a real app, you would likely encrypt the client_secret and refresh_token
   const credsToSave = {
       profile_id: profileId,
       name: 'amazon',
@@ -99,27 +74,23 @@ export async function saveAmazonCredentials(profileId: string, credentials: Amaz
       seller_id: credentials.seller_id,
       marketplace_id: credentials.marketplace_id,
   };
-  await upsertCredential(supabase, 'amazon_credentials', credsToSave);
+  await upsertCredential('amazon_credentials', credsToSave);
 }
 
 export async function saveWalmartCredentials(profileId: string, credentials: WalmartCredentials) {
-  const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'walmart_credentials', { ...credentials, profile_id: profileId, name: 'walmart'});
+  await upsertCredential('walmart_credentials', { ...credentials, profile_id: profileId, name: 'walmart'});
 }
 
 export async function saveEbayCredentials(profileId: string, credentials: EbayCredentials) {
-  const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'ebay_credentials', { ...credentials, profile_id: profileId, name: 'ebay'});
+  await upsertCredential('ebay_credentials', { ...credentials, profile_id: profileId, name: 'ebay'});
 }
 
 export async function saveEtsyCredentials(profileId: string, credentials: EtsyCredentials) {
-  const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy', profile_id: profileId, name: 'etsy'});
+  await upsertCredential('etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy', profile_id: profileId, name: 'etsy'});
 }
 
 export async function saveWayfairCredentials(profileId: string, credentials: WayfairCredentials) {
-  const supabase = createClient({ db: 'MAIN' });
-  await upsertCredential(supabase, 'wayfair_credentials', { ...credentials, profile_id: profileId, name: 'wayfair' });
+  await upsertCredential('wayfair_credentials', { ...credentials, profile_id: profileId, name: 'wayfair' });
 }
 
 
@@ -128,28 +99,19 @@ export async function saveWayfairCredentials(profileId: string, credentials: Way
 // ============================================
 
 async function getShopifyConfig(profileId: string, logs: string[]): Promise<ShopifyCredentials> {
-    const supabase = createClient({ db: 'MAIN' });
-    
-    logs.push("Attempting to fetch Shopify credentials from Supabase...");
-    const { data, error } = await supabase
-        .from('shopify_credentials')
-        .select('id, store_name, access_token, api_version')
-        .eq('profile_id', profileId)
-        .limit(1)
-        .single();
-
-    if (error || !data) {
-        logs.push(`Supabase error fetching Shopify credentials: ${error?.message || 'Not found'}`);
-        throw new Error('Could not fetch Shopify credentials for this profile.');
+    logs.push("[MOCK] Fetching Shopify credentials...");
+    if (profileId !== 'mock_profile_1') {
+      throw new Error('Could not fetch Shopify credentials for this profile.');
     }
-    
-    const { id, store_name, access_token, api_version } = data;
-    const storeUrl = getStoreUrl(store_name);
-    const apiVersion = api_version || apiVersionDefault;
+    const storeName = process.env.SHOPIFY_STORE_NAME;
+    const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
 
-    logs.push(`Successfully fetched credentials. Store: ${storeUrl}, API Version: ${apiVersion}`);
+    if (!storeName || !accessToken) {
+        throw new Error('Shopify credentials (SHOPIFY_STORE_NAME, SHOPIFY_ACCESS_TOKEN) are not configured in .env');
+    }
 
-    return { id, profile_id: profileId, store_name, access_token, api_version: apiVersion };
+    logs.push(`Successfully fetched mock credentials. Store: ${storeName}`);
+    return { id: 1, profile_id: profileId, store_name: storeName, access_token: accessToken, api_version: apiVersionDefault };
 }
 
 
@@ -405,14 +367,13 @@ export async function getShopifyOrders(options: { profileId: string, dateRange?:
 // External Platform Functions
 // ============================================
 export async function getPlatformProductCounts(profileId: string, logs: string[]): Promise<PlatformProductCount[]> {
-    const supabase = createClient({ db: 'MAIN' });
     const counts: PlatformProductCount[] = [];
 
     // Mocking counts for now
     const platforms = ['Shopify', 'Amazon', 'Walmart', 'eBay', 'Etsy'];
     for (const platform of platforms) {
         const tableName = `${platform.toLowerCase()}_credentials`;
-        const connected = await checkCredentialExists(supabase, tableName, profileId, logs);
+        const connected = await checkCredentialExists(tableName, profileId, logs);
         if (connected) {
             logs.push(`Fetching count for connected platform: ${platform}`);
             // In a real scenario, you'd make an API call to the platform
@@ -433,25 +394,20 @@ export async function getPlatformProductCounts(profileId: string, logs: string[]
 // ============================================
 
 async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ clientId: string; clientSecret: string; }> {
-    const supabase = createClient({ db: 'MAIN' });
-    
-    logs.push("Attempting to fetch Walmart credentials from Supabase...");
-    const { data, error } = await supabase
-        .from('walmart_credentials')
-        .select('client_id, client_secret')
-        .eq('profile_id', profileId)
-        .limit(1)
-        .single();
-
-    if (error || !data) {
-        logs.push(`Supabase error fetching Walmart credentials: ${error?.message || 'Not found'}`);
-        throw new Error('Could not fetch Walmart credentials for this profile.');
+    logs.push("[MOCK] Fetching Walmart credentials...");
+    if (profileId !== 'mock_profile_1') {
+      throw new Error('Could not fetch Walmart credentials for this profile.');
     }
-    
-    const { client_id, client_secret } = data;
-    logs.push(`Successfully fetched Walmart credentials.`);
+    // In a real app, these would come from a secure source. Here, we'll use env vars for mock.
+    const clientId = process.env.WALMART_CLIENT_ID;
+    const clientSecret = process.env.WALMART_CLIENT_SECRET;
+     if (!clientId || !clientSecret) {
+        throw new Error('Walmart credentials (WALMART_CLIENT_ID, WALMART_CLIENT_SECRET) are not configured in .env');
+    }
 
-    return { clientId: client_id, clientSecret: client_secret };
+    logs.push(`Successfully fetched mock Walmart credentials.`);
+
+    return { clientId, clientSecret };
 }
 
 
@@ -526,28 +482,6 @@ export async function getWalmartOrders(profileId: string): Promise<{ orders: Sho
       logs.push(`Error in getWalmartOrders: ${error.message}`);
     }
     throw error;
-  }
-}
-
-
-function getWalmartSignature(
-  consumerId: string,
-  privateKey: string,
-  requestUrl: string,
-  requestMethod: string,
-  timestamp: string
-): string {
-  const stringToSign = `${consumerId}\n${requestUrl}\n${requestMethod.toUpperCase()}\n${timestamp}\n`;
-  const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
-
-  try {
-      const pkiKey = forge.pki.privateKeyFromPem(formattedPrivateKey);
-      const md = forge.md.sha256.create();
-      md.update(stringToSign, 'utf8');
-      const signature = pkiKey.sign(md);
-      return forge.util.encode64(signature);
-  } catch (e) {
-      throw new Error("Failed to parse private key. Ensure it is a valid PKCS8 key.");
   }
 }
 

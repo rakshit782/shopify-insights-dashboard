@@ -8,7 +8,6 @@ import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
-import { createClient } from '@/lib/supabase/server';
 
 
 export async function handleSyncProducts(profileId: string) {
@@ -74,7 +73,7 @@ export async function handleGetProduct(profileId: string, id: number) {
   }
 }
 
-export async function handleGetCredentialStatuses(profileId: string) {
+export async function handleGetCredentialStatuses(profileId: string): Promise<{ success: boolean; statuses: Record<string, boolean>; error: string | null; }> {
     try {
         const statuses = await getCredentialStatuses(profileId);
         return { success: true, statuses, error: null };
@@ -287,39 +286,25 @@ export async function getDashboardStats(profileId: string | null, dateRange?: Da
 
 // Settings Actions
 export async function handleSaveBusinessProfile(profileData: BusinessProfileCreation): Promise<{ success: boolean, profile: BusinessProfile | null, error: string | null }> {
-    const supabase = createClient({ db: 'MAIN' });
-    
-    // Upsert the profile
-    const { data, error } = await supabase
-        .from('business_profiles')
-        .upsert({ ...profileData, id: profileData.id || undefined }) // let db create id if it's new
-        .select()
-        .single();
-
-    if (error) {
-        console.error('Error saving business profile:', error);
-        return { success: false, profile: null, error: error.message };
-    }
-
-    return { success: true, profile: data, error: null };
+    // Mock implementation as Supabase is removed
+    console.log("Simulating save for business profile:", profileData);
+    const newProfile: BusinessProfile = {
+        id: profileData.id || `profile_${Date.now()}`,
+        ...profileData
+    };
+    return { success: true, profile: newProfile, error: null };
 }
 
 export async function handleGetBusinessProfiles(): Promise<{ success: boolean, profiles: BusinessProfile[], error: string | null }> {
     try {
-        const supabase = createClient({ db: 'MAIN' });
-
-        const { data: profiles, error } = await supabase
-            .from('business_profiles')
-            .select('*');
-
-        if (error) {
-            console.error('Error fetching business profiles:', error);
-            return { success: false, profiles: [], error: error.message };
-        }
+        // Mock implementation as Supabase is removed
+        const mockProfiles: BusinessProfile[] = [
+            { id: 'mock_profile_1', profile_name: 'Mock Shopify Store', store_url: 'https://mock.shopify.com', contact_email: 'contact@mock.com' }
+        ];
 
         // For each profile, fetch the credential statuses
         const profilesWithStatuses = await Promise.all(
-            (profiles || []).map(async (profile) => {
+            (mockProfiles || []).map(async (profile) => {
                 const { statuses } = await handleGetCredentialStatuses(profile.id);
                 return { ...profile, credential_statuses: statuses };
             })
@@ -334,33 +319,8 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
 }
 
 export async function handleGetUserAgency(): Promise<{ success: boolean; email: string | null; agency: Agency | null; error: string | null; }> {
-    try {
-        const supabase = createClient({ db: 'MAIN' });
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            return { success: false, email: null, agency: null, error: 'User not authenticated.' };
-        }
-
-        const { data: agency, error } = await supabase
-            .from('agencies')
-            .select('agency_id, name')
-            .eq('user_id', user.id)
-            .single();
-
-        if (error) {
-             if (error.code === 'PGRST116') { // "PostgREST error 116: The result contains 0 rows"
-                return { success: true, email: user.email || null, agency: null, error: null };
-            }
-            console.error('Error fetching agency:', error);
-            return { success: false, email: user.email || null, agency: null, error: error.message };
-        }
-
-        return { success: true, email: user.email || null, agency, error: null };
-    } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        return { success: false, email: null, agency: null, error: errorMessage };
-    }
+    // Mock implementation as Supabase is removed
+    return { success: true, email: 'user@example.com', agency: { agency_id: 'agency_123', name: 'Mock Agency' }, error: null };
 }
     
     
