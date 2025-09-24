@@ -519,6 +519,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     subtotal_price: subtotal.toFixed(2),
     total_tax: totalTax.toFixed(2),
     total_shipping: totalShipping.toFixed(2),
+    total_discounts: '0.00',
     currency:
       walmartOrder.orderLines.orderLine[0]?.charges.charge[0]?.chargeAmount.currency ||
       'USD',
