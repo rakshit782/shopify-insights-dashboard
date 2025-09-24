@@ -9,6 +9,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -145,7 +146,7 @@ export async function getShopifyProducts(options?: { countOnly?: boolean }): Pro
         }
 
         const allProducts: ShopifyProduct[] = [];
-        let url: string | undefined = `${storeUrl}/admin/api/${config.api_version}/products.json?limit=10`;
+        let url: string | undefined = `${storeUrl}/admin/api/${config.api_version}/products.json?limit=250`;
         logs.push(`Fetching initial page of Shopify products...`);
 
         while (url) {
