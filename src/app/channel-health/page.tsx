@@ -7,7 +7,7 @@ export default async function ChannelHealthPage() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseKey || supabaseUrl === "your-supabase-main-url") {
         return (
           <div className="flex h-screen items-center justify-center p-8">
             <Alert variant="destructive" className="max-w-2xl">
