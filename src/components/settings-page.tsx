@@ -22,6 +22,18 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } =
     'wayfair': { name: 'Wayfair', icon: <Image src="/wayfair.svg" alt="Wayfair" width={24} height={24} unoptimized /> },
 };
 
+const InfoRow = ({ icon: Icon, label, value, isLoading, isMono=false }: { icon: any; label: string; value: string | null | undefined, isLoading: boolean, isMono?: boolean }) => (
+    <div className="flex items-start gap-3">
+       <Icon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+       <div>
+           <p className="text-sm font-medium">{label}</p>
+           {isLoading ? <Skeleton className="h-5 w-48 mt-1" /> :
+               <p className={cn("text-sm text-muted-foreground", isMono && "font-mono")}>{value || 'N/A'}</p>
+           }
+       </div>
+   </div>
+);
+
 
 function UserProfileAndSettingsCard() {
     const [user, setUser] = useState<User | null>(null);
@@ -47,18 +59,6 @@ function UserProfileAndSettingsCard() {
         fetchUser();
     }, []);
 
-    const InfoRow = ({ icon: Icon, label, value, isMono=false }: { icon: any; label: string; value: string | null | undefined, isMono?: boolean }) => (
-         <div className="flex items-start gap-3">
-            <Icon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div>
-                <p className="text-sm font-medium">{label}</p>
-                {isLoading ? <Skeleton className="h-5 w-48 mt-1" /> :
-                    <p className={cn("text-sm text-muted-foreground", isMono && "font-mono")}>{value || 'N/A'}</p>
-                }
-            </div>
-        </div>
-    );
-
     return (
         <Card>
             <CardHeader>
@@ -67,11 +67,11 @@ function UserProfileAndSettingsCard() {
             </CardHeader>
             <CardContent className="space-y-4">
                  {error && <p className="text-sm text-destructive">{error}</p>}
-                <InfoRow icon={Mail} label="Email" value={profile?.email} />
-                <InfoRow icon={Building} label="Agency" value={agency?.name} />
-                <InfoRow icon={Key} label="Auth0 ID" value={user?.auth0_id} isMono />
-                <InfoRow icon={Hash} label="User ID" value={user?.id} isMono />
-                <InfoRow icon={UserIcon} label="Role" value={user?.role} />
+                <InfoRow icon={Mail} label="Email" value={profile?.email} isLoading={isLoading} />
+                <InfoRow icon={Building} label="Agency" value={agency?.name} isLoading={isLoading} />
+                <InfoRow icon={Key} label="Auth0 ID" value={user?.auth0_id} isMono isLoading={isLoading} />
+                <InfoRow icon={Hash} label="User ID" value={user?.id} isMono isLoading={isLoading} />
+                <InfoRow icon={UserIcon} label="Role" value={user?.role} isLoading={isLoading} />
             </CardContent>
         </Card>
     );
