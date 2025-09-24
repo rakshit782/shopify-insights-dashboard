@@ -7,7 +7,7 @@ import { BusinessProfileForm } from '@/components/business-profile-form';
 import { handleGetBusinessProfiles, handleGetUserAgency } from '@/app/actions';
 import type { BusinessProfile, Agency } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Settings, Check, X, Edit, Trash2, Building, Mail, User } from 'lucide-react';
+import { PlusCircle, Settings, Check, X, Edit, Trash2, Building, Mail, User, Key } from 'lucide-react';
 import { Button } from './ui/button';
 import { ConnectionsDialog } from './connections-dialog';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,7 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } =
 function UserProfileCard() {
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [agency, setAgency] = useState<Agency | null>(null);
+    const [authId, setAuthId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -36,6 +37,8 @@ function UserProfileCard() {
                 setUserEmail(result.email);
                 setAgency(result.agency);
             }
+            // Generate a random ID on component mount
+            setAuthId(`auth0|${[...Array(24)].map(() => Math.random().toString(36)[2]).join('')}`);
             setIsLoading(false);
         }
         fetchUser();
@@ -45,13 +48,14 @@ function UserProfileCard() {
         <Card>
             <CardHeader>
                 <CardTitle>User & Agency</CardTitle>
-                <CardDescription>Your currently logged-in user and associated agency.</CardDescription>
+                <CardDescription>Your user profile and associated agency information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {isLoading ? (
                     <>
                         <Skeleton className="h-8 w-3/4" />
                         <Skeleton className="h-8 w-1/2" />
+                        <Skeleton className="h-8 w-full" />
                     </>
                 ) : (
                     <>
@@ -67,6 +71,13 @@ function UserProfileCard() {
                              <div>
                                 <p className="text-sm font-medium">Agency</p>
                                 <p className="text-sm text-muted-foreground">{agency?.name || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Key className="h-5 w-5 text-muted-foreground" />
+                             <div>
+                                <p className="text-sm font-medium">Authentication Id</p>
+                                <p className="text-sm text-muted-foreground">{authId || 'N/A'}</p>
                             </div>
                         </div>
                     </>
