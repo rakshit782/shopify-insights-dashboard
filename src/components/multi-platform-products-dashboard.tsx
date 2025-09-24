@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Shirt, Code, RefreshCw, UploadCloud, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetAmazonProducts, handleGetWalmartProducts, handleGetEtsyProducts, handleSyncProducts } from '@/app/actions';
+import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetEtsyProducts, handleSyncProducts } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from './product-table';
 import { ScrollArea } from './ui/scroll-area';
@@ -37,16 +37,6 @@ const platformMeta: {
         icon: <Image src="/shopify.svg" alt="Shopify" width={18} height={18} unoptimized />,
         fetcher: handleGetShopifyProducts,
         showPushToDb: true,
-    },
-    'amazon': { 
-        name: 'Amazon', 
-        icon: <Image src="/amazon.svg" alt="Amazon" width={18} height={18} unoptimized />,
-        fetcher: handleGetAmazonProducts
-    },
-    'walmart': { 
-        name: 'Walmart', 
-        icon: <Image src="/walmart.svg" alt="Walmart" width={18} height={18} unoptimized />,
-        fetcher: handleGetWalmartProducts
     },
     'etsy': { 
         name: 'Etsy', 

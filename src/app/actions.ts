@@ -2,7 +2,7 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getAmazonProducts, getWalmartProducts, getEtsyProducts } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
@@ -325,26 +325,6 @@ export async function handleGetShopifyProducts() {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     return { success: false, products: [], error: `Failed to fetch Shopify products: ${errorMessage}`, logs: [] };
   }
-}
-
-export async function handleGetAmazonProducts() {
-    try {
-        const { products, logs } = await getAmazonProducts();
-        return { success: true, products, error: null, logs };
-    } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        return { success: false, products: [], error: `Failed to fetch Amazon products: ${errorMessage}`, logs: [errorMessage] };
-    }
-}
-
-export async function handleGetWalmartProducts() {
-    try {
-        const { products, logs } = await getWalmartProducts();
-        return { success: true, products, error: null, logs };
-    } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        return { success: false, products: [], error: `Failed to fetch Walmart products: ${errorMessage}`, logs: [errorMessage] };
-    }
 }
 
 export async function handleGetEtsyProducts() {
