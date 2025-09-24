@@ -485,14 +485,12 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     line.charges.charge.forEach(charge => {
         const chargeAmount = Number(charge.chargeAmount?.amount || 0);
         const taxAmount = Number(charge.tax?.taxAmount?.amount || 0);
+        totalTax += taxAmount; // Sum all taxes
         
         if (charge.chargeType === 'PRODUCT') {
             subtotal += chargeAmount;
-            totalTax += taxAmount; // Tax is nested inside product charge
         } else if (charge.chargeType === 'SHIPPING') {
             totalShipping += chargeAmount;
-            // Shipping can also have tax
-            totalTax += taxAmount;
         }
     });
   });
@@ -580,6 +578,9 @@ async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
         const client = new OrdersV0ApiClient({
             region: 'na', // or 'eu', 'fe'
             refreshToken: refreshToken,
+            sellingPartner: {
+                sellingPartnerId: sellingPartnerId
+            },
             credentials: {
                 clientId: clientId,
                 clientSecret: clientSecret,
@@ -604,14 +605,17 @@ async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
 export async function getAmazonOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
     const logs: string[] = [];
     const sp = await getAmazonSPAPIClient(logs);
+    const marketplaceId = process.env.AMAZON_MARKETPLACE_ID;
 
-    if (!sp) {
+    if (!sp || !marketplaceId) {
+        if (!sp) logs.push("SP-API client failed to initialize.");
+        if (!marketplaceId) logs.push("AMAZON_MARKETPLACE_ID is not set in .env file.");
         return { orders: [], logs };
     }
     
     try {
         const params: any = {
-            MarketplaceIds: ['ATVPDKIKX0DER'], // US marketplace ID
+            MarketplaceIds: [marketplaceId],
             OrderStatuses: ['Pending', 'Unshipped', 'PartiallyShipped', 'Shipped', 'InvoiceUnconfirmed', 'Canceled', 'Unfulfillable'],
         };
         
@@ -701,8 +705,7 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
             address1: amazonOrder.ShippingAddress.AddressLine1,
             address2: amazonOrder.ShippingAddress.AddressLine2,
             city: amazonOrder.ShippingAddress.City,
-            state: amazonOrder.ShippingAddress.StateOrRegion,
-            postalCode: amazonOrder.ShippingAddress.PostalCode,
+            province: amazonOrder.ShippingAddress.StateOrRegion,
             country: amazonOrder.ShippingAddress.CountryCode,
             zip: amazonOrder.ShippingAddress.PostalCode,
             phone: amazonOrder.ShippingAddress.Phone,
