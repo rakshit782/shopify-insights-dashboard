@@ -18,6 +18,12 @@ import type { DateRange } from 'react-day-picker';
 
 type OrderFetcher = (dateRange?: DateRange) => Promise<{ success: boolean; orders: ShopifyOrder[]; error: string | null; }>;
 
+type CachedOrders = {
+    data: ShopifyOrder[];
+    timestamp: number;
+    error: string | null;
+};
+
 const platformMeta: { 
   [key: string]: { 
     name: string; 
@@ -74,29 +80,37 @@ function OrdersLoadingSkeleton() {
     )
 }
 
-function PlatformOrderView({ platformId, dateRange }: { platformId: string, dateRange?: DateRange }) {
-    const [orders, setOrders] = useState<ShopifyOrder[]>([]);
+function PlatformOrderView({ platformId, dateRange, cache, setCache }: { platformId: string, dateRange?: DateRange, cache: Record<string, CachedOrders>, setCache: Function }) {
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
+    
     const platform = platformMeta[platformId];
+    const cachedEntry = cache[platformId];
+    const orders = cachedEntry?.data || [];
+    const error = cachedEntry?.error || null;
+    const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 120); // 2 hours
 
     useEffect(() => {
         async function fetchOrders() {
-            setIsLoading(true);
-            setError(null);
-            const result = await platform.fetcher(dateRange);
-            if (result.success) {
-                setOrders(result.orders);
-            } else {
-                setError(result.error);
+            if (isCacheValid) {
+                setIsLoading(false);
+                return;
             }
+            setIsLoading(true);
+            const result = await platform.fetcher(dateRange);
+            setCache((prev: Record<string, CachedOrders>) => ({
+                ...prev,
+                [platformId]: {
+                    data: result.orders,
+                    timestamp: Date.now(),
+                    error: result.error,
+                }
+            }));
             setIsLoading(false);
         }
         fetchOrders();
-    }, [platform.fetcher, dateRange]);
+    }, [platform.fetcher, dateRange, platformId, setCache, isCacheValid]);
 
-    if (isLoading) return <OrdersLoadingSkeleton />;
+    if (isLoading && !isCacheValid) return <OrdersLoadingSkeleton />;
     if (error) return (
         <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
@@ -112,6 +126,7 @@ export function MultiPlatformOrdersDashboard() {
     const [connectedChannels, setConnectedChannels] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+    const [orderCache, setOrderCache] = useState<Record<string, CachedOrders>>({});
 
     const fetchStatuses = useCallback(async () => {
         setIsLoading(true);
@@ -129,6 +144,8 @@ export function MultiPlatformOrdersDashboard() {
     
     const handleDateUpdate = useCallback((range?: DateRange) => {
         setDateRange(range);
+        // Invalidate cache when date range changes
+        setOrderCache({});
     }, []);
 
     const defaultTab = useMemo(() => connectedChannels[0] || '', [connectedChannels]);
@@ -172,12 +189,10 @@ export function MultiPlatformOrdersDashboard() {
                 </TabsList>
                 {connectedChannels.map(id => (
                     <TabsContent key={id} value={id}>
-                        <PlatformOrderView platformId={id} dateRange={dateRange} />
+                        <PlatformOrderView platformId={id} dateRange={dateRange} cache={orderCache} setCache={setOrderCache} />
                     </TabsContent>
                 ))}
             </Tabs>
         </div>
     );
 }
-
-    

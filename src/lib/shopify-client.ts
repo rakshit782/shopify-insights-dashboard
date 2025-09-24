@@ -390,7 +390,8 @@ async function getWalmartAccessToken(clientId: string, clientSecret: string, log
                 'Authorization': `Basic ${authHeader}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'WM_QOS.CORRELATION_ID': correlationId,
-                'WM_SVC.NAME': 'Walmart-Marketplace-Api'
+                'WM_SVC.NAME': 'Walmart-Marketplace-Api',
+                'Accept': 'application/json'
             },
             body: 'grant_type=client_credentials'
         });
@@ -548,7 +549,7 @@ async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
     const clientId = process.env.AMAZON_CLIENT_ID;
     const clientSecret = process.env.AMAZON_CLIENT_SECRET;
 
-    if (!refreshToken || !sellingPartnerId || !clientId || !clientSecret) {
+    if (!refreshToken || !sellingPartnerId || !clientId || !clientSecret || refreshToken.includes('your-')) {
         logs.push(`Amazon SP-API credentials not found or are placeholders in .env file.`);
         return null;
     }
