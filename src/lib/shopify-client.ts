@@ -485,12 +485,13 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     line.charges.charge.forEach(charge => {
         const chargeAmount = Number(charge.chargeAmount?.amount || 0);
         const taxAmount = Number(charge.tax?.taxAmount?.amount || 0);
-        totalTax += taxAmount; // Sum all taxes
         
         if (charge.chargeType === 'PRODUCT') {
             subtotal += chargeAmount;
+            totalTax += taxAmount;
         } else if (charge.chargeType === 'SHIPPING') {
             totalShipping += chargeAmount;
+             totalTax += taxAmount; // Shipping tax is also a tax
         }
     });
   });
@@ -609,9 +610,8 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
     const logs: string[] = [];
     const accessToken = await getAmazonAccessToken(logs);
     const marketplaceId = process.env.AMAZON_MARKETPLACE_ID;
-    const sellerId = process.env.AMAZON_SELLER_ID;
 
-    if (!accessToken || !marketplaceId || !sellerId) {
+    if (!accessToken || !marketplaceId) {
         logs.push("Amazon credentials or Marketplace ID not configured properly.");
         return { orders: [], logs };
     }
@@ -634,7 +634,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 
         const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
         
-        logs.push("Fetching Amazon orders...");
+        logs.push(`Fetching Amazon orders from: ${orderUrl}`);
         const orderResponse = await fetch(orderUrl, {
             headers: { 'x-amz-access-token': accessToken }
         });
@@ -647,13 +647,18 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
         }
 
         const amazonOrders: AmazonOrder[] = orderData.payload?.Orders || [];
-        logs.push(`Successfully fetched ${amazonOrders.length} orders from Amazon.`);
+        logs.push(`Successfully fetched ${amazonOrders.length} Amazon order headers.`);
+
+        if (amazonOrders.length === 0) {
+            return { orders: [], logs };
+        }
 
         const mappedOrders: ShopifyOrder[] = [];
         for (const order of amazonOrders) {
              let orderItems: AmazonOrderItem[] = [];
              try {
                 const itemsUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders/${order.AmazonOrderId}/orderItems`;
+                logs.push(`Fetching items for Amazon order ${order.AmazonOrderId}`);
                 const itemsRes = await fetch(itemsUrl, {
                     headers: { 'x-amz-access-token': accessToken }
                 });
@@ -670,7 +675,8 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
             }
             mappedOrders.push(mapAmazonOrderToShopifyOrder(order, orderItems));
         }
-
+        
+        logs.push(`Successfully mapped ${mappedOrders.length} Amazon orders.`);
         return { orders: mappedOrders, logs };
 
     } catch (e) {
@@ -691,7 +697,7 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
     let totalDiscounts = 0;
 
     items.forEach(item => {
-        subtotal += parseFloat(item.ItemPrice?.Amount || '0') * item.QuantityOrdered;
+        subtotal += parseFloat(item.ItemPrice?.Amount || '0');
         totalShipping += parseFloat(item.ShippingPrice?.Amount || '0');
         totalTax += parseFloat(item.ItemTax?.Amount || '0');
         totalDiscounts += parseFloat(item.PromotionDiscount?.Amount || '0');
