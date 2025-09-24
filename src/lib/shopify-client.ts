@@ -590,7 +590,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
     try {
         const params: any = {
             MarketplaceIds: ['ATVPDKIKX0DER'], // US marketplace ID
-            OrderStatuses: ['Unshipped', 'PartiallyShipped', 'Shipped', 'InvoiceUnconfirmed'],
+            OrderStatuses: ['Pending', 'Unshipped', 'PartiallyShipped', 'Shipped', 'InvoiceUnconfirmed', 'Canceled', 'Unfulfillable'],
         };
         
         if (options.dateRange?.from) {
