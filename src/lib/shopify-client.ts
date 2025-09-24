@@ -4,6 +4,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -627,26 +628,15 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
 
         const baseParams: any = {
             MarketplaceIds: marketplaceId,
+            CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString()
         };
-        if (options.dateRange?.from) {
-             baseParams.CreatedAfter = options.dateRange.from.toISOString()
-        } else {
-             baseParams.CreatedAfter = subDays(new Date(), 15).toISOString();
-        }
         
         logs.push(`Starting to fetch Amazon orders with params: ${JSON.stringify(baseParams)}`);
 
         do {
-            let url: string;
-            if (nextToken) {
-                const nextParams = new URLSearchParams({ NextToken: nextToken });
-                url = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${nextParams.toString()}`;
-                logs.push(`Fetching next page of Amazon orders from: ${url}`);
-            } else {
-                 const initialParams = new URLSearchParams(baseParams);
-                 url = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${initialParams.toString()}`;
-                 logs.push(`Fetching first page of Amazon orders from: ${url}`);
-            }
+            const params = new URLSearchParams(nextToken ? { NextToken: nextToken } : baseParams);
+            const url = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
+            logs.push(`Fetching Amazon orders from: ${url}`);
 
             const orderResponse = await fetch(url, {
                 headers: { 'x-amz-access-token': accessToken }
@@ -892,17 +882,20 @@ export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[];
         }
         logs.push(`Found ${skus.length} SKUs from Shopify to search on Amazon.`);
 
-        // 2. Query Amazon one SKU at a time
+        // 2. Query Amazon in batches of 20 SKUs
         const allListings: any[] = [];
-        for (const sku of skus) {
-            logs.push(`Querying Amazon Listings API for SKU: ${sku}.`);
+        const batchSize = 20;
+
+        for (let i = 0; i < skus.length; i += batchSize) {
+            const skuBatch = skus.slice(i, i + batchSize);
+            logs.push(`Querying Amazon Listings API for SKU batch: ${skuBatch.join(', ')}.`);
             
             const params = new URLSearchParams({
                 sellerId: sellerId,
                 marketplaceIds: marketplaceId,
                 includedData: 'summaries,attributes,offers',
-                skus: sku,
             });
+            skuBatch.forEach(sku => params.append('skus', sku));
 
             const url = `https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items?${params.toString()}`;
             
@@ -914,16 +907,16 @@ export async function getAmazonProducts(): Promise<{ products: ShopifyProduct[];
             const data: any = await response.json();
             
             if (!response.ok) {
-                logs.push(`Amazon Listings API Error for SKU ${sku}: ${response.status} - ${JSON.stringify(data)}`);
-                continue; // Continue to the next SKU even if one fails
+                logs.push(`Amazon Listings API Error for batch starting with ${skuBatch[0]}: ${response.status} - ${JSON.stringify(data)}`);
+                continue; // Continue to the next batch even if one fails
             }
 
             const newListings = data.items || [];
             if (newListings.length > 0) {
                 allListings.push(...newListings);
-                logs.push(`Fetched ${newListings.length} listing for SKU ${sku}.`);
+                logs.push(`Fetched ${newListings.length} listings for this batch.`);
             } else {
-                logs.push(`No listing found for SKU ${sku}.`);
+                logs.push(`No listings found for this batch.`);
             }
         }
         
@@ -1069,3 +1062,6 @@ export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; l
      // In a real app, you would fetch products from the Etsy API.
     return { products: [], logs };
 }
+
+
+    
