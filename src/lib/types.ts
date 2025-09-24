@@ -77,6 +77,7 @@ export interface ShopifyProduct {
     variant_ids: number[];
     admin_graphql_api_id: string;
   } | null;
+  linked_to_platforms?: string[]; // New field to track connections
 }
 
 export interface MappedShopifyProduct {
@@ -326,4 +327,3 @@ export interface SyncSettings {
   marketplaces: MarketplaceSyncSetting[];
 }
     
-

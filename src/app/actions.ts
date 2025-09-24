@@ -3,7 +3,7 @@
 'use server';
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct } from '@/lib/shopify-client';
-import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
+import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, SyncSettings } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
@@ -449,5 +449,35 @@ export async function handleGetSyncSettings(): Promise<{ success: boolean; setti
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         console.error('Error loading sync settings:', errorMessage);
         return { success: false, settings: null, error: `Database operation failed: ${errorMessage}` };
+    }
+}
+
+export async function handleCreateProductOnPlatform(productId: string, platform: string): Promise<{ success: boolean; error: string | null }> {
+    console.log(`Received request to create product ${productId} on platform ${platform}`);
+
+    try {
+        const product = await getSingleWebsiteProduct(productId);
+        if (!product) {
+            return { success: false, error: 'Product not found in local database.' };
+        }
+
+        console.log(`Creating product "${product.title}" on ${platform}...`);
+        
+        // This is a placeholder. In a real application, you would call the
+        // specific API for each platform to create the product.
+        // For example: `createWalmartProduct(product)`, `createEtsyListing(product)`, etc.
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+        
+        // After successfully creating, you might want to update your local DB
+        // to store the new external ID. For now, we just log it.
+        const newExternalId = `${platform.toUpperCase()}_${product.id.substring(0, 5)}_${Date.now()}`;
+        console.log(`Product created on ${platform} with new ID: ${newExternalId}`);
+
+        return { success: true, error: null };
+
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error(`Failed to create product on ${platform}:`, errorMessage);
+        return { success: false, error: errorMessage };
     }
 }

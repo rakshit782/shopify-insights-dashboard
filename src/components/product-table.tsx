@@ -15,25 +15,63 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Shirt, MoreHorizontal, RefreshCw, UploadCloud, Loader2 } from 'lucide-react';
+import { Shirt, MoreHorizontal, RefreshCw, UploadCloud, Loader2, Link2, CircleDot } from 'lucide-react';
 import type { ShopifyProduct } from '@/lib/types';
 import { PaginationControls } from './pagination-controls';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+
+const platformIcons: { [key: string]: string } = {
+  shopify: '/shopify.svg',
+  amazon: '/amazon.svg',
+  walmart: '/walmart.svg',
+  etsy: '/etsy.svg',
+  ebay: '/ebay.svg',
+};
+
+
+const StatusIndicator = ({ isConnected, platform, onConnect }: { isConnected: boolean; platform: string; onConnect: () => void; }) => {
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center">
+                        {isConnected ? (
+                            <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                        ) : (
+                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onConnect}>
+                             <div className="h-2.5 w-2.5 rounded-full bg-red-500 hover:ring-2 hover:ring-red-300 transition-all" />
+                           </Button>
+                        )}
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{platform}: {isConnected ? 'Connected' : 'Click to push product'}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
+
 
 export function ProductTable({ 
     products, 
-    platform, 
+    platform,
+    connectedChannels,
     onRefresh, 
     isLoading,
     onPushToDb,
     isPushingToDb,
+    onProductCreate,
 }: { 
     products: ShopifyProduct[], 
     platform: string, 
+    connectedChannels: string[],
     onRefresh: () => void, 
     isLoading: boolean,
     onPushToDb?: () => void,
     isPushingToDb?: boolean,
+    onProductCreate: (productId: string, platform: string) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(10);
@@ -105,6 +143,20 @@ export function ProductTable({
                 <TableHead>Status</TableHead>
                 <TableHead>Inventory</TableHead>
                 <TableHead>Price</TableHead>
+                {connectedChannels.map(channel => (
+                  <TableHead key={channel} className="text-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Image src={platformIcons[channel]} alt={channel} width={18} height={18} className="mx-auto" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           <p className="capitalize">{channel}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                ))}
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
@@ -127,6 +179,15 @@ export function ProductTable({
                   </TableCell>
                   <TableCell>{product.variants?.[0]?.inventory_quantity ?? 'N/A'}</TableCell>
                   <TableCell>${product.variants?.[0]?.price ?? 'N/A'}</TableCell>
+                  {connectedChannels.map(channel => (
+                     <TableCell key={channel} className="text-center">
+                       <StatusIndicator 
+                         isConnected={product.linked_to_platforms?.includes(channel) ?? false}
+                         platform={channel}
+                         onConnect={() => onProductCreate(product.id, channel)}
+                       />
+                     </TableCell>
+                  ))}
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

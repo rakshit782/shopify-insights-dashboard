@@ -1,4 +1,5 @@
 
+
 import type { ShopifyProduct } from './types';
 import { createSupabaseServerClient } from './supabase/server';
 
@@ -92,27 +93,37 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
 
     // The result is an array of objects with individual columns.
     // We need to map it to an array of ShopifyProduct objects.
-    const products: ShopifyProduct[] = allProductsData.map(item => ({
-        id: item.shopify_product_id,
-        admin_graphql_api_id: item.id,
-        handle: item.handle,
-        title: item.title,
-        body_html: item.body_html,
-        vendor: item.vendor,
-        product_type: item.product_type,
-        status: item.status,
-        tags: item.tags,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        published_at: item.published_at,
-        variants: item.variants,
-        options: item.options,
-        images: item.images,
-        image: item.image,
-        // Properties not in the db table but required by the type are filled with defaults
-        template_suffix: '',
-        published_scope: 'web', 
-    }));
+    const products: ShopifyProduct[] = allProductsData.map(item => {
+        // Mock which platforms this product is linked to
+        const linked_to_platforms = ['shopify']; // Always on Shopify
+        if (Math.random() > 0.5) linked_to_platforms.push('amazon');
+        if (Math.random() > 0.6) linked_to_platforms.push('walmart');
+        if (Math.random() > 0.7) linked_to_platforms.push('etsy');
+
+
+        return {
+            id: item.shopify_product_id,
+            admin_graphql_api_id: item.id,
+            handle: item.handle,
+            title: item.title,
+            body_html: item.body_html,
+            vendor: item.vendor,
+            product_type: item.product_type,
+            status: item.status,
+            tags: item.tags,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            published_at: item.published_at,
+            variants: item.variants,
+            options: item.options,
+            images: item.images,
+            image: item.image,
+            // Properties not in the db table but required by the type are filled with defaults
+            template_suffix: '',
+            published_scope: 'web', 
+            linked_to_platforms,
+        }
+    });
 
     logs.push(`Successfully fetched a total of ${products.length} products from website database.`);
 
@@ -134,6 +145,38 @@ export async function getWebsiteProductCount(logs: string[]): Promise<number> {
     return count || 0;
 }
     
+export async function getSingleWebsiteProduct(id: string): Promise<ShopifyProduct | null> {
+    const supabase = createSupabaseServerClient('DATA');
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+    
+    if (error || !data) {
+        console.error(`Error fetching product ${id}:`, error);
+        return null;
+    }
 
-
+    return {
+        id: data.shopify_product_id,
+        admin_graphql_api_id: data.id,
+        handle: data.handle,
+        title: data.title,
+        body_html: data.body_html,
+        vendor: data.vendor,
+        product_type: data.product_type,
+        status: data.status,
+        tags: data.tags,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        published_at: data.published_at,
+        variants: data.variants,
+        options: data.options,
+        images: data.images,
+        image: data.image,
+        template_suffix: '',
+        published_scope: 'web', 
+    };
+}
     

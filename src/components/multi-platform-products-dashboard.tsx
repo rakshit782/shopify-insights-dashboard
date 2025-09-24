@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Shirt, Code, RefreshCw, UploadCloud, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { handleGetCredentialStatuses, handleGetWebsiteProducts, handleGetEtsyProducts, handleSyncProducts } from '@/app/actions';
+import { handleGetCredentialStatuses, handleGetWebsiteProducts, handleGetEtsyProducts, handleSyncProducts, handleCreateProductOnPlatform } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from './product-table';
 import { ScrollArea } from './ui/scroll-area';
@@ -42,6 +42,16 @@ const platformMeta: {
         name: 'Etsy', 
         icon: <Image src="/etsy.svg" alt="Etsy" width={18} height={18} unoptimized />,
         fetcher: handleGetEtsyProducts
+    },
+     'amazon': { 
+        name: 'Amazon', 
+        icon: <Image src="/amazon.svg" alt="Amazon" width={18} height={18} unoptimized />,
+        fetcher: async () => ({ success: true, products: [], error: "Product fetching not implemented for Amazon.", logs: [] })
+    },
+     'walmart': { 
+        name: 'Walmart', 
+        icon: <Image src="/walmart.svg" alt="Walmart" width={18} height={18} unoptimized />,
+        fetcher: async () => ({ success: true, products: [], error: "Product fetching not implemented for Walmart.", logs: [] })
     },
 };
 
@@ -98,7 +108,7 @@ function DebugLog({ logs }: { logs: string[] }) {
     )
 }
 
-function PlatformProductView({ platformId, cache, setCache }: { platformId: string, cache: Record<string, CachedProducts>, setCache: Function }) {
+function PlatformProductView({ platformId, connectedChannels, cache, setCache }: { platformId: string, connectedChannels: string[], cache: Record<string, CachedProducts>, setCache: Function }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isPushingToDb, setIsPushingToDb] = useState(false);
     const { toast } = useToast();
@@ -159,6 +169,38 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         }
         setIsPushingToDb(false);
     }
+    
+     const handleCreateOnPlatform = useCallback(async (productId: string, platform: string) => {
+        const result = await handleCreateProductOnPlatform(productId, platform);
+        if (result.success) {
+            toast({
+                title: `Product Pushed to ${platform}`,
+                description: `Product ${productId} is being created on ${platform}.`,
+            });
+            // Optimistically update the UI
+            setCache((prev: Record<string, CachedProducts>) => {
+                const updatedProducts = prev[platformId]?.data.map(p => {
+                    if (p.id === productId) {
+                        return { ...p, linked_to_platforms: [...(p.linked_to_platforms || []), platform] };
+                    }
+                    return p;
+                });
+                return {
+                    ...prev,
+                    [platformId]: {
+                        ...prev[platformId],
+                        data: updatedProducts,
+                    },
+                };
+            });
+        } else {
+            toast({
+                title: 'Push Failed',
+                description: result.error,
+                variant: 'destructive',
+            });
+        }
+    }, [platformId, setCache, toast]);
 
     if (isLoading && !isCacheValid) return <ProductsLoadingSkeleton />;
     
@@ -212,10 +254,12 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
             <ProductTable 
                 products={products} 
                 platform={platform.name} 
+                connectedChannels={connectedChannels}
                 onRefresh={() => fetchProducts()}
                 isLoading={isLoading}
                 onPushToDb={platform.showPushToDb ? handlePushToDb : undefined}
                 isPushingToDb={isPushingToDb}
+                 onProductCreate={handleCreateOnPlatform}
             />
             <DebugLog logs={logs} />
         </>
@@ -241,7 +285,8 @@ export function MultiPlatformProductsDashboard() {
         fetchStatuses();
     }, [fetchStatuses]);
     
-    const defaultTab = useMemo(() => connectedChannels[0] || '', [connectedChannels]);
+    // Set Shopify as default tab if it's connected, otherwise use the first one.
+    const defaultTab = useMemo(() => connectedChannels.includes('shopify') ? 'shopify' : connectedChannels[0] || '', [connectedChannels]);
 
     if (isLoading) {
         return (
@@ -264,11 +309,15 @@ export function MultiPlatformProductsDashboard() {
         );
     }
     
+    // Only show tabs for platforms that are actually meant for viewing product lists.
+    const productViewChannels = connectedChannels.filter(id => id === 'shopify' || id === 'etsy');
+
+
     return (
         <div className="space-y-4">
             <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList>
-                    {connectedChannels.map(id => (
+                    {productViewChannels.map(id => (
                         <TabsTrigger key={id} value={id}>
                         <div className="flex items-center gap-2">
                             {platformMeta[id].icon}
@@ -277,9 +326,9 @@ export function MultiPlatformProductsDashboard() {
                         </TabsTrigger>
                     ))}
                 </TabsList>
-                {connectedChannels.map(id => (
+                {productViewChannels.map(id => (
                     <TabsContent key={id} value={id}>
-                        <PlatformProductView platformId={id} cache={productCache} setCache={setProductCache} />
+                        <PlatformProductView platformId={id} connectedChannels={connectedChannels} cache={productCache} setCache={setProductCache} />
                     </TabsContent>
                 ))}
             </Tabs>
