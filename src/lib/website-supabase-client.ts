@@ -4,6 +4,7 @@ import type { ShopifyProduct } from './types';
 import { createSupabaseServerClient } from './supabase/server';
 
 const BATCH_SIZE = 50;
+const FETCH_BATCH_SIZE = 1000; // For fetching from Supabase
 
 export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise<void> {
     const supabase = createSupabaseServerClient('DATA');
@@ -50,21 +51,49 @@ export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise
 export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
     const logs: string[] = [];
     const supabase = createSupabaseServerClient('DATA');
-    logs.push('Fetching website products from DATA database...');
+    logs.push('Fetching all website products from DATA database with pagination...');
     
-    const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('updated_at', { ascending: false });
+    let allProductsData: any[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    if (error) {
-        logs.push(`Error fetching website products: ${error.message}`);
-        return { rawProducts: [], logs };
+    while(hasMore) {
+        const from = page * FETCH_BATCH_SIZE;
+        const to = from + FETCH_BATCH_SIZE - 1;
+        
+        logs.push(`Fetching products from range: ${from} to ${to}`);
+        
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('updated_at', { ascending: false })
+            .range(from, to);
+
+        if (error) {
+            logs.push(`Error fetching website products on page ${page}: ${error.message}`);
+            // Stop fetching on error
+            hasMore = false; 
+            break;
+        }
+
+        if (data && data.length > 0) {
+            allProductsData.push(...data);
+            logs.push(`Fetched ${data.length} products. Total so far: ${allProductsData.length}`);
+            if (data.length < FETCH_BATCH_SIZE) {
+                hasMore = false; // Last page
+                logs.push('Last page of products reached.');
+            } else {
+                page++;
+            }
+        } else {
+            hasMore = false; // No more data
+            logs.push('No more products to fetch.');
+        }
     }
-    
+
     // The result is an array of objects with individual columns.
     // We need to map it to an array of ShopifyProduct objects.
-    const products: ShopifyProduct[] = data.map(item => ({
+    const products: ShopifyProduct[] = allProductsData.map(item => ({
         id: item.shopify_product_id,
         admin_graphql_api_id: item.id,
         handle: item.handle,
@@ -86,7 +115,7 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
         published_scope: 'web', 
     }));
 
-    logs.push(`Successfully fetched ${products.length} products from website database.`);
+    logs.push(`Successfully fetched a total of ${products.length} products from website database.`);
 
     return { rawProducts: products, logs };
 }
