@@ -8,6 +8,7 @@ import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 
 export async function handleSyncProducts(profileId: string) {
@@ -286,25 +287,36 @@ export async function getDashboardStats(profileId: string | null, dateRange?: Da
 
 // Settings Actions
 export async function handleSaveBusinessProfile(profileData: BusinessProfileCreation): Promise<{ success: boolean, profile: BusinessProfile | null, error: string | null }> {
-    // Mock implementation as Supabase is removed
-    console.log("Simulating save for business profile:", profileData);
-    const newProfile: BusinessProfile = {
-        id: profileData.id || `profile_${Date.now()}`,
-        ...profileData
-    };
-    return { success: true, profile: newProfile, error: null };
+    const supabase = createSupabaseServerClient('MAIN');
+    try {
+        const { id, ...dataToUpsert } = profileData;
+        let result;
+        if (id) {
+            // Update existing profile
+            result = await supabase.from('business_profiles').update(dataToUpsert).eq('id', id).select().single();
+        } else {
+            // Create new profile
+            result = await supabase.from('business_profiles').insert(dataToUpsert).select().single();
+        }
+
+        if (result.error) throw result.error;
+
+        return { success: true, profile: result.data, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, profile: null, error: `Failed to save profile: ${errorMessage}` };
+    }
 }
 
 export async function handleGetBusinessProfiles(): Promise<{ success: boolean, profiles: BusinessProfile[], error: string | null }> {
     try {
-        // Mock implementation as Supabase is removed
-        const mockProfiles: BusinessProfile[] = [
-            { id: 'mock_profile_1', profile_name: 'Mock Shopify Store', store_url: 'https://mock.shopify.com', contact_email: 'contact@mock.com' }
-        ];
-
+        const supabase = createSupabaseServerClient('MAIN');
+        const { data: profiles, error } = await supabase.from('business_profiles').select('*');
+        if (error) throw error;
+        
         // For each profile, fetch the credential statuses
         const profilesWithStatuses = await Promise.all(
-            (mockProfiles || []).map(async (profile) => {
+            (profiles || []).map(async (profile) => {
                 const { statuses } = await handleGetCredentialStatuses(profile.id);
                 return { ...profile, credential_statuses: statuses };
             })
@@ -319,12 +331,15 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
 }
 
 export async function handleGetUserAgency(): Promise<{ success: boolean; email: string | null; agency: Agency | null; error: string | null; }> {
-    // Mock implementation as Supabase is removed
+    // This is now a mock function since user auth is removed
     return { success: true, email: 'rvaishjpr@gmail.com', agency: { agency_id: 'agency_123', name: 'Mock Agency' }, error: null };
 }
     
     
 
     
+
+    
+
 
     

@@ -19,6 +19,7 @@ import { PlaceHolderImages } from './placeholder-images';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { DateRange } from 'react-day-picker';
+import { createSupabaseServerClient } from './supabase/server';
 
 export interface PlatformProductCount {
   platform: string;
@@ -31,14 +32,24 @@ const apiVersionDefault = '2025-07';
 // Credential Management
 // =_==========================================
 
-// Mock implementations since Supabase is removed
 async function upsertCredential(tableName: string, data: any) {
-  console.log(`[MOCK] Upserting to ${tableName}`, data);
+  const supabase = createSupabaseServerClient('MAIN');
+  const { error } = await supabase.from(tableName).upsert(data, { onConflict: 'profile_id' });
+  if (error) throw new Error(`Failed to upsert credential to ${tableName}: ${error.message}`);
 }
-async function checkCredentialExists(tableName: string, profileId: string, logs: string[]): Promise<boolean> {
-   console.log(`[MOCK] Checking credentials for ${profileId} in ${tableName}`);
-   // Simulate Shopify being connected for the mock profile
-   return tableName === 'shopify_credentials' && profileId === 'mock_profile_1';
+async function checkCredentialExists(tableName:string, profileId: string, logs: string[]): Promise<boolean> {
+    const supabase = createSupabaseServerClient('MAIN');
+    const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .eq('profile_id', profileId)
+        .limit(1);
+
+    if (error) {
+        logs.push(`Error checking credentials for ${tableName}: ${error.message}`);
+        return false;
+    }
+    return data && data.length > 0;
 }
 
 export async function getCredentialStatuses(profileId: string): Promise<Record<string, boolean>> {
@@ -99,21 +110,21 @@ export async function saveWayfairCredentials(profileId: string, credentials: Way
 // ============================================
 
 async function getShopifyConfig(profileId: string, logs: string[]): Promise<ShopifyCredentials | null> {
-    logs.push("[MOCK] Fetching Shopify credentials...");
-    if (profileId !== 'mock_profile_1') {
-      logs.push('Could not fetch Shopify credentials for this profile.');
-      return null;
-    }
-    const storeName = process.env.SHOPIFY_STORE_NAME;
-    const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
-
-    if (!storeName || !accessToken || storeName === 'your-store-name') {
-        logs.push('Shopify credentials (SHOPIFY_STORE_NAME, SHOPIFY_ACCESS_TOKEN) are not configured in .env');
+    logs.push("Fetching Shopify credentials...");
+    const supabase = createSupabaseServerClient('MAIN');
+    const { data, error } = await supabase
+        .from('shopify_credentials')
+        .select('*')
+        .eq('profile_id', profileId)
+        .single();
+    
+    if (error || !data) {
+        logs.push(`Could not fetch Shopify credentials for profile ${profileId}: ${error?.message || 'No data found'}`);
         return null;
     }
 
-    logs.push(`Successfully fetched mock credentials. Store: ${storeName}`);
-    return { id: 1, profile_id: profileId, store_name: storeName, access_token: accessToken, api_version: apiVersionDefault };
+    logs.push(`Successfully fetched credentials. Store: ${data.store_name}`);
+    return data as ShopifyCredentials;
 }
 
 
@@ -414,22 +425,21 @@ export async function getPlatformProductCounts(profileId: string, logs: string[]
 // ============================================
 
 async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ clientId: string; clientSecret: string; } | null> {
-    logs.push("[MOCK] Fetching Walmart credentials...");
-    if (profileId !== 'mock_profile_1') {
-      logs.push('Could not fetch Walmart credentials for this profile.');
-      return null;
-    }
-    // In a real app, these would come from a secure source. Here, we'll use env vars for mock.
-    const clientId = process.env.WALMART_CLIENT_ID;
-    const clientSecret = process.env.WALMART_CLIENT_SECRET;
-     if (!clientId || !clientSecret || clientId === 'your-walmart-client-id') {
-        logs.push('Walmart credentials (WALMART_CLIENT_ID, WALMART_CLIENT_SECRET) are not configured in .env');
+    logs.push("Fetching Walmart credentials...");
+    const supabase = createSupabaseServerClient('MAIN');
+    const { data, error } = await supabase
+        .from('walmart_credentials')
+        .select('client_id, client_secret')
+        .eq('profile_id', profileId)
+        .single();
+        
+    if (error || !data) {
+        logs.push(`Could not fetch Walmart credentials: ${error?.message || 'Not found'}`);
         return null;
     }
 
-    logs.push(`Successfully fetched mock Walmart credentials.`);
-
-    return { clientId, clientSecret };
+    logs.push(`Successfully fetched Walmart credentials.`);
+    return { clientId: data.client_id, clientSecret: data.client_secret };
 }
 
 
@@ -582,6 +592,8 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
+
+    
 
     
 

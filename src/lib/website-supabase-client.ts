@@ -1,38 +1,78 @@
 
 import 'dotenv/config';
 import type { ShopifyProduct } from './types';
-
-// This file now contains mock implementations as Supabase has been removed.
+import { createSupabaseServerClient } from './supabase/server';
 
 const BATCH_SIZE = 50;
 
 export async function syncProductsToWebsite(products: ShopifyProduct[]): Promise<void> {
-    console.log(`[MOCK] Syncing ${products.length} products to website.`);
-    // In a real scenario, this would upsert to a database.
-    // For now, we just log the action.
+    const supabase = createSupabaseServerClient('DATA');
+    console.log(`Syncing ${products.length} products to website.`);
+    
+    // In a real implementation, you'd want more robust error handling per batch
     for (let i = 0; i < products.length; i += BATCH_SIZE) {
         const batch = products.slice(i, i + BATCH_SIZE);
-        console.log(`[MOCK] Syncing batch of ${batch.length} products.`);
+        const productsToUpsert = batch.map(p => ({
+            id: p.admin_graphql_api_id, // Use GraphQL ID as the primary key
+            handle: p.handle,
+            shopify_data: p, // Store the entire raw product object
+            last_synced: new Date().toISOString()
+        }));
+
+        const { error } = await supabase
+            .from('products')
+            .upsert(productsToUpsert, { onConflict: 'id' });
+
+        if (error) {
+            console.error(`Error syncing batch of ${batch.length} products:`, error);
+            // Decide if you want to throw or continue
+            throw new Error(`Failed to sync a batch of products: ${error.message}`);
+        } else {
+             console.log(`Successfully synced batch of ${batch.length} products.`);
+        }
     }
 }
 
 
 export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduct[], logs: string[] }> {
     const logs: string[] = [];
-    logs.push('[MOCK] Fetching website products...');
+    const supabase = createSupabaseServerClient('DATA');
+    logs.push('Fetching website products from DATA database...');
     
-    // Returning an empty array as there is no database to fetch from.
-    // In a real scenario with a DB, you would fetch all products here.
-    const mockProducts: ShopifyProduct[] = []; 
+    const { data, error } = await supabase
+        .from('products')
+        .select('shopify_data') // Select only the column with the raw Shopify data
+        .order('shopify_data->>updated_at', { ascending: false });
 
-    logs.push(`[MOCK] Successfully fetched ${mockProducts.length} products from website database.`);
+    if (error) {
+        logs.push(`Error fetching website products: ${error.message}`);
+        return { rawProducts: [], logs };
+    }
+    
+    // The result is an array of objects like [{ shopify_data: {...} }, { shopify_data: {...} }]
+    // We need to map it to an array of product objects.
+    const products: ShopifyProduct[] = data.map(item => item.shopify_data);
 
-    return { rawProducts: mockProducts, logs };
+    logs.push(`Successfully fetched ${products.length} products from website database.`);
+
+    return { rawProducts: products, logs };
 }
 
 export async function getWebsiteProductCount(logs: string[]): Promise<number> {
-    logs.push('[MOCK] Fetching website product count...');
-    // Return 0 as there is no database.
-    return 0;
+    const supabase = createSupabaseServerClient('DATA');
+    logs.push('Fetching website product count from DATA database...');
+    const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+    if (error) {
+        logs.push(`Error fetching product count: ${error.message}`);
+        return 0;
+    }
+    
+    return count || 0;
 }
+    
+
+
     
