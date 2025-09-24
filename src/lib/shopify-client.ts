@@ -561,41 +561,44 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
 // Amazon Helpers
 // ============================================
 
-async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
-    logs.push("Reading Amazon SP-API credentials from .env file...");
+async function getAmazonAccessToken(logs: string[]): Promise<string | null> {
     const refreshToken = process.env.AMAZON_REFRESH_TOKEN;
-    const sellingPartnerId = process.env.AMAZON_SELLER_ID;
     const clientId = process.env.AMAZON_CLIENT_ID;
     const clientSecret = process.env.AMAZON_CLIENT_SECRET;
 
-    if (!refreshToken || !sellingPartnerId || !clientId || !clientSecret || refreshToken.includes('your-')) {
-        logs.push(`Amazon SP-API credentials not found or are placeholders in .env file.`);
+    if (!refreshToken || !clientId || !clientSecret) {
+        logs.push('Amazon token credentials missing from .env file.');
         return null;
     }
-    
+
+    const url = 'https://api.amazon.com/auth/o2/token';
+    const body = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret
+    });
+
     try {
-        const { OrdersV0ApiClient } = (await import('@sp-api-sdk/orders-api-v0'));
-        const client = new OrdersV0ApiClient({
-            region: 'na', // or 'eu', 'fe'
-            refreshToken: refreshToken,
-            sellingPartner: {
-                sellingPartnerId: sellingPartnerId
-            },
-            credentials: {
-                clientId: clientId,
-                clientSecret: clientSecret,
-                accessKeyId: '', // Not needed when using refresh token
-                secretAccessKey: '', // Not needed when using refresh token
-                role: {
-                  arn: ''
-                },
-            },
+        logs.push('Requesting Amazon SP-API access token...');
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
         });
-        logs.push("Successfully initialized Amazon SP-API client.");
-        return client;
-    } catch(e) {
+
+        const data: any = await response.json();
+        
+        if (!response.ok) {
+            logs.push(`Amazon Token API Error: ${response.status} - ${JSON.stringify(data)}`);
+            return null;
+        }
+
+        logs.push('Successfully retrieved Amazon access token.');
+        return data.access_token;
+    } catch (e) {
         if (e instanceof Error) {
-            logs.push(`Error initializing Amazon SP-API client: ${e.message}`);
+            logs.push(`Network error fetching Amazon token: ${e.message}`);
         }
         return null;
     }
@@ -604,57 +607,72 @@ async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
 
 export async function getAmazonOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
     const logs: string[] = [];
-    const sp = await getAmazonSPAPIClient(logs);
+    const accessToken = await getAmazonAccessToken(logs);
     const marketplaceId = process.env.AMAZON_MARKETPLACE_ID;
+    const sellerId = process.env.AMAZON_SELLER_ID;
 
-    if (!sp || !marketplaceId) {
-        if (!sp) logs.push("SP-API client failed to initialize.");
-        if (!marketplaceId) logs.push("AMAZON_MARKETPLACE_ID is not set in .env file.");
+    if (!accessToken || !marketplaceId || !sellerId) {
+        logs.push("Amazon credentials or Marketplace ID not configured properly.");
         return { orders: [], logs };
     }
-    
+
     try {
-        const params: any = {
-            MarketplaceIds: [marketplaceId],
-            OrderStatuses: ['Pending', 'Unshipped', 'PartiallyShipped', 'Shipped', 'InvoiceUnconfirmed', 'Canceled', 'Unfulfillable'],
-        };
+        const params = new URLSearchParams({
+            MarketplaceIds: marketplaceId,
+            OrderStatuses: 'Pending,Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Canceled,Unfulfillable',
+        });
         
         if (options.dateRange?.from) {
-            params.CreatedAfter = options.dateRange.from.toISOString();
+            params.set('CreatedAfter', options.dateRange.from.toISOString());
         } else {
-             // Default to last 15 days if no start date
-            const fifteenDaysAgo = subDays(new Date(), 14);
-            params.CreatedAfter = fifteenDaysAgo.toISOString();
+            params.set('CreatedAfter', subDays(new Date(), 15).toISOString());
         }
 
         if (options.dateRange?.to) {
-            params.CreatedBefore = options.dateRange.to.toISOString();
+            params.set('CreatedBefore', options.dateRange.to.toISOString());
         }
 
-        logs.push("Fetching Amazon orders with params:", JSON.stringify(params));
+        const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
         
-        const res = await sp.getOrders(params);
+        logs.push("Fetching Amazon orders...");
+        const orderResponse = await fetch(orderUrl, {
+            headers: { 'x-amz-access-token': accessToken }
+        });
 
-        const amazonOrders: AmazonOrder[] = res.data.payload?.Orders || [];
+        const orderData: any = await orderResponse.json();
+        
+        if (!orderResponse.ok) {
+            logs.push(`Amazon Orders API Error: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
+            return { orders: [], logs };
+        }
+
+        const amazonOrders: AmazonOrder[] = orderData.payload?.Orders || [];
         logs.push(`Successfully fetched ${amazonOrders.length} orders from Amazon.`);
 
         const mappedOrders: ShopifyOrder[] = [];
         for (const order of amazonOrders) {
-            let orderItems: AmazonOrderItem[] = [];
+             let orderItems: AmazonOrderItem[] = [];
              try {
-                const itemsRes = await sp.getOrderItems({
-                    AmazonOrderId: order.AmazonOrderId
+                const itemsUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders/${order.AmazonOrderId}/orderItems`;
+                const itemsRes = await fetch(itemsUrl, {
+                    headers: { 'x-amz-access-token': accessToken }
                 });
-                orderItems = itemsRes.data.payload?.OrderItems || [];
+                const itemsData = await itemsRes.json();
+                if (itemsRes.ok) {
+                    orderItems = itemsData.payload?.OrderItems || [];
+                } else {
+                     logs.push(`Could not fetch items for Amazon order ${order.AmazonOrderId}: ${JSON.stringify(itemsData)}`);
+                }
             } catch (e) {
                 if (e instanceof Error) {
-                    logs.push(`Could not fetch items for Amazon order ${order.AmazonOrderId}: ${e.message}`);
+                    logs.push(`Error fetching items for Amazon order ${order.AmazonOrderId}: ${e.message}`);
                 }
             }
             mappedOrders.push(mapAmazonOrderToShopifyOrder(order, orderItems));
         }
 
         return { orders: mappedOrders, logs };
+
     } catch (e) {
         if (e instanceof Error) {
             logs.push(`Error in getAmazonOrders: ${e.message}`);
@@ -662,6 +680,7 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
         return { orders: [], logs };
     }
 }
+
 
 function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrderItem[]): ShopifyOrder {
     const financialStatus = amazonOrder.OrderStatus === 'Pending' ? 'pending' : 'paid';
