@@ -11,6 +11,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -476,14 +477,14 @@ export async function getWalmartOrders(options: { dateRange?: DateRange }): Prom
     
     const params = new URLSearchParams();
     if (options.dateRange?.from) {
-        params.append('createdStartDate', options.dateRange.from.toISOString());
+        params.append('createdStartDate', options.dateRange.from.toISOString().split('T')[0]);
     } else {
         // Default to last 15 days if no start date
         const fifteenDaysAgo = subDays(new Date(), 14);
-        params.append('createdStartDate', fifteenDaysAgo.toISOString());
+        params.append('createdStartDate', fifteenDaysAgo.toISOString().split('T')[0]);
     }
      if (options.dateRange?.to) {
-        params.append('createdEndDate', options.dateRange.to.toISOString());
+        params.append('createdEndDate', options.dateRange.to.toISOString().split('T')[0]);
     }
 
     const url = `https://marketplace.walmartapis.com/v3/orders?${params.toString()}`;
@@ -817,4 +818,5 @@ export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; l
     
 
     
+
 
