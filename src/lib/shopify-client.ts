@@ -485,11 +485,14 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     line.charges.charge.forEach(charge => {
         const chargeAmount = Number(charge.chargeAmount?.amount || 0);
         const taxAmount = Number(charge.tax?.taxAmount?.amount || 0);
-        totalTax += taxAmount;
+        
         if (charge.chargeType === 'PRODUCT') {
             subtotal += chargeAmount;
+            totalTax += taxAmount; // Tax is nested inside product charge
         } else if (charge.chargeType === 'SHIPPING') {
             totalShipping += chargeAmount;
+            // Shipping can also have tax
+            totalTax += taxAmount;
         }
     });
   });
@@ -501,7 +504,7 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
   const lastName = nameParts.slice(1).join(' ') || '';
 
   const latestStatusLine = walmartOrder.orderLines.orderLine.reduce((latest, current) => {
-    return (current.statusDate > latest.statusDate) ? current : latest;
+    return (new Date(current.statusDate) > new Date(latest.statusDate)) ? current : latest;
   });
   
   const fulfillmentStatus = latestStatusLine.status;

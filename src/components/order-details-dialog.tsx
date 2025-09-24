@@ -43,8 +43,8 @@ export function OrderDetailsDialog({ isOpen, onOpenChange, order }: OrderDetails
       case 'Acknowledged': return 'secondary';
       case 'partial': return 'outline';
       default: return 'outline';
-    }
-  };
+    };
+  }
 
   const customerName = `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim() || 'N/A';
   
