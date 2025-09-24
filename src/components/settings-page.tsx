@@ -208,12 +208,12 @@ function MarketplaceSyncSettings() {
         async function loadSettings() {
             setIsLoading(true);
             const statusResult = await handleGetCredentialStatuses();
-            if (statusResult.success) {
+            if (statusResult.success && statusResult.statuses) {
                 const connectedChannels = Object.keys(statusResult.statuses)
                     .filter(key => statusResult.statuses[key] && platformIconMap[key] && key !== 'shopify') // Exclude shopify as source
                     .map(key => ({
                         id: key,
-                        name: key.charAt(0).toUpperCase() + key.slice(1),
+                        name: platformNameMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
                         // In a real app, these values would come from the database
                         syncInventory: false, 
                         syncPrice: false,
@@ -257,11 +257,9 @@ function MarketplaceSyncSettings() {
                         ) : fields.length > 0 ? (
                             fields.map((field, index) => (
                                 <div key={field.id}>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <Image src={platformIconMap[field.id] || 'https://placehold.co/400'} alt={field.name} width={24} height={24} />
-                                            <h3 className="text-lg font-semibold">{field.name}</h3>
-                                        </div>
+                                    <div className="flex items-center gap-3">
+                                        <Image src={platformIconMap[field.id] || 'https://placehold.co/400'} alt={field.name} width={24} height={24} unoptimized/>
+                                        <h3 className="text-lg font-semibold">{field.name}</h3>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 p-4 border rounded-lg">
                                         <FormField
