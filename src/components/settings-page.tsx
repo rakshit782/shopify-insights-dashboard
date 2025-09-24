@@ -149,7 +149,7 @@ function MarketplaceConnectionsCard() {
                         allPlatforms.map(platform => (
                             <div key={platform} className="flex items-center justify-between p-3 border rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <Image src={platformIconMap[platform] || 'https://placehold.co/400'} alt={platform} width={20} height={20} />
+                                    <Image src={platformIconMap[platform] || 'https://placehold.co/400'} alt={platform} width={20} height={20} unoptimized />
                                     <span className="font-medium">{platformNameMap[platform]}</span>
                                 </div>
                                 {statuses[platform] ? (
@@ -210,12 +210,11 @@ function MarketplaceSyncSettings() {
             const statusResult = await handleGetCredentialStatuses();
             if (statusResult.success && statusResult.statuses) {
                 const connectedChannels = Object.keys(statusResult.statuses)
-                    .filter(key => statusResult.statuses[key] && platformIconMap[key] && key !== 'shopify') // Exclude shopify as source
+                    .filter(key => statusResult.statuses[key] && platformIconMap[key])
                     .map(key => ({
                         id: key,
                         name: platformNameMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
-                        // In a real app, these values would come from the database
-                        syncInventory: false, 
+                        syncInventory: false,
                         syncPrice: false,
                         priceAdjustment: 0,
                     }));
@@ -229,8 +228,6 @@ function MarketplaceSyncSettings() {
     const onSubmit = (data: SyncSettingsFormValues) => {
         setIsSubmitting(true);
         console.log('Submitting sync settings:', data);
-        // In a real app, you would call a server action here to save the settings.
-        // await handleSaveSyncSettings(data);
         toast({
             title: 'Settings Saved',
             description: 'Your marketplace sync settings have been updated.',
@@ -245,7 +242,7 @@ function MarketplaceSyncSettings() {
                     <CardHeader>
                         <CardTitle>Marketplace Sync Settings</CardTitle>
                         <CardDescription>
-                            Configure how inventory and pricing are synced from Shopify to other marketplaces.
+                           Shopify is the source of truth. Configure how its data syncs to other marketplaces.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -255,47 +252,50 @@ function MarketplaceSyncSettings() {
                                 <Skeleton className="h-16 w-full" />
                             </div>
                         ) : fields.length > 0 ? (
-                            fields.map((field, index) => (
+                            fields.map((field, index) => {
+                                const isShopify = field.id === 'shopify';
+                                return (
                                 <div key={field.id}>
                                     <div className="flex items-center gap-3">
                                         <Image src={platformIconMap[field.id] || 'https://placehold.co/400'} alt={field.name} width={24} height={24} unoptimized/>
                                         <h3 className="text-lg font-semibold">{field.name}</h3>
+                                        {isShopify && <Badge variant="outline">Source</Badge>}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 p-4 border rounded-lg">
                                         <FormField
                                             control={form.control}
                                             name={`marketplaces.${index}.syncInventory`}
-                                            render={({ field }) => (
+                                            render={({ field: formField }) => (
                                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm col-span-1">
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="flex items-center gap-2"><Boxes className="h-4 w-4"/> Sync Inventory</FormLabel>
                                                     </div>
-                                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                                    <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
                                                 </FormItem>
                                             )}
                                         />
                                         <FormField
                                             control={form.control}
                                             name={`marketplaces.${index}.syncPrice`}
-                                            render={({ field }) => (
+                                            render={({ field: formField }) => (
                                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm col-span-1">
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="flex items-center gap-2"><ShoppingCart className="h-4 w-4"/> Sync Price</FormLabel>
                                                     </div>
-                                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                                    <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
                                                 </FormItem>
                                             )}
                                         />
                                         <FormField
                                             control={form.control}
                                             name={`marketplaces.${index}.priceAdjustment`}
-                                            render={({ field }) => (
+                                            render={({ field: formField }) => (
                                                 <FormItem className="col-span-1">
                                                     <FormLabel className="text-xs">Price Adjustment (%)</FormLabel>
                                                     <FormControl>
                                                         <div className="relative">
                                                             <Percent className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                            <Input type="number" {...field} className="pl-8" />
+                                                            <Input type="number" disabled={isShopify} {...formField} className="pl-8" />
                                                         </div>
                                                     </FormControl>
                                                 </FormItem>
@@ -304,9 +304,10 @@ function MarketplaceSyncSettings() {
                                     </div>
                                     {index < fields.length - 1 && <Separator className="mt-6" />}
                                 </div>
-                            ))
+                                );
+                            })
                         ) : (
-                            <p className="text-sm text-muted-foreground">No other marketplaces are connected. Add credentials in your .env file to configure sync settings.</p>
+                            <p className="text-sm text-muted-foreground">No marketplaces are connected. Add credentials in your .env file to configure sync settings.</p>
                         )}
                     </CardContent>
                     <CardFooter>
@@ -336,7 +337,5 @@ export function SettingsPage() {
     </div>
   );
 }
-
-    
 
     
