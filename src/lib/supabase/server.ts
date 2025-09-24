@@ -16,14 +16,21 @@ export function createSupabaseServerClient(database: 'MAIN' | 'DATA') {
   let supabaseUrl: string | undefined;
   let supabaseServiceRoleKey: string | undefined;
   let placeholderUrl: string;
+  let urlEnvName: string;
+  let keyEnvName: string;
+
 
   if (database === 'MAIN') {
-    supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY_MAIN;
+    urlEnvName = 'NEXT_PUBLIC_SUPABASE_URL';
+    keyEnvName = 'SUPABASE_SERVICE_ROLE_KEY_MAIN';
+    supabaseUrl = process.env[urlEnvName];
+    supabaseServiceRoleKey = process.env[keyEnvName];
     placeholderUrl = "your-supabase-main-url";
   } else if (database === 'DATA') {
-    supabaseUrl = process.env.SUPABASE_URL_DATA;
-    supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY_DATA;
+    urlEnvName = 'SUPABASE_URL_DATA';
+    keyEnvName = 'SUPABASE_SERVICE_ROLE_KEY_DATA';
+    supabaseUrl = process.env[urlEnvName];
+    supabaseServiceRoleKey = process.env[keyEnvName];
     placeholderUrl = "your-supabase-data-url";
   } else {
     // Should not happen, but good to have a fallback
@@ -31,10 +38,10 @@ export function createSupabaseServerClient(database: 'MAIN' | 'DATA') {
   }
 
   // Check for missing or placeholder credentials
-  if (!supabaseUrl || !supabaseServiceRoleKey || supabaseUrl === placeholderUrl) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error(`Supabase credentials for the ${database} database are not set or are placeholders. Check your .env file.`);
-    }
+  if (!supabaseUrl || !supabaseServiceRoleKey || supabaseUrl.includes(placeholderUrl)) {
+    console.error(`Supabase credentials for the ${database} database are not set or are placeholders.`);
+    console.error(`Please ensure ${urlEnvName} and ${keyEnvName} are set in your environment (e.g., in Vercel project settings).`);
+    
     // Return a do-nothing client to prevent crashes
     return createDummyClient(database);
   }
