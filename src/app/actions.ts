@@ -185,7 +185,7 @@ async function getSalesData(dateRange?: DateRange): Promise<number> {
 
 export async function getDashboardStats(dateRange?: DateRange) {
     try {
-        const defaultRange: DateRange = { from: subDays(new Date(), 6), to: new Date() };
+        const defaultRange: DateRange = { from: subDays(new Date(), 14), to: new Date() };
         const range = dateRange || defaultRange;
     
         const [

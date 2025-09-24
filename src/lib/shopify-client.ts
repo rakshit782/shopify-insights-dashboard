@@ -432,9 +432,9 @@ export async function getWalmartOrders(options: { dateRange?: DateRange }): Prom
     if (options.dateRange?.from) {
         params.append('createdStartDate', options.dateRange.from.toISOString());
     } else {
-        // Default to last 7 days if no start date
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        params.append('createdStartDate', sevenDaysAgo);
+        // Default to last 15 days if no start date
+        const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+        params.append('createdStartDate', fifteenDaysAgo);
     }
      if (options.dateRange?.to) {
         params.append('createdEndDate', options.dateRange.to.toISOString());
@@ -596,9 +596,9 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
         if (options.dateRange?.from) {
             params.CreatedAfter = options.dateRange.from.toISOString();
         } else {
-             // Default to last 7 days if no start date
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            params.CreatedAfter = sevenDaysAgo;
+             // Default to last 15 days if no start date
+            const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+            params.CreatedAfter = fifteenDaysAgo;
         }
 
         if (options.dateRange?.to) {

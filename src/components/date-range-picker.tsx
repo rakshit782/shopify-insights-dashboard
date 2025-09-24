@@ -28,13 +28,13 @@ interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function DateRangePicker({ className, onUpdate }: DateRangePickerProps) {
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
-  const [preset, setPreset] = React.useState<string>('7');
+  const [preset, setPreset] = React.useState<string>('15');
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
       setIsMounted(true);
       const initialDate = {
-          from: subDays(new Date(), 6),
+          from: subDays(new Date(), 14),
           to: new Date(),
       };
       setDate(initialDate);
@@ -56,6 +56,7 @@ export function DateRangePicker({ className, onUpdate }: DateRangePickerProps) {
         case '1': newRange = { from: now, to: now }; break;
         case '2': newRange = { from: subDays(now, 1), to: subDays(now, 1) }; break;
         case '7': newRange = { from: subDays(now, 6), to: now }; break;
+        case '15': newRange = { from: subDays(now, 14), to: now }; break;
         case '30': newRange = { from: subDays(now, 29), to: now }; break;
         case 'month': newRange = { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now }; break;
         case 'year': newRange = { from: new Date(now.getFullYear(), 0, 1), to: now }; break;
@@ -95,6 +96,7 @@ export function DateRangePicker({ className, onUpdate }: DateRangePickerProps) {
                 <SelectItem value="1">Today</SelectItem>
                 <SelectItem value="2">Yesterday</SelectItem>
                 <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="15">Last 15 days</SelectItem>
                 <SelectItem value="30">Last 30 days</SelectItem>
                 <SelectItem value="month">This month</SelectItem>
                 <SelectItem value="year">This year</SelectItem>
