@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +8,7 @@ import * as z from 'zod';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2 } from 'lucide-react';
+import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { handleGetOrCreateUser, handleGetCredentialStatuses } from '@/app/actions';
 import type { User, Profile } from '@/lib/types';
@@ -17,6 +18,7 @@ import { Switch } from './ui/switch';
 import { Input } from './ui/input';
 import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from './ui/badge';
 
 const InfoRow = ({ icon: Icon, label, value, isLoading }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -85,6 +87,91 @@ function UserProfileCard() {
   );
 }
 
+const platformIconMap: { [key: string]: string } = {
+    shopify: '/shopify.svg',
+    amazon: '/amazon.svg',
+    walmart: '/walmart.svg',
+    ebay: '/ebay.svg',
+    etsy: '/etsy.svg',
+    wayfair: '/wayfair.svg',
+};
+
+const platformNameMap: { [key: string]: string } = {
+    shopify: 'Shopify',
+    amazon: 'Amazon',
+    walmart: 'Walmart',
+    ebay: 'eBay',
+    etsy: 'Etsy',
+    wayfair: 'Wayfair',
+}
+
+
+function MarketplaceConnectionsCard() {
+    const [statuses, setStatuses] = useState<Record<string, boolean>>({});
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchStatuses() {
+            setIsLoading(true);
+            const result = await handleGetCredentialStatuses();
+            if (result.success) {
+                setStatuses(result.statuses);
+            }
+            setIsLoading(false);
+        }
+        fetchStatuses();
+    }, []);
+
+    const allPlatforms = ['shopify', 'amazon', 'walmart', 'ebay', 'etsy', 'wayfair'];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Marketplace Connections</CardTitle>
+                <CardDescription>
+                    Status of your connected sales channels based on credentials in the .env file.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {isLoading ? (
+                         Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-6 w-6 rounded-full" />
+                                    <Skeleton className="h-5 w-20" />
+                                </div>
+                                <Skeleton className="h-6 w-24" />
+                            </div>
+                        ))
+                    ) : (
+                        allPlatforms.map(platform => (
+                            <div key={platform} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Image src={platformIconMap[platform]} alt={platform} width={20} height={20} />
+                                    <span className="font-medium">{platformNameMap[platform]}</span>
+                                </div>
+                                {statuses[platform] ? (
+                                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Connected
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="secondary">
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Not Connected
+                                    </Badge>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+
 const marketplaceSyncSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -98,14 +185,6 @@ const syncSettingsSchema = z.object({
 });
 
 type SyncSettingsFormValues = z.infer<typeof syncSettingsSchema>;
-
-const platformIconMap: { [key: string]: string } = {
-    shopify: '/shopify.svg',
-    amazon: '/amazon.svg',
-    walmart: '/walmart.svg',
-    ebay: '/ebay.svg',
-    etsy: '/etsy.svg',
-};
 
 function MarketplaceSyncSettings() {
     const { toast } = useToast();
@@ -253,7 +332,10 @@ export function SettingsPage() {
         <p className="text-muted-foreground">Manage your application settings and synchronization rules.</p>
       </div>
       <UserProfileCard />
+      <MarketplaceConnectionsCard />
       <MarketplaceSyncSettings />
     </div>
   );
 }
+
+    
