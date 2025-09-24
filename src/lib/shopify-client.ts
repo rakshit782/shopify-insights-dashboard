@@ -446,7 +446,6 @@ export async function getWalmartOrders(options: { dateRange?: DateRange }): Prom
     const response = await fetch(url, {
       headers: {
         'WM_SEC.ACCESS_TOKEN': accessToken,
-        'Authorization': `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
         'WM_QOS.CORRELATION_ID': correlationId,
         'WM_SVC.NAME': 'Walmart-Marketplace-Api',
         'Accept': 'application/json'
