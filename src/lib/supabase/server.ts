@@ -70,10 +70,14 @@ export function createSupabaseServerClient(database: 'MAIN' | 'DATA') {
 }
 
 function createDummyClient(database: 'MAIN' | 'DATA' | 'UNKNOWN') {
-    const errorMessage = `Supabase for ${database} not configured.`;
+    const errorMessage = `Supabase for ${database} database not configured. Check environment variables.`;
     const errorResponse = { error: { message: errorMessage }, data: null, count: null };
 
-    const dummyQueryBuilder: any = {
+    const dummyQueryBuilder: any = new Promise((resolve) => {
+        resolve(errorResponse);
+    });
+
+    Object.assign(dummyQueryBuilder, {
         select: () => dummyQueryBuilder,
         insert: () => dummyQueryBuilder,
         update: () => dummyQueryBuilder,
@@ -82,9 +86,9 @@ function createDummyClient(database: 'MAIN' | 'DATA' | 'UNKNOWN') {
         eq: () => dummyQueryBuilder,
         limit: () => dummyQueryBuilder,
         order: () => dummyQueryBuilder,
-        single: async () => ({ ...errorResponse, data: null }), // single returns one object
-        then: (resolve: any) => resolve(errorResponse), // Allow awaiting the query builder
-    };
+        range: () => dummyQueryBuilder,
+        single: () => dummyQueryBuilder,
+    });
     
     return {
         from: () => dummyQueryBuilder,
