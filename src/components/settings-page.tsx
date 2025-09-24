@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BusinessProfileForm } from '@/components/business-profile-form';
-import { handleGetBusinessProfiles } from '@/app/actions';
-import type { BusinessProfile } from '@/lib/types';
+import { handleGetBusinessProfiles, handleGetUserAgency } from '@/app/actions';
+import type { BusinessProfile, Agency } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Settings, Check, X, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Settings, Check, X, Edit, Trash2, Building, Mail, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { ConnectionsDialog } from './connections-dialog';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,60 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } =
     'etsy': { name: 'Etsy', icon: <Image src="/etsy.svg" alt="Etsy" width={24} height={24} unoptimized /> },
     'wayfair': { name: 'Wayfair', icon: <Image src="/wayfair.svg" alt="Wayfair" width={24} height={24} unoptimized /> },
 };
+
+
+function UserProfileCard() {
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [agency, setAgency] = useState<Agency | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchUser() {
+            setIsLoading(true);
+            const result = await handleGetUserAgency();
+            if (result.success) {
+                setUserEmail(result.email);
+                setAgency(result.agency);
+            }
+            setIsLoading(false);
+        }
+        fetchUser();
+    }, []);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>User & Agency</CardTitle>
+                <CardDescription>Your currently logged-in user and associated agency.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {isLoading ? (
+                    <>
+                        <Skeleton className="h-8 w-3/4" />
+                        <Skeleton className="h-8 w-1/2" />
+                    </>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-3">
+                            <User className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                                <p className="text-sm font-medium">Username</p>
+                                <p className="text-sm text-muted-foreground">{userEmail || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Building className="h-5 w-5 text-muted-foreground" />
+                             <div>
+                                <p className="text-sm font-medium">Agency</p>
+                                <p className="text-sm text-muted-foreground">{agency?.name || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 
 export function SettingsPage() {
@@ -176,10 +230,12 @@ export function SettingsPage() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-            <div>
+            <div className="space-y-4">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
                 <p className="text-muted-foreground">Manage your business profiles and application settings.</p>
             </div>
+            
+            <UserProfileCard />
 
             {renderContent()}
 

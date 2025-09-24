@@ -320,7 +320,7 @@ export async function handleGetBusinessProfiles(): Promise<{ success: boolean, p
 
 export async function handleGetUserAgency(): Promise<{ success: boolean; email: string | null; agency: Agency | null; error: string | null; }> {
     // Mock implementation as Supabase is removed
-    return { success: true, email: 'user@example.com', agency: { agency_id: 'agency_123', name: 'Mock Agency' }, error: null };
+    return { success: true, email: 'rvaishjpr@gmail.com', agency: { agency_id: 'agency_123', name: 'Mock Agency' }, error: null };
 }
     
     
