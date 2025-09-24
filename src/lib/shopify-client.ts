@@ -617,44 +617,55 @@ export async function getAmazonOrders(options: { dateRange?: DateRange }): Promi
     }
 
     try {
-        const params = new URLSearchParams({
+        const allAmazonOrders: AmazonOrder[] = [];
+        let nextToken: string | undefined = undefined;
+
+        const baseParams = {
             MarketplaceIds: marketplaceId,
             OrderStatuses: 'Pending,Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Canceled,Unfulfillable',
-        });
+            CreatedAfter: options.dateRange?.from?.toISOString() || subDays(new Date(), 15).toISOString(),
+            ...(options.dateRange?.to && { CreatedBefore: options.dateRange.to.toISOString() }),
+        };
+
+        logs.push('Starting to fetch Amazon orders...');
+
+        do {
+            const params = new URLSearchParams(baseParams);
+            if (nextToken) {
+                params.set('NextToken', nextToken);
+            }
+            
+            const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
+            
+            logs.push(`Fetching Amazon orders from: ${orderUrl}`);
+            const orderResponse = await fetch(orderUrl, {
+                headers: { 'x-amz-access-token': accessToken }
+            });
+
+            const orderData: any = await orderResponse.json();
+            
+            if (!orderResponse.ok) {
+                logs.push(`Amazon Orders API Error: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
+                // Stop fetching if an error occurs
+                break;
+            }
+
+            const newOrders: AmazonOrder[] = orderData.payload?.Orders || [];
+            allAmazonOrders.push(...newOrders);
+            logs.push(`Fetched ${newOrders.length} orders. Total fetched: ${allAmazonOrders.length}.`);
+
+            nextToken = orderData.payload?.NextToken;
+
+        } while (nextToken);
         
-        if (options.dateRange?.from) {
-            params.set('CreatedAfter', options.dateRange.from.toISOString());
-        } else {
-            params.set('CreatedAfter', subDays(new Date(), 15).toISOString());
-        }
-
-        if (options.dateRange?.to) {
-            params.set('CreatedBefore', options.dateRange.to.toISOString());
-        }
-
-        const orderUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders?${params.toString()}`;
+        logs.push(`Finished fetching all ${allAmazonOrders.length} Amazon order headers.`);
         
-        logs.push(`Fetching Amazon orders from: ${orderUrl}`);
-        const orderResponse = await fetch(orderUrl, {
-            headers: { 'x-amz-access-token': accessToken }
-        });
-
-        const orderData: any = await orderResponse.json();
-        
-        if (!orderResponse.ok) {
-            logs.push(`Amazon Orders API Error: ${orderResponse.status} - ${JSON.stringify(orderData)}`);
-            return { orders: [], logs };
-        }
-
-        const amazonOrders: AmazonOrder[] = orderData.payload?.Orders || [];
-        logs.push(`Successfully fetched ${amazonOrders.length} Amazon order headers.`);
-
-        if (amazonOrders.length === 0) {
+        if (allAmazonOrders.length === 0) {
             return { orders: [], logs };
         }
 
         const mappedOrders: ShopifyOrder[] = [];
-        for (const order of amazonOrders) {
+        for (const order of allAmazonOrders) {
              let orderItems: AmazonOrderItem[] = [];
              try {
                 const itemsUrl = `https://sellingpartnerapi-na.amazon.com/orders/v0/orders/${order.AmazonOrderId}/orderItems`;
