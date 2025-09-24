@@ -114,18 +114,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/channel-health'}
-                tooltip={{ children: 'Channel Health' }}
-              >
-                <Link href="/channel-health">
-                  <ShieldCheck className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Channel Health</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild

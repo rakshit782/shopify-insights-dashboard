@@ -1,6 +1,5 @@
 
 
-
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
   id: number;
@@ -125,50 +124,9 @@ export interface ShopifyProductUpdate {
 }
 
 export interface ShopifyCredentials {
-    id: number;
-    profile_id: string;
     store_name: string;
     access_token: string;
     api_version: string;
-}
-
-export interface AmazonCredentials {
-    id?: number;
-    profile_id: string;
-    client_id: string;
-    client_secret: string;
-    refresh_token: string;
-    seller_id: string;
-    marketplace_id: string;
-}
-
-export interface WalmartCredentials {
-    id?: number;
-    profile_id: string;
-    client_id: string;
-    client_secret: string;
-}
-
-export interface EbayCredentials {
-    id?: number;
-    profile_id: string;
-    app_id: string;
-    cert_id: string;
-    dev_id: string;
-    oauth_token: string;
-}
-
-export interface EtsyCredentials {
-    id?: number;
-    profile_id: string;
-    keystring: string;
-}
-
-export interface WayfairCredentials {
-    id?: number;
-    profile_id: string;
-    client_id: string;
-    client_secret: string;
 }
 
 export interface AppSettings {
@@ -272,16 +230,6 @@ export interface WalmartOrder {
     }[];
   };
 }
-
-export interface BusinessProfile {
-    id: string; // uuid
-    profile_name: string;
-    store_url: string;
-    contact_email: string;
-    credential_statuses?: Record<string, boolean>;
-}
-
-export type BusinessProfileCreation = Omit<BusinessProfile, 'id' | 'credential_statuses'> & { id?: string };
 
 export interface Agency {
     agency_id: string;

@@ -21,7 +21,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface EditProductFormProps {
   product: ShopifyProduct;
-  profileId: string;
 }
 
 const variantSchema = z.object({
@@ -42,7 +41,7 @@ const formSchema = z.object({
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-export function EditProductForm({ product, profileId }: EditProductFormProps) {
+export function EditProductForm({ product }: EditProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,7 +121,7 @@ export function EditProductForm({ product, profileId }: EditProductFormProps) {
         })) as ShopifyVariantUpdate[],
     };
 
-    const result = await handleUpdateProduct(profileId, productData);
+    const result = await handleUpdateProduct(productData);
 
     if (result.success) {
       toast({
@@ -307,5 +306,3 @@ export function EditProductForm({ product, profileId }: EditProductFormProps) {
     </Card>
   );
 }
-
-    

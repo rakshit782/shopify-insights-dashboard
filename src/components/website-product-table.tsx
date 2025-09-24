@@ -121,9 +121,11 @@ export function WebsiteProductTable({ products }: { products: ShopifyProduct[] }
                     </TableCell>
                     <TableCell>
                         <div className="flex items-center gap-2">
-                            {connectedChannels.map(channel => {
+                            {Object.keys(platformIconMap).map(channel => {
+                                const isConnected = connectedChannels.includes(channel);
                                 // MOCK DATA: In a real app, you'd check the product's sync status for each channel
-                                const isSynced = channel === 'shopify'; 
+                                const isSynced = channel === 'shopify' && isConnected; 
+                                if (!isConnected) return null; // Only show icons for connected channels
                                 return (
                                     <Tooltip key={channel}>
                                         <TooltipTrigger>
@@ -149,9 +151,9 @@ export function WebsiteProductTable({ products }: { products: ShopifyProduct[] }
                      </TableCell>
                     <TableCell>
                       {/* In a real app, this would link to the product on the live website */}
-                      <Button asChild variant="outline" size="sm">
-                         <Link href={`#`} target="_blank" rel="noopener noreferrer">
-                           View <ExternalLink className="ml-2 h-3 w-3" />
+                       <Button asChild variant="outline" size="sm">
+                         <Link href={`/products/${product.id}/edit`}>
+                           Edit
                          </Link>
                       </Button>
                     </TableCell>

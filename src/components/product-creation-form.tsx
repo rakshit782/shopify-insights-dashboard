@@ -14,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { handleOptimizeContent, handleGetCredentialStatuses } from '@/app/actions';
+import { handleOptimizeContent, handleGetCredentialStatuses, handleCreateProduct } from '@/app/actions';
 import { RichTextEditor } from './rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Checkbox } from './ui/checkbox';
 import { Skeleton } from './ui/skeleton';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 const bulletPointSchema = z.object({
   id: z.string(),
@@ -104,6 +105,7 @@ function UrlUpload({ name, control, label }: { name: any; control: any, label: s
 
 export function ProductCreationForm() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState<Marketplace | null>(null);
   const [channelStatuses, setChannelStatuses] = useState<Record<string, boolean>>({});
@@ -145,7 +147,7 @@ export function ProductCreationForm() {
         if (result.success && result.statuses) {
             setChannelStatuses(result.statuses);
             // Pre-select connected marketplaces
-            const connected = Object.keys(result.statuses).filter(key => result.statuses![key]);
+            const connected = Object.keys(result.statuses).filter(key => result.statuses![key] && platformMeta[key]);
             form.setValue('marketplaces', connected);
         } else {
             toast({
@@ -200,22 +202,38 @@ export function ProductCreationForm() {
 
   const onSubmit = async (values: ProductFormValues) => {
     setIsSubmitting(true);
-    // In a real app, you would handle the form submission, including file uploads.
-    console.log(values);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    toast({
-      title: 'Product Created (Simulated)',
-      description: 'The new product has been saved to your catalog.',
+    // For now, we'll create a mock product and sync it.
+    // The handleCreateProduct function is now simplified.
+    // A real implementation would map catalog data to Shopify/other platform schemas.
+    const result = await handleCreateProduct({
+        title: values.title,
+        body_html: values.description || '',
+        vendor: 'YourBrand', // Placeholder
+        product_type: 'YourType', // Placeholder
+        price: 99.99 // Placeholder
     });
-    form.reset();
+    
+    if (result.success) {
+        toast({
+        title: 'Product Created',
+        description: 'The new product has been saved and synced.',
+        });
+        form.reset();
+        router.push('/product-database');
+        router.refresh();
+    } else {
+        toast({
+        title: 'Creation Failed',
+        description: result.error,
+        variant: 'destructive'
+        })
+    }
+
     setIsSubmitting(false);
   };
 
   const connectedChannels = Object.keys(channelStatuses).filter(key => channelStatuses[key] && platformMeta[key]);
-
 
   return (
     <Form {...form}>
@@ -414,7 +432,7 @@ export function ProductCreationForm() {
                    ) : (
                         <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-md flex items-center gap-3">
                             <XCircle className="h-5 w-5 text-destructive" />
-                            No marketplaces connected. Please add connections on the Channel Health page.
+                            No marketplaces connected. Please add credentials to your .env file.
                         </div>
                    )}
                 </FormItem>
@@ -498,5 +516,3 @@ export function ProductCreationForm() {
     </Form>
   );
 }
-
-    

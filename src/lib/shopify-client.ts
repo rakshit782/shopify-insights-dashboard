@@ -6,11 +6,6 @@ import type {
   ShopifyOrder,
   ShopifyProductCreation,
   ShopifyProductUpdate,
-  AmazonCredentials,
-  WalmartCredentials,
-  EbayCredentials,
-  EtsyCredentials,
-  WayfairCredentials,
   WalmartOrder,
   AppSettings,
   ShopifyCredentials,
@@ -19,7 +14,6 @@ import { PlaceHolderImages } from './placeholder-images';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { DateRange } from 'react-day-picker';
-import { createSupabaseServerClient } from './supabase/server';
 
 export interface PlatformProductCount {
   platform: string;
@@ -29,104 +23,46 @@ export interface PlatformProductCount {
 const apiVersionDefault = '2025-07';
 
 // ============================================
-// Credential Management
-// =_==========================================
+// Credential Management is now handled by .env
+// ============================================
 
-async function upsertCredential(tableName: string, data: any) {
-  const supabase = createSupabaseServerClient('MAIN');
-  const { error } = await supabase.from(tableName).upsert(data, { onConflict: 'profile_id' });
-  if (error) throw new Error(`Failed to upsert credential to ${tableName}: ${error.message}`);
-}
-async function checkCredentialExists(tableName:string, profileId: string, logs: string[]): Promise<boolean> {
-    const supabase = createSupabaseServerClient('MAIN');
-    const { data, error } = await supabase
-        .from(tableName)
-        .select('id')
-        .eq('profile_id', profileId)
-        .limit(1);
-
-    if (error) {
-        logs.push(`Error checking credentials for ${tableName}: ${error.message}`);
-        return false;
-    }
-    return data && data.length > 0;
+function checkEnvVar(variableName: string): boolean {
+    return !!process.env[variableName];
 }
 
-export async function getCredentialStatuses(profileId: string): Promise<Record<string, boolean>> {
-  const logs: string[] = [];
-  const statuses: Record<string, boolean> = {};
-  const platforms = ['shopify', 'amazon', 'walmart', 'ebay', 'etsy', 'wayfair'];
-
-  for (const platform of platforms) {
-    const tableName = `${platform}_credentials`;
-    statuses[platform] = await checkCredentialExists(tableName, profileId, logs);
-  }
-
-  return statuses;
-}
-
-// Individual save functions
-
-export async function saveShopifyCredentials(profileId: string, storeName: string, accessToken: string) {
-  await upsertCredential(
-    'shopify_credentials',
-    { profile_id: profileId, name: 'shopify', store_name: storeName, access_token: accessToken, api_version: apiVersionDefault },
-  );
-}
-
-export async function saveAmazonCredentials(profileId: string, credentials: AmazonCredentials) {
-  const credsToSave = {
-      profile_id: profileId,
-      name: 'amazon',
-      profile_id_amazon: credentials.profile_id,
-      client_id: credentials.client_id,
-      client_secret: credentials.client_secret,
-      refresh_token: credentials.refresh_token,
-      seller_id: credentials.seller_id,
-      marketplace_id: credentials.marketplace_id,
+export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
+  return {
+      'shopify': checkEnvVar('SHOPIFY_STORE_NAME') && checkEnvVar('SHOPIFY_ACCESS_TOKEN'),
+      'amazon': checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
+      'walmart': checkEnvVar('WALMART_CLIENT_ID') && checkEnvVar('WALMART_CLIENT_SECRET'),
+      // Assuming other platforms might be added later
+      'ebay': false,
+      'etsy': false,
+      'wayfair': false,
   };
-  await upsertCredential('amazon_credentials', credsToSave);
 }
-
-export async function saveWalmartCredentials(profileId: string, credentials: WalmartCredentials) {
-  await upsertCredential('walmart_credentials', { ...credentials, profile_id: profileId, name: 'walmart'});
-}
-
-export async function saveEbayCredentials(profileId: string, credentials: EbayCredentials) {
-  await upsertCredential('ebay_credentials', { ...credentials, profile_id: profileId, name: 'ebay'});
-}
-
-export async function saveEtsyCredentials(profileId: string, credentials: EtsyCredentials) {
-  await upsertCredential('etsy_credentials', {keystring: credentials.keystring, client_id: 'etsy', profile_id: profileId, name: 'etsy'});
-}
-
-export async function saveWayfairCredentials(profileId: string, credentials: WayfairCredentials) {
-  await upsertCredential('wayfair_credentials', { ...credentials, profile_id: profileId, name: 'wayfair' });
-}
-
 
 // ============================================
 // Shopify Helpers
 // ============================================
 
-async function getShopifyConfig(profileId: string, logs: string[]): Promise<ShopifyCredentials | null> {
-    logs.push("Fetching Shopify credentials...");
-    const supabase = createSupabaseServerClient('MAIN');
-    const { data, error } = await supabase
-        .from('shopify_credentials')
-        .select('*')
-        .eq('profile_id', profileId)
-        .single();
+function getShopifyConfig(logs: string[]): ShopifyCredentials | null {
+    logs.push("Reading Shopify credentials from .env file...");
+    const storeName = process.env.SHOPIFY_STORE_NAME;
+    const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
     
-    if (error || !data) {
-        logs.push(`Could not fetch Shopify credentials for profile ${profileId}: ${error?.message || 'No data found'}`);
+    if (!storeName || !accessToken || storeName === 'your-store-name') {
+        logs.push(`Shopify credentials not found or are placeholders in .env file.`);
         return null;
     }
 
-    logs.push(`Successfully fetched credentials. Store: ${data.store_name}`);
-    return data as ShopifyCredentials;
+    logs.push(`Successfully read credentials for store: ${storeName}`);
+    return {
+        store_name: storeName,
+        access_token: accessToken,
+        api_version: apiVersionDefault
+    } as ShopifyCredentials;
 }
-
 
 export function mapShopifyProducts(rawProducts: ShopifyProduct[]): MappedShopifyProduct[] {
   return rawProducts.map((product, index) => {
@@ -167,10 +103,10 @@ async function safeFetch(url: string, options: any, logs: string[], retries = 3)
   throw new Error(`Exceeded retry attempts for ${url}`);
 }
 
-export async function getShopifyProducts(options: { profileId: string, countOnly?: boolean }): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
+export async function getShopifyProducts(options: { countOnly?: boolean }): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const config = await getShopifyConfig(options.profileId, logs);
+        const config = getShopifyConfig(logs);
         if (!config) {
             return { rawProducts: [], count: 0, logs };
         }
@@ -211,13 +147,12 @@ export async function getShopifyProducts(options: { profileId: string, countOnly
     }
 }
 
-
-export async function createShopifyProduct(profileId: string, productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct, logs: string[] }> {
+export async function createShopifyProduct(productData: ShopifyProductCreation): Promise<{ product: ShopifyProduct, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const config = await getShopifyConfig(profileId, logs);
+        const config = getShopifyConfig(logs);
          if (!config) {
-            throw new Error("Shopify credentials are not configured.");
+            throw new Error("Shopify credentials are not configured in .env file.");
         }
         const storeUrl = getStoreUrl(config.store_name);
         const url = `${storeUrl}/admin/api/${config.api_version}/products.json`;
@@ -268,12 +203,12 @@ export async function createShopifyProduct(profileId: string, productData: Shopi
     }
 }
 
-export async function updateShopifyProduct(profileId: string, productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct, logs: string[] }> {
+export async function updateShopifyProduct(productData: ShopifyProductUpdate): Promise<{ product: ShopifyProduct, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const config = await getShopifyConfig(profileId, logs);
+        const config = getShopifyConfig(logs);
         if (!config) {
-            throw new Error("Shopify credentials are not configured.");
+            throw new Error("Shopify credentials are not configured in .env file.");
         }
         const storeUrl = getStoreUrl(config.store_name);
         const url = `${storeUrl}/admin/api/${config.api_version}/products/${productData.id}.json`;
@@ -309,12 +244,12 @@ export async function updateShopifyProduct(profileId: string, productData: Shopi
     }
 }
 
-export async function getShopifyProduct(profileId: string, id: number): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
+export async function getShopifyProduct(id: number): Promise<{ product: ShopifyProduct | null, logs: string[] }> {
     const logs: string[] = [];
     try {
-        const config = await getShopifyConfig(profileId, logs);
+        const config = getShopifyConfig(logs);
         if (!config) {
-            throw new Error("Shopify credentials are not configured.");
+            throw new Error("Shopify credentials are not configured in .env file.");
         }
         const storeUrl = getStoreUrl(config.store_name);
         const url = `${storeUrl}/admin/api/${config.api_version}/products/${id}.json`;
@@ -346,10 +281,10 @@ export async function getShopifyProduct(profileId: string, id: number): Promise<
     }
 }
 
-export async function getShopifyOrders(options: { profileId: string, dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+export async function getShopifyOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
-    const config = await getShopifyConfig(options.profileId, logs);
+    const config = getShopifyConfig(logs);
     if (!config) {
         return { orders: [], logs };
     }
@@ -397,20 +332,20 @@ export async function getShopifyOrders(options: { profileId: string, dateRange?:
 // ============================================
 // External Platform Functions
 // ============================================
-export async function getPlatformProductCounts(profileId: string, logs: string[]): Promise<PlatformProductCount[]> {
+export async function getPlatformProductCounts(logs: string[]): Promise<PlatformProductCount[]> {
     const counts: PlatformProductCount[] = [];
+    const statuses = await getCredentialStatuses();
 
     // Mocking counts for now
     const platforms = ['Shopify', 'Amazon', 'Walmart', 'eBay', 'Etsy'];
     for (const platform of platforms) {
-        const tableName = `${platform.toLowerCase()}_credentials`;
-        const connected = await checkCredentialExists(tableName, profileId, logs);
-        if (connected) {
+        const platformKey = platform.toLowerCase();
+        if (statuses[platformKey]) {
             logs.push(`Fetching count for connected platform: ${platform}`);
             // In a real scenario, you'd make an API call to the platform
             // For now, we return a mock count if connected.
             if (platform === 'Shopify') {
-                 const { count } = await getShopifyProducts({ profileId, countOnly: true });
+                 const { count } = await getShopifyProducts({ countOnly: true });
                  counts.push({ platform, count: count || 0 });
             } else {
                 counts.push({ platform, count: Math.floor(Math.random() * 5000) });
@@ -424,22 +359,18 @@ export async function getPlatformProductCounts(profileId: string, logs: string[]
 // Walmart Helpers
 // ============================================
 
-async function getWalmartConfig(profileId: string, logs: string[]): Promise<{ clientId: string; clientSecret: string; } | null> {
-    logs.push("Fetching Walmart credentials...");
-    const supabase = createSupabaseServerClient('MAIN');
-    const { data, error } = await supabase
-        .from('walmart_credentials')
-        .select('client_id, client_secret')
-        .eq('profile_id', profileId)
-        .single();
-        
-    if (error || !data) {
-        logs.push(`Could not fetch Walmart credentials: ${error?.message || 'Not found'}`);
+function getWalmartConfig(logs: string[]): { clientId: string; clientSecret: string; } | null {
+    logs.push("Reading Walmart credentials from .env file...");
+    const clientId = process.env.WALMART_CLIENT_ID;
+    const clientSecret = process.env.WALMART_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret || clientId === 'your-walmart-client-id') {
+        logs.push(`Walmart credentials not found or are placeholders in .env file.`);
         return null;
     }
 
-    logs.push(`Successfully fetched Walmart credentials.`);
-    return { clientId: data.client_id, clientSecret: data.client_secret };
+    logs.push(`Successfully read Walmart credentials.`);
+    return { clientId, clientSecret };
 }
 
 
@@ -480,10 +411,10 @@ async function getWalmartAccessToken(clientId: string, clientSecret: string, log
 }
 
 
-export async function getWalmartOrders(profileId: string): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+export async function getWalmartOrders(): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
-    const config = await getWalmartConfig(profileId, logs);
+    const config = getWalmartConfig(logs);
     if (!config) {
         return { orders: [], logs };
     }
@@ -592,9 +523,3 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     total_tax: null,
   };
 }
-
-    
-
-    
-
-    
