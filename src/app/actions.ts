@@ -110,30 +110,31 @@ export async function handleOptimizeContent(input: OptimizeContentInput) {
 export async function handleGetShopifyOrders(dateRange?: DateRange) {
   try {
     const { orders } = await getShopifyOrders({ dateRange });
-    return { success: true, orders, error: null };
+    return { success: true, orders, error: null, logs: [] };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-    return { success: false, orders: [], error: `Failed to fetch Shopify orders: ${errorMessage}` };
+    return { success: false, orders: [], error: `Failed to fetch Shopify orders: ${errorMessage}`, logs: [] };
   }
 }
 
 export async function handleGetWalmartOrders(dateRange?: DateRange) {
   try {
-    const { orders } = await getWalmartOrders({ dateRange });
-    return { success: true, orders, error: null };
+    const { orders, logs } = await getWalmartOrders({ dateRange });
+    return { success: true, orders, error: null, logs };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-    return { success: false, orders: [], error: `Failed to fetch Walmart orders: ${errorMessage}` };
+    return { success: false, orders: [], error: `Failed to fetch Walmart orders: ${errorMessage}`, logs: [] };
   }
 }
 
 export async function handleGetAmazonOrders(dateRange?: DateRange) {
     try {
-        const { orders } = await getAmazonOrders({ dateRange });
-        return { success: true, orders, error: null };
+        const { orders, logs } = await getAmazonOrders({ dateRange });
+        const error = orders.length === 0 ? "No orders found. Check logs for details." : null;
+        return { success: true, orders, error: null, logs };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        return { success: false, orders: [], error: `Failed to fetch Amazon orders: ${errorMessage}` };
+        return { success: false, orders: [], error: `Failed to fetch Amazon orders: ${errorMessage}`, logs: [errorMessage] };
     }
 }
 

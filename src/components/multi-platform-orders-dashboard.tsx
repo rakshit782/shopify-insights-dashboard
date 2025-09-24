@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, ShoppingCart, Settings } from 'lucide-react';
+import { Terminal, ShoppingCart, Settings, Code } from 'lucide-react';
 import Image from 'next/image';
 import { handleGetCredentialStatuses, handleGetShopifyOrders, handleGetWalmartOrders, handleGetAmazonOrders } from '@/app/actions';
 import type { ShopifyOrder } from '@/lib/types';
@@ -15,13 +15,15 @@ import { Button } from './ui/button';
 import Link from 'next/link';
 import { DateRangePicker } from './date-range-picker';
 import type { DateRange } from 'react-day-picker';
+import { ScrollArea } from './ui/scroll-area';
 
-type OrderFetcher = (dateRange?: DateRange) => Promise<{ success: boolean; orders: ShopifyOrder[]; error: string | null; }>;
+type OrderFetcher = (dateRange?: DateRange) => Promise<{ success: boolean; orders: ShopifyOrder[]; error: string | null; logs: string[] }>;
 
 type CachedOrders = {
     data: ShopifyOrder[];
     timestamp: number;
     error: string | null;
+    logs: string[];
 };
 
 const platformMeta: { 
@@ -49,12 +51,12 @@ const platformMeta: {
     'ebay': { 
         name: 'eBay', 
         icon: <Image src="/ebay.svg" alt="eBay" width={18} height={18} unoptimized />,
-        fetcher: async () => ({ success: true, orders: [], error: null }) // Placeholder
+        fetcher: async () => ({ success: true, orders: [], error: null, logs: ['eBay not implemented.'] }) // Placeholder
     },
     'etsy': { 
         name: 'Etsy', 
         icon: <Image src="/etsy.svg" alt="Etsy" width={18} height={18} unoptimized />,
-        fetcher: async () => ({ success: true, orders: [], error: null }) // Placeholder
+        fetcher: async () => ({ success: true, orders: [], error: null, logs: ['Etsy not implemented.'] }) // Placeholder
     },
 };
 
@@ -80,6 +82,35 @@ function OrdersLoadingSkeleton() {
     )
 }
 
+function DebugLog({ logs }: { logs: string[] }) {
+    if (logs.length === 0) return null;
+    return (
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                    <Code className="h-5 w-5" />
+                    API Call Logs
+                </CardTitle>
+                <CardDescription>
+                    This is a log of the API calls made to fetch the order data. Use this for debugging purposes.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ScrollArea className="h-[200px] w-full">
+                    <div className="font-mono text-xs text-muted-foreground bg-slate-900/50 dark:bg-slate-800/50 p-4 rounded-md">
+                        {logs.map((log, index) => (
+                            <p key={index} className="whitespace-pre-wrap break-all border-b border-slate-700/50 py-1">
+                                {`[${index + 1}] ${log}`}
+                            </p>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    )
+}
+
+
 function PlatformOrderView({ platformId, dateRange, cache, setCache }: { platformId: string, dateRange?: DateRange, cache: Record<string, CachedOrders>, setCache: Function }) {
     const [isLoading, setIsLoading] = useState(true);
     
@@ -87,6 +118,7 @@ function PlatformOrderView({ platformId, dateRange, cache, setCache }: { platfor
     const cachedEntry = cache[platformId];
     const orders = cachedEntry?.data || [];
     const error = cachedEntry?.error || null;
+    const logs = cachedEntry?.logs || [];
     const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < 1000 * 60 * 120); // 2 hours
 
     useEffect(() => {
@@ -103,6 +135,7 @@ function PlatformOrderView({ platformId, dateRange, cache, setCache }: { platfor
                     data: result.orders,
                     timestamp: Date.now(),
                     error: result.error,
+                    logs: result.logs || [],
                 }
             }));
             setIsLoading(false);
@@ -111,15 +144,39 @@ function PlatformOrderView({ platformId, dateRange, cache, setCache }: { platfor
     }, [platform.fetcher, dateRange, platformId, setCache, isCacheValid]);
 
     if (isLoading && !isCacheValid) return <OrdersLoadingSkeleton />;
+    
     if (error) return (
-        <Alert variant="destructive">
-            <Terminal className="h-4 w-4" />
-            <AlertTitle>Failed to load orders</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <>
+            <Alert variant="destructive">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Failed to load orders</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <DebugLog logs={logs} />
+        </>
     );
+    
+    if (orders.length === 0) {
+       return (
+            <>
+                <Card className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
+                    <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
+                    <CardTitle>No Orders Found</CardTitle>
+                    <CardDescription className="mt-2 max-w-md">
+                        There are no orders to display for this marketplace in the selected date range.
+                    </CardDescription>
+                </Card>
+                 <DebugLog logs={logs} />
+            </>
+        );
+    }
 
-    return <OrderTable orders={orders} platform={platformId} />;
+    return (
+        <>
+            <OrderTable orders={orders} platform={platformId} />
+            <DebugLog logs={logs} />
+        </>
+    );
 }
 
 export function MultiPlatformOrdersDashboard() {
