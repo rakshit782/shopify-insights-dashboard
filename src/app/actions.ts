@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getPlatformProductCounts } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
@@ -117,14 +117,24 @@ export async function handleGetShopifyOrders(dateRange?: DateRange) {
   }
 }
 
-export async function handleGetWalmartOrders() {
+export async function handleGetWalmartOrders(dateRange?: DateRange) {
   try {
-    const { orders } = await getWalmartOrders();
+    const { orders } = await getWalmartOrders({ dateRange });
     return { success: true, orders, error: null };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     return { success: false, orders: [], error: `Failed to fetch Walmart orders: ${errorMessage}` };
   }
+}
+
+export async function handleGetAmazonOrders(dateRange?: DateRange) {
+    try {
+        const { orders } = await getAmazonOrders({ dateRange });
+        return { success: true, orders, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        return { success: false, orders: [], error: `Failed to fetch Amazon orders: ${errorMessage}` };
+    }
 }
 
 // Placeholder actions for order management
@@ -283,3 +293,5 @@ export async function handleGetOrCreateUser(): Promise<{ success: boolean; user:
         return { success: false, user: null, profile: null, agency: null, error: `Database operation failed: ${errorMessage}` };
     }
 }
+
+    

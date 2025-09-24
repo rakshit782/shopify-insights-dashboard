@@ -9,11 +9,14 @@ import type {
   WalmartOrder,
   AppSettings,
   ShopifyCredentials,
+  AmazonOrder,
+  AmazonOrderItem,
 } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import fetch, { type Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { DateRange } from 'react-day-picker';
+
 
 export interface PlatformProductCount {
   platform: string;
@@ -27,15 +30,14 @@ const apiVersionDefault = '2025-07';
 // ============================================
 
 function checkEnvVar(variableName: string): boolean {
-    return !!process.env[variableName];
+    return !!process.env[variableName] && !process.env[variableName]?.includes('your-');
 }
 
 export async function getCredentialStatuses(): Promise<Record<string, boolean>> {
   return {
       'shopify': checkEnvVar('SHOPIFY_STORE_NAME') && checkEnvVar('SHOPIFY_ACCESS_TOKEN'),
-      'amazon': checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
+      'amazon': checkEnvVar('AMAZON_REFRESH_TOKEN') && checkEnvVar('AMAZON_SELLING_PARTNER_ID') && checkEnvVar('AMAZON_CLIENT_ID') && checkEnvVar('AMAZON_CLIENT_SECRET'),
       'walmart': checkEnvVar('WALMART_CLIENT_ID') && checkEnvVar('WALMART_CLIENT_SECRET'),
-      // Assuming other platforms might be added later
       'ebay': false,
       'etsy': false,
       'wayfair': false,
@@ -411,7 +413,7 @@ async function getWalmartAccessToken(clientId: string, clientSecret: string, log
 }
 
 
-export async function getWalmartOrders(): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+export async function getWalmartOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
   const logs: string[] = [];
   try {
     const config = getWalmartConfig(logs);
@@ -424,10 +426,20 @@ export async function getWalmartOrders(): Promise<{ orders: ShopifyOrder[]; logs
     }
     
     const correlationId = uuidv4();
-    // Get orders created in the last 7 days as an example
-    const createdStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    
+    const params = new URLSearchParams();
+    if (options.dateRange?.from) {
+        params.append('createdStartDate', options.dateRange.from.toISOString());
+    } else {
+        // Default to last 7 days if no start date
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        params.append('createdStartDate', sevenDaysAgo);
+    }
+     if (options.dateRange?.to) {
+        params.append('createdEndDate', options.dateRange.to.toISOString());
+    }
 
-    const url = `https://marketplace.walmartapis.com/v3/orders?createdStartDate=${createdStartDate}`;
+    const url = `https://marketplace.walmartapis.com/v3/orders?${params.toString()}`;
 
     logs.push('Fetching Walmart orders...');
     const response = await fetch(url, {
@@ -522,4 +534,148 @@ function mapWalmartOrderToShopifyOrder(walmartOrder: WalmartOrder): ShopifyOrder
     subtotal_price: null,
     total_tax: null,
   };
+}
+
+
+// ============================================
+// Amazon Helpers
+// ============================================
+
+async function getAmazonSPAPIClient(logs: string[]): Promise<any | null> {
+    logs.push("Reading Amazon SP-API credentials from .env file...");
+    const refreshToken = process.env.AMAZON_REFRESH_TOKEN;
+    const sellingPartnerId = process.env.AMAZON_SELLING_PARTNER_ID;
+    const clientId = process.env.AMAZON_CLIENT_ID;
+    const clientSecret = process.env.AMAZON_CLIENT_SECRET;
+
+    if (!refreshToken || !sellingPartnerId || !clientId || !clientSecret) {
+        logs.push(`Amazon SP-API credentials not found or are placeholders in .env file.`);
+        return null;
+    }
+    
+    try {
+        const { OrdersV0ApiClient } = (await import('@sp-api-sdk/orders-api-v0'));
+        const client = new OrdersV0ApiClient({
+            region: 'na', // or 'eu', 'fe'
+            refreshToken: refreshToken,
+            credentials: {
+                clientId: clientId,
+                clientSecret: clientSecret,
+                accessKeyId: '', // Not needed when using refresh token
+                secretAccessKey: '', // Not needed when using refresh token
+                role: {
+                  arn: ''
+                },
+            },
+        });
+        logs.push("Successfully initialized Amazon SP-API client.");
+        return client;
+    } catch(e) {
+        if (e instanceof Error) {
+            logs.push(`Error initializing Amazon SP-API client: ${e.message}`);
+        }
+        return null;
+    }
+}
+
+
+export async function getAmazonOrders(options: { dateRange?: DateRange }): Promise<{ orders: ShopifyOrder[]; logs: string[] }> {
+    const logs: string[] = [];
+    const sp = await getAmazonSPAPIClient(logs);
+
+    if (!sp) {
+        return { orders: [], logs };
+    }
+    
+    try {
+        const params: any = {
+            MarketplaceIds: ['ATVPDKIKX0DER'], // US marketplace ID
+            OrderStatuses: ['Unshipped', 'PartiallyShipped', 'Shipped', 'InvoiceUnconfirmed'],
+        };
+        
+        if (options.dateRange?.from) {
+            params.CreatedAfter = options.dateRange.from.toISOString();
+        } else {
+             // Default to last 7 days if no start date
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            params.CreatedAfter = sevenDaysAgo;
+        }
+
+        if (options.dateRange?.to) {
+            params.CreatedBefore = options.dateRange.to.toISOString();
+        }
+
+        logs.push("Fetching Amazon orders with params:", JSON.stringify(params));
+        
+        const res = await sp.getOrders(params);
+
+        const amazonOrders: AmazonOrder[] = res.data.payload?.Orders || [];
+        logs.push(`Successfully fetched ${amazonOrders.length} orders from Amazon.`);
+
+        const mappedOrders: ShopifyOrder[] = [];
+        for (const order of amazonOrders) {
+            let orderItems: AmazonOrderItem[] = [];
+             try {
+                const itemsRes = await sp.getOrderItems({
+                    AmazonOrderId: order.AmazonOrderId
+                });
+                orderItems = itemsRes.data.payload?.OrderItems || [];
+            } catch (e) {
+                if (e instanceof Error) {
+                    logs.push(`Could not fetch items for Amazon order ${order.AmazonOrderId}: ${e.message}`);
+                }
+            }
+            mappedOrders.push(mapAmazonOrderToShopifyOrder(order, orderItems));
+        }
+
+        return { orders: mappedOrders, logs };
+    } catch (e) {
+        if (e instanceof Error) {
+            logs.push(`Error in getAmazonOrders: ${e.message}`);
+        }
+        return { orders: [], logs };
+    }
+}
+
+function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrderItem[]): ShopifyOrder {
+    const financialStatus = amazonOrder.OrderStatus === 'Pending' ? 'pending' : 'paid';
+
+    return {
+        id: amazonOrder.AmazonOrderId,
+        admin_graphql_api_id: `gid://amazon/Order/${amazonOrder.AmazonOrderId}`,
+        name: amazonOrder.AmazonOrderId,
+        created_at: amazonOrder.PurchaseDate,
+        updated_at: amazonOrder.LastUpdateDate,
+        total_price: amazonOrder.OrderTotal?.Amount || '0.00',
+        currency: amazonOrder.OrderTotal?.CurrencyCode || 'USD',
+        financial_status: financialStatus,
+        fulfillment_status: amazonOrder.OrderStatus,
+        customer: {
+            id: null,
+            email: amazonOrder.BuyerInfo?.BuyerEmail || null,
+            first_name: amazonOrder.ShippingAddress?.Name.split(' ')[0] || null,
+            last_name: amazonOrder.ShippingAddress?.Name.split(' ').slice(1).join(' ') || null,
+            phone: amazonOrder.ShippingAddress?.Phone || null,
+        },
+        shipping_address: amazonOrder.ShippingAddress ? {
+            first_name: amazonOrder.ShippingAddress.Name.split(' ')[0],
+            last_name: amazonOrder.ShippingAddress.Name.split(' ').slice(1).join(' '),
+            address1: amazonOrder.ShippingAddress.AddressLine1,
+            address2: amazonOrder.ShippingAddress.AddressLine2,
+            city: amazonOrder.ShippingAddress.City,
+            province: amazonOrder.ShippingAddress.StateOrRegion,
+            country: amazonOrder.ShippingAddress.CountryCode,
+            zip: amazonOrder.ShippingAddress.PostalCode,
+            phone: amazonOrder.ShippingAddress.Phone,
+            country_code: amazonOrder.ShippingAddress.CountryCode,
+        } : null,
+        line_items: items.map(item => ({
+            id: item.OrderItemId,
+            title: item.Title,
+            quantity: item.QuantityOrdered,
+            price: item.ItemPrice?.Amount || '0.00',
+            sku: item.SellerSKU,
+            vendor: 'Amazon',
+        })),
+    };
 }

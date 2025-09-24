@@ -136,6 +136,7 @@ export interface AppSettings {
 
 // Represents the possible fulfillment statuses from Walmart
 export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
+export type AmazonFulfillmentStatus = 'Shipped' | 'Unshipped' | 'PartiallyShipped' | 'Canceled' | 'Unfulfillable';
 
 // Corresponds to the Order object from Shopify Admin API, adapted for multiple platforms
 export interface ShopifyOrder {
@@ -150,7 +151,7 @@ export interface ShopifyOrder {
     total_tax?: string | null; // Optional for other platforms
     currency: string;
     financial_status: 'pending' | 'authorized' | 'partially_paid' | 'paid' | 'partially_refunded' | 'refunded' | 'voided';
-    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | WalmartFulfillmentStatus | null;
+    fulfillment_status: 'fulfilled' | 'unfulfilled' | 'partial' | WalmartFulfillmentStatus | AmazonFulfillmentStatus | null;
     customer: {
         id?: number | string | null;
         email?: string | null;
@@ -231,6 +232,44 @@ export interface WalmartOrder {
   };
 }
 
+// Represents a raw order from the Amazon SP-API
+export interface AmazonOrder {
+    AmazonOrderId: string;
+    PurchaseDate: string; // ISO 8601 format
+    LastUpdateDate: string; // ISO 8601 format
+    OrderStatus: 'Pending' | 'Unshipped' | 'PartiallyShipped' | 'Shipped' | 'Canceled' | 'Unfulfillable';
+    FulfillmentChannel: 'AFN' | 'MFN';
+    SalesChannel: string;
+    OrderTotal: {
+      CurrencyCode: string;
+      Amount: string;
+    };
+    ShippingAddress?: {
+      Name: string;
+      AddressLine1: string;
+      AddressLine2?: string;
+      City: string;
+      StateOrRegion: string;
+      PostalCode: string;
+      CountryCode: string;
+      Phone?: string;
+    };
+    BuyerInfo?: {
+      BuyerEmail?: string;
+    }
+}
+
+export interface AmazonOrderItem {
+    OrderItemId: string;
+    SellerSKU: string;
+    Title: string;
+    QuantityOrdered: number;
+    ItemPrice: {
+        CurrencyCode: string;
+        Amount: string;
+    }
+}
+
 export interface Agency {
     agency_id: string;
     name: string;
@@ -255,3 +294,5 @@ export interface Profile {
     phone?: string;
     country?: string;
 }
+
+    

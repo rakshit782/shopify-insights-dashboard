@@ -8,13 +8,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, ShoppingCart, Settings } from 'lucide-react';
 import Image from 'next/image';
-import { handleGetCredentialStatuses, handleGetShopifyOrders, handleGetWalmartOrders } from '@/app/actions';
+import { handleGetCredentialStatuses, handleGetShopifyOrders, handleGetWalmartOrders, handleGetAmazonOrders } from '@/app/actions';
 import type { ShopifyOrder } from '@/lib/types';
 import { OrderTable } from './order-table';
 import { Button } from './ui/button';
 import Link from 'next/link';
+import { DateRangePicker } from './date-range-picker';
+import type { DateRange } from 'react-day-picker';
 
-type OrderFetcher = () => Promise<{ success: boolean; orders: ShopifyOrder[]; error: string | null; }>;
+type OrderFetcher = (dateRange?: DateRange) => Promise<{ success: boolean; orders: ShopifyOrder[]; error: string | null; }>;
 
 const platformMeta: { 
   [key: string]: { 
@@ -26,17 +28,17 @@ const platformMeta: {
     'shopify': { 
         name: 'Shopify', 
         icon: <Image src="/shopify.svg" alt="Shopify" width={18} height={18} unoptimized />,
-        fetcher: () => handleGetShopifyOrders()
+        fetcher: (dateRange) => handleGetShopifyOrders(dateRange)
     },
     'walmart': { 
         name: 'Walmart', 
         icon: <Image src="/walmart.svg" alt="Walmart" width={18} height={18} unoptimized />,
-        fetcher: () => handleGetWalmartOrders()
+        fetcher: (dateRange) => handleGetWalmartOrders(dateRange)
     },
     'amazon': { 
         name: 'Amazon', 
         icon: <Image src="/amazon.svg" alt="Amazon" width={18} height={18} unoptimized />,
-        fetcher: async () => ({ success: true, orders: [], error: null }) // Placeholder
+        fetcher: (dateRange) => handleGetAmazonOrders(dateRange)
     },
     'ebay': { 
         name: 'eBay', 
@@ -72,7 +74,7 @@ function OrdersLoadingSkeleton() {
     )
 }
 
-function PlatformOrderView({ platformId }: { platformId: string }) {
+function PlatformOrderView({ platformId, dateRange }: { platformId: string, dateRange?: DateRange }) {
     const [orders, setOrders] = useState<ShopifyOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -83,7 +85,7 @@ function PlatformOrderView({ platformId }: { platformId: string }) {
         async function fetchOrders() {
             setIsLoading(true);
             setError(null);
-            const result = await platform.fetcher();
+            const result = await platform.fetcher(dateRange);
             if (result.success) {
                 setOrders(result.orders);
             } else {
@@ -92,7 +94,7 @@ function PlatformOrderView({ platformId }: { platformId: string }) {
             setIsLoading(false);
         }
         fetchOrders();
-    }, [platform.fetcher]);
+    }, [platform.fetcher, dateRange]);
 
     if (isLoading) return <OrdersLoadingSkeleton />;
     if (error) return (
@@ -109,6 +111,7 @@ function PlatformOrderView({ platformId }: { platformId: string }) {
 export function MultiPlatformOrdersDashboard() {
     const [connectedChannels, setConnectedChannels] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
     const fetchStatuses = useCallback(async () => {
         setIsLoading(true);
@@ -123,6 +126,10 @@ export function MultiPlatformOrdersDashboard() {
     useEffect(() => {
         fetchStatuses();
     }, [fetchStatuses]);
+    
+    const handleDateUpdate = useCallback((range?: DateRange) => {
+        setDateRange(range);
+    }, []);
 
     const defaultTab = useMemo(() => connectedChannels[0] || '', [connectedChannels]);
 
@@ -149,6 +156,9 @@ export function MultiPlatformOrdersDashboard() {
     
     return (
         <div className="space-y-4">
+            <div className="flex justify-end">
+                <DateRangePicker onUpdate={handleDateUpdate} />
+            </div>
             <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList>
                     {connectedChannels.map(id => (
@@ -162,10 +172,12 @@ export function MultiPlatformOrdersDashboard() {
                 </TabsList>
                 {connectedChannels.map(id => (
                     <TabsContent key={id} value={id}>
-                        <PlatformOrderView platformId={id} />
+                        <PlatformOrderView platformId={id} dateRange={dateRange} />
                     </TabsContent>
                 ))}
             </Tabs>
         </div>
     );
 }
+
+    
