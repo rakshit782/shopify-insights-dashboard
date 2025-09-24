@@ -6,13 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Shirt, Code, RefreshCw } from 'lucide-react';
+import { Terminal, Shirt, Code, RefreshCw, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetAmazonProducts, handleGetWalmartProducts, handleGetEtsyProducts } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from './product-table';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 type ProductFetcher = () => Promise<{ success: boolean; products: ShopifyProduct[]; error: string | null; logs: string[] }>;
 
@@ -28,12 +29,14 @@ const platformMeta: {
     name: string; 
     icon: React.ReactNode;
     fetcher: ProductFetcher;
+    showPushToDb?: boolean;
   } 
 } = {
     'shopify': { 
         name: 'Shopify', 
         icon: <Image src="/shopify.svg" alt="Shopify" width={18} height={18} unoptimized />,
-        fetcher: handleGetShopifyProducts
+        fetcher: handleGetShopifyProducts,
+        showPushToDb: true,
     },
     'amazon': { 
         name: 'Amazon', 
@@ -58,7 +61,10 @@ function ProductsLoadingSkeleton() {
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-9 w-28" />
+                    <div className="flex gap-2">
+                        <Skeleton className="h-9 w-24" />
+                        <Skeleton className="h-9 w-28" />
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -104,6 +110,7 @@ function DebugLog({ logs }: { logs: string[] }) {
 
 function PlatformProductView({ platformId, cache, setCache }: { platformId: string, cache: Record<string, CachedProducts>, setCache: Function }) {
     const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
     
     const platform = platformMeta[platformId];
     const cachedEntry = cache[platformId];
@@ -135,6 +142,13 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         fetchProducts();
     }, [fetchProducts]);
 
+    const handlePushToDb = () => {
+        toast({
+            title: "Push to Database",
+            description: "This functionality is not yet implemented."
+        });
+    }
+
     if (isLoading && !isCacheValid) return <ProductsLoadingSkeleton />;
     
     if (error) return (
@@ -155,10 +169,18 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Products</CardTitle>
-                            <Button variant="outline" size="sm" onClick={() => fetchProducts(true)} disabled={isLoading}>
-                                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                                Refresh
-                            </Button>
+                             <div className="flex items-center gap-2">
+                                {platform.showPushToDb && (
+                                    <Button variant="outline" size="sm" onClick={handlePushToDb}>
+                                        <UploadCloud className="mr-2 h-4 w-4" />
+                                        Push to DB
+                                    </Button>
+                                )}
+                                <Button variant="outline" size="sm" onClick={() => fetchProducts(true)} disabled={isLoading}>
+                                    <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                    Refresh
+                                </Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
@@ -181,6 +203,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                 platform={platformId} 
                 onRefresh={() => fetchProducts(true)}
                 isLoading={isLoading}
+                onPushToDb={platform.showPushToDb ? handlePushToDb : undefined}
             />
             <DebugLog logs={logs} />
         </>

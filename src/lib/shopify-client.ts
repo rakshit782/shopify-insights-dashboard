@@ -7,6 +7,7 @@
 
 
 
+
 import 'dotenv/config';
 import type {
   MappedShopifyProduct,
@@ -115,7 +116,7 @@ async function safeFetch(url: string, options: any, logs: string[], retries = 3)
   throw new Error(`Exceeded retry attempts for ${url}`);
 }
 
-export async function getShopifyProducts(options: { countOnly?: boolean }): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
+export async function getShopifyProducts(options?: { countOnly?: boolean }): Promise<{ rawProducts: ShopifyProduct[], count?: number, logs: string[] }> {
     const logs: string[] = [];
     try {
         const config = getShopifyConfig(logs);
@@ -124,7 +125,7 @@ export async function getShopifyProducts(options: { countOnly?: boolean }): Prom
         }
         const storeUrl = getStoreUrl(config.store_name);
         
-        if (options.countOnly) {
+        if (options?.countOnly) {
             const endpoint = 'products/count.json';
             const url = `${storeUrl}/admin/api/${config.api_version}/${endpoint}`;
             logs.push(`Fetching Shopify data from endpoint: ${endpoint}`);
@@ -143,7 +144,7 @@ export async function getShopifyProducts(options: { countOnly?: boolean }): Prom
         }
 
         const allProducts: ShopifyProduct[] = [];
-        let url: string | undefined = `${storeUrl}/admin/api/${config.api_version}/products.json?limit=250`;
+        let url: string | undefined = `${storeUrl}/admin/api/${config.api_version}/products.json?limit=10`;
         logs.push(`Fetching initial page of Shopify products...`);
 
         while (url) {
@@ -161,7 +162,9 @@ export async function getShopifyProducts(options: { countOnly?: boolean }): Prom
             allProducts.push(...data.products);
             logs.push(`Fetched ${data.products.length} products. Total so far: ${allProducts.length}`);
 
-            // Check for next page link in headers
+            // Add a 1-second delay between requests
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
             const linkHeader = response.headers.get('Link');
             if (linkHeader) {
                 const links = linkHeader.split(', ');
@@ -188,7 +191,6 @@ export async function getShopifyProducts(options: { countOnly?: boolean }): Prom
         } else {
             logs.push(`An unknown error occurred in getShopifyProducts.`);
         }
-        // Return empty state on error
         return { rawProducts: [], count: 0, logs };
     }
 }
