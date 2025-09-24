@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -148,7 +149,7 @@ function MarketplaceConnectionsCard() {
                         allPlatforms.map(platform => (
                             <div key={platform} className="flex items-center justify-between p-3 border rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <Image src={platformIconMap[platform]} alt={platform} width={20} height={20} />
+                                    <Image src={platformIconMap[platform] || 'https://placehold.co/400'} alt={platform} width={20} height={20} />
                                     <span className="font-medium">{platformNameMap[platform]}</span>
                                 </div>
                                 {statuses[platform] ? (
@@ -258,7 +259,7 @@ function MarketplaceSyncSettings() {
                                 <div key={field.id}>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <Image src={platformIconMap[field.id]} alt={field.name} width={24} height={24} />
+                                            <Image src={platformIconMap[field.id] || 'https://placehold.co/400'} alt={field.name} width={24} height={24} />
                                             <h3 className="text-lg font-semibold">{field.name}</h3>
                                         </div>
                                     </div>
@@ -337,5 +338,7 @@ export function SettingsPage() {
     </div>
   );
 }
+
+    
 
     
