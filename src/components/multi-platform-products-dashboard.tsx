@@ -6,9 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Shirt, Code, RefreshCw, UploadCloud } from 'lucide-react';
+import { Terminal, Shirt, Code, RefreshCw, UploadCloud, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetAmazonProducts, handleGetWalmartProducts, handleGetEtsyProducts } from '@/app/actions';
+import { handleGetCredentialStatuses, handleGetShopifyProducts, handleGetAmazonProducts, handleGetWalmartProducts, handleGetEtsyProducts, handleSyncProducts } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { ProductTable } from './product-table';
 import { ScrollArea } from './ui/scroll-area';
@@ -110,6 +110,7 @@ function DebugLog({ logs }: { logs: string[] }) {
 
 function PlatformProductView({ platformId, cache, setCache }: { platformId: string, cache: Record<string, CachedProducts>, setCache: Function }) {
     const [isLoading, setIsLoading] = useState(true);
+    const [isPushingToDb, setIsPushingToDb] = useState(false);
     const { toast } = useToast();
     
     const platform = platformMeta[platformId];
@@ -142,11 +143,28 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
         fetchProducts();
     }, [fetchProducts]);
 
-    const handlePushToDb = () => {
+    const handlePushToDb = async () => {
+        setIsPushingToDb(true);
         toast({
-            title: "Push to Database",
-            description: "This functionality is not yet implemented."
+            title: "Syncing to Database...",
+            description: "Fetching latest Shopify products and pushing them to your Supabase instance."
         });
+
+        const result = await handleSyncProducts();
+
+        if (result.success) {
+            toast({
+                title: "Sync Successful",
+                description: `${result.count} products have been successfully synced to the database.`
+            });
+        } else {
+            toast({
+                title: "Sync Failed",
+                description: result.error,
+                variant: "destructive"
+            });
+        }
+        setIsPushingToDb(false);
     }
 
     if (isLoading && !isCacheValid) return <ProductsLoadingSkeleton />;
@@ -171,8 +189,8 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                             <CardTitle>Products</CardTitle>
                              <div className="flex items-center gap-2">
                                 {platform.showPushToDb && (
-                                    <Button variant="outline" size="sm" onClick={handlePushToDb}>
-                                        <UploadCloud className="mr-2 h-4 w-4" />
+                                    <Button variant="outline" size="sm" onClick={handlePushToDb} disabled={isPushingToDb}>
+                                        {isPushingToDb ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                                         Push to DB
                                     </Button>
                                 )}
@@ -204,6 +222,7 @@ function PlatformProductView({ platformId, cache, setCache }: { platformId: stri
                 onRefresh={() => fetchProducts(true)}
                 isLoading={isLoading}
                 onPushToDb={platform.showPushToDb ? handlePushToDb : undefined}
+                isPushingToDb={isPushingToDb}
             />
             <DebugLog logs={logs} />
         </>

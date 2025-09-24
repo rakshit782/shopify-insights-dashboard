@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Shirt, MoreHorizontal, RefreshCw, UploadCloud } from 'lucide-react';
+import { Shirt, MoreHorizontal, RefreshCw, UploadCloud, Loader2 } from 'lucide-react';
 import type { ShopifyProduct } from '@/lib/types';
 import { PaginationControls } from './pagination-controls';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -26,12 +26,14 @@ export function ProductTable({
     onRefresh, 
     isLoading,
     onPushToDb,
+    isPushingToDb,
 }: { 
     products: ShopifyProduct[], 
     platform: string, 
     onRefresh: () => void, 
     isLoading: boolean,
     onPushToDb?: () => void,
+    isPushingToDb?: boolean,
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(10);
@@ -81,12 +83,12 @@ export function ProductTable({
                 </div>
                  <div className="flex items-center gap-2">
                     {onPushToDb && (
-                         <Button variant="outline" size="sm" onClick={onPushToDb} disabled={isLoading}>
-                            <UploadCloud className="mr-2 h-4 w-4" />
+                         <Button variant="outline" size="sm" onClick={onPushToDb} disabled={isLoading || isPushingToDb}>
+                            {isPushingToDb ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                             Push to DB
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading || isPushingToDb}>
                         <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
