@@ -167,10 +167,28 @@ export function ProductTable({
                   <TableCell className="font-medium">{product.title}</TableCell>
                   <TableCell>{product.variants?.[0]?.sku || 'N/A'}</TableCell>
                   <TableCell>
-                    {product.amazon_asin || 'N/A'}
+                    {product.amazon_asin ? (
+                      <a 
+                        href={`https://www.amazon.com/dp/${product.amazon_asin}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {product.amazon_asin}
+                      </a>
+                    ) : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    {product.walmart_id || 'N/A'}
+                     {product.walmart_id ? (
+                      <a 
+                        href={`https://www.walmart.com/ip/${product.walmart_id}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {product.walmart_id}
+                      </a>
+                    ) : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusVariant(product.status)}>{product.status}</Badge>
