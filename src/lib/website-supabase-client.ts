@@ -94,13 +94,6 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
     // The result is an array of objects with individual columns.
     // We need to map it to an array of ShopifyProduct objects.
     const products: ShopifyProduct[] = allProductsData.map(item => {
-        // Mock which platforms this product is linked to
-        const linked_to_platforms = ['shopify']; // Always on Shopify
-        if (Math.random() > 0.5) linked_to_platforms.push('amazon');
-        if (Math.random() > 0.6) linked_to_platforms.push('walmart');
-        if (Math.random() > 0.7) linked_to_platforms.push('etsy');
-
-
         return {
             id: item.shopify_product_id,
             admin_graphql_api_id: item.id,
@@ -121,7 +114,7 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
             // Properties not in the db table but required by the type are filled with defaults
             template_suffix: '',
             published_scope: 'web', 
-            linked_to_platforms,
+            linked_to_platforms: item.linked_to_platforms || ['shopify'],
         }
     });
 

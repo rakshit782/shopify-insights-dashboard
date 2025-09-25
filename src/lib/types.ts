@@ -78,6 +78,8 @@ export interface ShopifyProduct {
     admin_graphql_api_id: string;
   } | null;
   linked_to_platforms?: string[]; // New field to track connections
+  amazon_asin?: string;
+  walmart_id?: string;
 }
 
 export interface MappedShopifyProduct {

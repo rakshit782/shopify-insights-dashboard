@@ -14,9 +14,9 @@ import type {
 } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import fetch, { type Response } from 'node-fetch';
-import { v4 as uuidv4 } from 'uuid';
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
+import { randomUUID } from 'crypto';
 
 
 export interface PlatformProductCount {
@@ -378,22 +378,14 @@ export async function getPlatformProductCounts(logs?: string[]): Promise<Platfor
     const counts: PlatformProductCount[] = [];
     const statuses = await getCredentialStatuses();
 
-    // Mocking counts for now
-    const platforms = ['Shopify', 'Amazon', 'Walmart', 'eBay', 'Etsy'];
-    for (const platform of platforms) {
-        const platformKey = platform.toLowerCase();
-        if (statuses[platformKey]) {
-            internalLogs.push(`Fetching count for connected platform: ${platform}`);
-            // In a real scenario, you'd make an API call to the platform
-            // For now, we return a mock count if connected.
-            if (platform === 'Shopify') {
-                 // const { count } = await getShopifyProducts({ countOnly: true });
-                 // counts.push({ platform, count: count || 0 });
-            } else {
-                counts.push({ platform, count: Math.floor(Math.random() * 5000) });
-            }
-        }
+    if (statuses['shopify']) {
+        const { count } = await getShopifyProducts({ countOnly: true });
+        counts.push({ platform: 'Shopify', count: count || 0 });
     }
+    // Note: Other platforms are not implemented to fetch real counts yet.
+    // To add them, you would implement a function similar to getShopifyProducts({ countOnly: true })
+    // for each platform and call it here if the platform is connected.
+    
     return counts;
 }
 
@@ -419,7 +411,7 @@ function getWalmartConfig(logs: string[]): { clientId: string; clientSecret: str
 async function getWalmartAccessToken(clientId: string, clientSecret: string, logs: string[]): Promise<string | null> {
     const url = 'https://marketplace.walmartapis.com/v3/token';
     const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
 
     logs.push('Requesting Walmart access token...');
     
@@ -466,7 +458,7 @@ export async function getWalmartOrders(options: { dateRange?: DateRange }): Prom
          return { orders: [], logs };
     }
     
-    const correlationId = uuidv4();
+    const correlationId = randomUUID();
     
     const params = new URLSearchParams();
     if (options.dateRange?.from) {
@@ -802,8 +794,7 @@ function mapAmazonOrderToShopifyOrder(amazonOrder: AmazonOrder, items: AmazonOrd
 // ============================================
 
 export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; logs: string[] }> {
-    const logs: string[] = ["Etsy product fetching is not implemented yet. Returning mock data."];
-     // In a real app, you would fetch products from the Etsy API.
+    const logs: string[] = ["Etsy product fetching is not implemented yet. Returning an empty array."];
     return { products: [], logs };
 }
 
