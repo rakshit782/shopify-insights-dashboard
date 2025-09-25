@@ -10,6 +10,8 @@ import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import fs from 'fs/promises';
+import path from 'path';
 
 
 export async function handleSyncProducts() {
@@ -403,52 +405,33 @@ export async function handleGetEtsyProducts() {
     }
 }
 
+const settingsFilePath = path.join(process.cwd(), 'src', 'lib', 'settings.json');
+
 export async function handleSaveSyncSettings(settings: SyncSettings): Promise<{ success: boolean; error: string | null; }> {
-    const supabase = createSupabaseServerClient('MAIN');
-    const userResult = await handleGetOrCreateUser(); // This gives us a consistent user/profile to work with
-    if (!userResult.success || !userResult.profile) {
-        return { success: false, error: 'Could not identify user profile to save settings.' };
-    }
-
     try {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ sync_settings: settings })
-            .eq('id', userResult.profile.id);
-
-        if (error) throw error;
-
+        const data = JSON.stringify(settings, null, 2);
+        await fs.writeFile(settingsFilePath, data, 'utf-8');
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         console.error('Error saving sync settings:', errorMessage);
-        return { success: false, error: `Database operation failed: ${errorMessage}` };
+        return { success: false, error: `File system operation failed: ${errorMessage}` };
     }
 }
 
 export async function handleGetSyncSettings(): Promise<{ success: boolean; settings: SyncSettings | null; error: string | null; }> {
-    const supabase = createSupabaseServerClient('MAIN');
-    const userResult = await handleGetOrCreateUser();
-    if (!userResult.success || !userResult.profile) {
-        return { success: false, settings: null, error: 'Could not identify user profile to load settings.' };
-    }
-    
-    // The profile is already fetched in handleGetOrCreateUser, but let's re-fetch to be safe
     try {
-        const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('sync_settings')
-            .eq('id', userResult.profile.id)
-            .single();
-
-        if (error) throw error;
-
-        return { success: true, settings: profile.sync_settings as SyncSettings | null, error: null };
-
+        const data = await fs.readFile(settingsFilePath, 'utf-8');
+        const settings = JSON.parse(data) as SyncSettings;
+        return { success: true, settings, error: null };
     } catch (e) {
+        if (e instanceof Error && 'code' in e && e.code === 'ENOENT') {
+            // File doesn't exist, return empty/default settings
+             return { success: true, settings: { marketplaces: [] }, error: null };
+        }
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
         console.error('Error loading sync settings:', errorMessage);
-        return { success: false, settings: null, error: `Database operation failed: ${errorMessage}` };
+        return { success: false, settings: null, error: `File system operation failed: ${errorMessage}` };
     }
 }
 
