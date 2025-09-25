@@ -137,9 +137,10 @@ export function ProductTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>Vendor</TableHead>
+                <TableHead>Shopify SKU</TableHead>
+                <TableHead>Amazon ASIN</TableHead>
+                <TableHead>Walmart ID</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Inventory</TableHead>
                 <TableHead>Price</TableHead>
@@ -163,17 +164,10 @@ export function ProductTable({
             <TableBody>
               {currentProducts.map(product => (
                 <TableRow key={product.id}>
-                  <TableCell>
-                     <Image
-                        src={product.image?.src || 'https://placehold.co/400'}
-                        alt={product.title}
-                        width={40}
-                        height={40}
-                        className="rounded-md object-cover"
-                     />
-                  </TableCell>
                   <TableCell className="font-medium">{product.title}</TableCell>
-                  <TableCell>{product.vendor}</TableCell>
+                  <TableCell>{product.variants?.[0]?.sku || 'N/A'}</TableCell>
+                  <TableCell>N/A</TableCell>
+                  <TableCell>N/A</TableCell>
                   <TableCell>
                     <Badge variant={getStatusVariant(product.status)}>{product.status}</Badge>
                   </TableCell>
