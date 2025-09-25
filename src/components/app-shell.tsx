@@ -45,19 +45,9 @@ export function AppShell({
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
-            {settings?.logoUrl ? (
-              <Image
-                src={settings.logoUrl}
-                alt="Logo"
-                width={140}
-                height={40}
-                unoptimized
-              />
-            ) : (
-              <span className="text-xl font-bold tracking-wider text-sidebar-foreground">
-                CAPEL RUGS
+              <span className="text-lg font-bold tracking-wider text-sidebar-foreground">
+                CAPEL RUGS INC.
               </span>
-            )}
           </div>
         </SidebarHeader>
 
@@ -220,19 +210,9 @@ export function AppShell({
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between gap-2 p-4 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center gap-2">
-            {settings?.logoUrl ? (
-              <Image
-                src={settings.logoUrl}
-                alt="Logo"
-                width={120}
-                height={30}
-                unoptimized
-              />
-            ) : (
-              <span className="text-lg font-bold tracking-wider">
-                CAPEL RUGS
-              </span>
-            )}
+            <span className="text-lg font-bold tracking-wider">
+              CAPEL RUGS INC.
+            </span>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleSidebar}>
             <Menu className="h-6 w-6" />
