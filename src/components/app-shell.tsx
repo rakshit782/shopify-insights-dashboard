@@ -29,25 +29,7 @@ import type { AppSettings } from '@/lib/types';
 
 
 const DefaultLogo = ({ className }: { className?: string }) => (
-    <svg
-      className={cn('text-foreground', className)}
-      width="160"
-      height="32"
-      viewBox="0 0 160 32"
-      fill="currentColor"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <text
-        x="0"
-        y="22"
-        fontFamily="Arial, sans-serif"
-        fontSize="18"
-        fontWeight="bold"
-        fill="currentColor"
-      >
-        Your Logo Here
-      </text>
-    </svg>
+    <Image src="https://storage.googleapis.com/temp-assets-studio-81078.appspot.com/capel-rugs-logo.png" alt="Capel Rugs" width={128} height={32} className={cn("h-8 w-auto", className)} unoptimized />
 );
 
 
@@ -185,7 +167,21 @@ export function AppShell({ children, settings }: { children: React.ReactNode, se
               >
                 Rakshit Vaish
               </a>{' '}
-              with <Heart className="inline h-3 w-3 text-red-500" fill="currentColor" />
+              with{' '}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="inline h-3 w-3 text-red-500"
+              >
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              </svg>
             </div>
           </div>
         </SidebarFooter>
