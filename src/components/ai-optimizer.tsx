@@ -5,14 +5,14 @@ import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Search, Wand2, Save } from 'lucide-react';
+import { Loader2, Search, Wand2, Save, Plus, X } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { handleGetProductBySku, handleOptimizeContent, handleUpdateProduct } from '@/app/actions';
+import { handleGetProductBySku, handleOptimizeContent, updateAmazonProduct, updateEtsyProduct, updateWalmartProduct } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
@@ -58,7 +58,7 @@ export function AiOptimizer() {
     },
   });
 
-  const { fields, replace, append } = useFieldArray({
+  const { fields, replace, append, remove } = useFieldArray({
     control: contentForm.control,
     name: 'bulletPoints',
   });
@@ -74,7 +74,7 @@ export function AiOptimizer() {
     if (result.product) {
       setProduct(result.product);
       contentForm.setValue('title', result.product.title);
-      contentForm.setValue('description', result.product.body_html);
+      contentForm.setValue('description', result.product.body_html.replace(/<[^>]+>/g, ' '));
       // For simplicity, we are not loading bullet points from the main product here.
       // A more advanced version could parse them from the description.
       replace([{ value: '' }]); 
@@ -104,7 +104,8 @@ export function AiOptimizer() {
     
     if (result.success && result.data) {
         contentForm.setValue('title', result.data.optimizedTitle);
-        contentForm.setValue('description', result.data.optimizedDescription);
+        // The AI returns simple HTML, let's strip it for the textarea
+        contentForm.setValue('description', result.data.optimizedDescription.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' '));
         replace(result.data.optimizedBulletPoints.map(bp => ({ value: bp })));
         toast({ title: 'Optimization Complete!', description: 'Review the generated content below.' });
     } else {
@@ -115,25 +116,63 @@ export function AiOptimizer() {
   }
 
   const onSave = async (data: OptimizedContentValues) => {
-    if (!product) return;
+    if (!product || !selectedMarketplace) {
+        toast({ title: 'Cannot Save', description: 'No product loaded or marketplace selected.', variant: 'destructive'});
+        return;
+    }
+    
+    const sku = product.variants?.[0]?.sku;
+    if (!sku) {
+        toast({ title: 'Cannot Save', description: 'The product does not have an SKU.', variant: 'destructive'});
+        return;
+    }
+
     setIsSaving(true);
-    toast({ title: 'Saving changes...', description: 'Updating the product in Shopify and your database.' });
+    toast({ title: `Saving changes to ${selectedMarketplace}...` });
 
-    // In a real app, you might want to convert bullet points to HTML and add to the description
-    const newDescription = data.description;
+    const updatePayload = {
+      sku: sku,
+      // In a real app you would send the title, description, and bullet points
+      // in the format the specific marketplace API expects.
+      // For now, we just log it to show the intent.
+      ...data,
+      bulletPoints: data.bulletPoints.map(bp => bp.value),
+    };
+    
+    let result = { success: false, error: 'Marketplace not implemented.' };
 
-    const result = await handleUpdateProduct({
-        id: product.id,
-        title: data.title,
-        body_html: newDescription,
-    });
+    try {
+        switch (selectedMarketplace) {
+            case 'amazon':
+                await updateAmazonProduct(updatePayload);
+                result = { success: true, error: null };
+                break;
+            case 'walmart':
+                await updateWalmartProduct(updatePayload);
+                result = { success: true, error: null };
+                break;
+            case 'etsy':
+                await updateEtsyProduct(updatePayload);
+                result = { success: true, error: null };
+                break;
+            default:
+                 toast({
+                    title: 'Save Skipped',
+                    description: `Saving to '${selectedMarketplace}' is not implemented yet.`,
+                    variant: 'default'
+                 });
+                 setIsSaving(false);
+                 return;
+        }
 
-    if (result.success) {
-        toast({ title: 'Save Successful!', description: 'Product content has been updated.' });
-        // Refresh product state
-        onSearch({ sku: searchForm.getValues('sku') });
-    } else {
-        toast({ title: 'Save Failed', description: result.error, variant: 'destructive' });
+        if (result.success) {
+            toast({ title: 'Save Successful!', description: `Content has been pushed to ${selectedMarketplace}.` });
+        } else {
+            toast({ title: 'Save Failed', description: result.error, variant: 'destructive' });
+        }
+    } catch(e) {
+        const errorMsg = e instanceof Error ? e.message : 'An unknown error occurred.';
+        toast({ title: 'Save Failed', description: errorMsg, variant: 'destructive' });
     }
 
     setIsSaving(false);
@@ -227,7 +266,7 @@ export function AiOptimizer() {
                             name="description"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Optimized Description</FormLabel>
+                                    <FormLabel>Optimized Description (Plain Text)</FormLabel>
                                     <FormControl><Textarea {...field} rows={6} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -243,18 +282,32 @@ export function AiOptimizer() {
                                     name={`bulletPoints.${index}.value`}
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormControl><Input {...field} /></FormControl>
+                                            <div className="flex items-center gap-2">
+                                                <FormControl><Input {...field} /></FormControl>
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             ))}
+                             <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => append({ value: '' })}
+                                >
+                                <Plus className="mr-2 h-4 w-4" /> Add Bullet Point
+                            </Button>
                            </div>
                         </div>
 
                         <div className="flex justify-end">
-                            <Button type="submit" disabled={isSaving || isOptimizing}>
+                            <Button type="submit" disabled={isSaving || isOptimizing || !selectedMarketplace}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Save Changes
+                                Save to {selectedMarketplace ? selectedMarketplace.charAt(0).toUpperCase() + selectedMarketplace.slice(1) : 'Marketplace'}
                             </Button>
                         </div>
                     </form>

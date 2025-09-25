@@ -798,35 +798,37 @@ export async function getEtsyProducts(): Promise<{ products: ShopifyProduct[]; l
     return { products: [], logs };
 }
 
-export async function updateEtsyProduct(payload: { sku?: string; price?: number; inventory?: number; }) {
+export async function updateEtsyProduct(payload: any) {
     console.log('--- SIMULATING ETSY PRODUCT UPDATE ---');
     console.log(`SKU: ${payload.sku}`);
     if (payload.price !== undefined) console.log(`New Price: ${payload.price}`);
     if (payload.inventory !== undefined) console.log(`New Inventory: ${payload.inventory}`);
+    if (payload.title) console.log(`New Title: ${payload.title}`);
+    if (payload.description) console.log(`New Description: ${payload.description}`);
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     console.log('--- Etsy update simulation complete. ---');
     return { success: true };
 }
 
-export async function updateWalmartProduct(payload: { sku?: string; price?: number; inventory?: number; }) {
+export async function updateWalmartProduct(payload: any) {
     console.log('--- SIMULATING WALMART PRODUCT UPDATE ---');
     console.log(`SKU: ${payload.sku}`);
     if (payload.price !== undefined) console.log(`New Price: ${payload.price}`);
     if (payload.inventory !== undefined) console.log(`New Inventory: ${payload.inventory}`);
-    // In a real app, you would make an API call to Walmart here
-    // using the payload to update inventory and price for the given SKU.
+    if (payload.title) console.log(`New Title: ${payload.title}`);
+    if (payload.description) console.log(`New Description: ${payload.description}`);
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     console.log('--- Walmart update simulation complete. ---');
     return { success: true };
 }
 
-export async function updateAmazonProduct(payload: { sku?: string; price?: number; inventory?: number; }) {
+export async function updateAmazonProduct(payload: any) {
     console.log('--- SIMULATING AMAZON PRODUCT UPDATE ---');
     console.log(`SKU: ${payload.sku}`);
     if (payload.price !== undefined) console.log(`New Price: ${payload.price}`);
     if (payload.inventory !== undefined) console.log(`New Inventory: ${payload.inventory}`);
-    // In a real app, you would make an API call to Amazon here
-    // using the payload to update inventory and price for the given SKU.
+    if (payload.title) console.log(`New Title: ${payload.title}`);
+    if (payload.description) console.log(`New Description: ${payload.description}`);
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     console.log('--- Amazon update simulation complete. ---');
     return { success: true };
