@@ -175,7 +175,7 @@ export function AppShell({ children, settings }: { children: React.ReactNode, se
             </SidebarMenuItem>
           </SidebarMenu>
           <div className="p-3 text-center text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-            <p>
+            <div>
               This ERP System is Developed by{' '}
               <a
                 href="https://www.linkedin.com/in/rakshitvaish"
@@ -186,7 +186,7 @@ export function AppShell({ children, settings }: { children: React.ReactNode, se
                 Rakshit Vaish
               </a>{' '}
               with <Heart className="inline h-3 w-3 text-red-500" fill="currentColor" />
-            </p>
+            </div>
           </div>
         </SidebarFooter>
       </Sidebar>
