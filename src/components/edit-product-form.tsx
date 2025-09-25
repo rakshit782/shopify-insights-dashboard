@@ -8,6 +8,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Trash2, Wand2, Image as ImageIcon, Link as LinkIcon, Plus } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,6 @@ import { RichTextEditor } from './rich-text-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from './ui/separator';
 import Image from 'next/image';
-import { Checkbox } from "@/components/ui/checkbox";
 
 
 const platformIcons: { [key: string]: string } = {
@@ -65,7 +65,7 @@ const formSchema = z.object({
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-export function EditProductForm({ product, onSuccess, connectedChannels }: EditProductFormProps) {
+export function EditProductForm({ product, onSuccess, connectedChannels = [] }: EditProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);

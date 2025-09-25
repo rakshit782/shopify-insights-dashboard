@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { handleGetProductBySku } from '@/app/actions';
+import { handleGetProductBySku, handleGetCredentialStatuses } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { EditProductForm } from './edit-product-form';
@@ -53,7 +53,18 @@ export function ProductSearchAndEdit() {
   const [product, setProduct] = useState<ShopifyProduct | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectedChannels, setConnectedChannels] = useState<string[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchStatuses() {
+        const result = await handleGetCredentialStatuses();
+        if (result.success && result.statuses) {
+            setConnectedChannels(Object.keys(result.statuses).filter(key => result.statuses[key]));
+        }
+    }
+    fetchStatuses();
+  }, []);
 
   const form = useForm<SearchFormValues>({
     resolver: zodResolver(searchSchema),
@@ -138,7 +149,7 @@ export function ProductSearchAndEdit() {
 
             {product && !isSearching && (
                 <div className="mt-6 border-t pt-6">
-                    <EditProductForm product={product} onSuccess={handleEditSuccess} />
+                    <EditProductForm product={product} onSuccess={handleEditSuccess} connectedChannels={connectedChannels} />
                 </div>
             )}
         </div>

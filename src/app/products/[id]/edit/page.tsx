@@ -1,6 +1,6 @@
 
 import { Suspense } from 'react';
-import { handleGetProduct } from '@/app/actions';
+import { handleGetProduct, handleGetCredentialStatuses } from '@/app/actions';
 import { EditProductForm } from '@/components/edit-product-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -55,7 +55,12 @@ function EditProductSkeleton() {
 export default async function EditProductPage({ params }: { params: { id: string }}) {
   const productId = params.id;
 
-  const { product, error } = await handleGetProduct(productId);
+  const [{ product, error }, { statuses }] = await Promise.all([
+      handleGetProduct(productId),
+      handleGetCredentialStatuses()
+  ]);
+  
+  const connectedChannels = statuses ? Object.keys(statuses).filter(key => statuses[key]) : [];
   
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -75,7 +80,7 @@ export default async function EditProductPage({ params }: { params: { id: string
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}
-        {product && <EditProductForm product={product} />}
+        {product && <EditProductForm product={product} connectedChannels={connectedChannels}/>}
       </Suspense>
     </div>
   );
