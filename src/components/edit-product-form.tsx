@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Trash2, Wand2, Image as ImageIcon, Link as LinkIcon, Checkbox } from 'lucide-react';
+import { Loader2, Trash2, Wand2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,8 @@ import { RichTextEditor } from './rich-text-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from './ui/separator';
 import Image from 'next/image';
+import { Checkbox } from "@/components/ui/checkbox";
+
 
 const platformIcons: { [key: string]: string } = {
   shopify: '/shopify.svg',
@@ -438,3 +440,5 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
     </Card>
   );
 }
+
+    
