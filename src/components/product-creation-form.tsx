@@ -61,15 +61,6 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } =
     'wayfair': { name: 'Wayfair', icon: <Image src="/wayfair.svg" alt="Wayfair" width={20} height={20} unoptimized /> },
 };
 
-function SectionHeader({ title, description }: { title: string; description?: string }) {
-  return (
-    <div className="mt-8 mb-4">
-      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-      {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      <Separator className="mt-2" />
-    </div>
-  );
-}
 
 function FileUploadPlaceholder({ icon: Icon, label }: { icon: React.FC<any>; label: string }) {
     return (
@@ -239,281 +230,288 @@ export function ProductCreationForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Product</CardTitle>
-            <CardDescription>Fill out the details below to add a new product to your master catalog.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Core Content Section */}
-            <SectionHeader title="Core Content" description="The foundational content for your product listing." />
-            
-            <div className="space-y-6">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Product Title</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Core Content Card */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Core Content</CardTitle>
+                        <CardDescription>The foundational content for your product listing.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Product Title</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                <Controller
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl><RichTextEditor value={field.value || ''} onChange={field.onChange} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-            
-            {/* Bullet Points Section */}
-            <div className="mt-6">
-              <FormLabel>Bullet Points ({fields.length}/5)</FormLabel>
-              <div className="mt-2 space-y-3">
-                {fields.map((field, index) => (
-                  <FormField
-                    key={field.id}
-                    control={form.control}
-                    name={`bulletPoints.${index}.value`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-2">
-                          <FormControl><Input {...field} placeholder={`Bullet point ${index + 1}`} /></FormControl>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                            <X className="h-4 w-4" />
-                          </Button>
+                        <Controller
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl><RichTextEditor value={field.value || ''} onChange={field.onChange} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <div>
+                            <FormLabel>Bullet Points ({fields.length}/5)</FormLabel>
+                            <div className="mt-2 space-y-3">
+                                {fields.map((field, index) => (
+                                <FormField
+                                    key={field.id}
+                                    control={form.control}
+                                    name={`bulletPoints.${index}.value`}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <div className="flex items-center gap-2">
+                                        <FormControl><Input {...field} placeholder={`Bullet point ${index + 1}`} /></FormControl>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                ))}
+                                <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => append({ id: getUniqueId(), value: '' })}
+                                disabled={fields.length >= 5}
+                                >
+                                <Plus className="mr-2 h-4 w-4" /> Add Bullet Point
+                                </Button>
+                            </div>
                         </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => append({ id: getUniqueId(), value: '' })}
-                  disabled={fields.length >= 5}
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Add Bullet Point
-                </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Media Card */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Media</CardTitle>
+                        <CardDescription>Upload images and videos for your product.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Tabs defaultValue="upload-images">
+                            <div className="flex items-center justify-between">
+                                <FormLabel>Images (up to 7)</FormLabel>
+                                <TabsList>
+                                    <TabsTrigger value="upload-images">Upload</TabsTrigger>
+                                    <TabsTrigger value="url-images">URL</TabsTrigger>
+                                </TabsList>
+                            </div>
+                            <TabsContent value="upload-images">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mt-2">
+                                    {Array.from({ length: 7 }).map((_, i) => (
+                                    <FileUploadPlaceholder key={i} icon={ImageIcon} label={`Image ${i + 1}`} />
+                                    ))}
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="url-images">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                                    {Array.from({ length: 7 }).map((_, i) => (
+                                    <UrlUpload key={i} name={`imageUrl${i + 1}`} control={form.control} label={`Image URL ${i + 1}`} />
+                                    ))}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+
+                         <Tabs defaultValue="upload-videos">
+                            <div className="flex items-center justify-between">
+                                <FormLabel>Videos (up to 2)</FormLabel>
+                                <TabsList>
+                                    <TabsTrigger value="upload-videos">Upload</TabsTrigger>
+                                    <TabsTrigger value="url-videos">URL</TabsTrigger>
+                                </TabsList>
+                            </div>
+                            <TabsContent value="upload-videos">
+                                <div className="grid grid-cols-2 gap-4 mt-2">
+                                    {Array.from({ length: 2 }).map((_, i) => (
+                                    <FileUploadPlaceholder key={i} icon={Video} label={`Video ${i + 1}`} />
+                                    ))}
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="url-videos">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                    {Array.from({ length: 2 }).map((_, i) => (
+                                        <UrlUpload key={i} name={`videoUrl${i + 1}`} control={form.control} label={`Video URL ${i+1}`} />
+                                    ))}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
               </div>
-            </div>
 
-            {/* AI Optimization Section */}
-            <div className="mt-8 p-4 bg-muted/50 rounded-lg border">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div className="mb-4 sm:mb-0">
-                        <h4 className="font-semibold flex items-center gap-2"><Wand2 className="h-5 w-5 text-primary"/> AI Content Optimizer</h4>
-                        <p className="text-sm text-muted-foreground">Optimize the title, description, and bullet points for a specific marketplace.</p>
-                    </div>
-                     <Select onValueChange={(value: Marketplace) => onOptimize(value)} disabled={!!isOptimizing}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder={isOptimizing ? 'Optimizing...' : 'Select Marketplace'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="google">Google</SelectItem>
-                            <SelectItem value="amazon">Amazon</SelectItem>
-                            <SelectItem value="walmart">Walmart</SelectItem>
-                            <SelectItem value="ebay">eBay</SelectItem>
-                            <SelectItem value="etsy">Etsy</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
+              {/* Right Column */}
+              <div className="lg:col-span-1 space-y-8">
+                 {/* AI Optimizer Card */}
+                 <Card>
+                    <CardHeader>
+                         <h4 className="font-semibold flex items-center gap-2"><Wand2 className="h-5 w-5 text-primary"/> AI Content Optimizer</h4>
+                    </CardHeader>
+                    <CardContent>
+                         <p className="text-sm text-muted-foreground mb-4">Optimize the title, description, and bullet points for a specific marketplace.</p>
+                         <Select onValueChange={(value: Marketplace) => onOptimize(value)} disabled={!!isOptimizing}>
+                            <SelectTrigger>
+                                <SelectValue placeholder={isOptimizing ? 'Optimizing...' : 'Select Marketplace'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="google">Google</SelectItem>
+                                <SelectItem value="amazon">Amazon</SelectItem>
+                                <SelectItem value="walmart">Walmart</SelectItem>
+                                <SelectItem value="ebay">eBay</SelectItem>
+                                <SelectItem value="etsy">Etsy</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
+                 </Card>
 
-            {/* Media Section */}
-            <SectionHeader title="Media" description="Upload images and videos for your product." />
-            
-            <div className="space-y-6">
-                 <Tabs defaultValue="upload-images">
-                    <div className="flex items-center justify-between">
-                         <FormLabel>Images (up to 7)</FormLabel>
-                        <TabsList>
-                            <TabsTrigger value="upload-images">Upload</TabsTrigger>
-                            <TabsTrigger value="url-images">URL</TabsTrigger>
-                        </TabsList>
-                    </div>
-                    <TabsContent value="upload-images">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mt-2">
-                            {Array.from({ length: 7 }).map((_, i) => (
-                               <FileUploadPlaceholder key={i} icon={ImageIcon} label={`Image ${i + 1}`} />
-                            ))}
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="url-images">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
-                             {Array.from({ length: 7 }).map((_, i) => (
-                               <UrlUpload key={i} name={`imageUrl${i + 1}`} control={form.control} label={`Image URL ${i + 1}`} />
-                            ))}
-                        </div>
-                    </TabsContent>
-                 </Tabs>
-
-                 <Tabs defaultValue="upload-videos">
-                    <div className="flex items-center justify-between">
-                         <FormLabel>Videos (up to 2)</FormLabel>
-                        <TabsList>
-                            <TabsTrigger value="upload-videos">Upload</TabsTrigger>
-                            <TabsTrigger value="url-videos">URL</TabsTrigger>
-                        </TabsList>
-                    </div>
-                    <TabsContent value="upload-videos">
-                        <div className="grid grid-cols-2 gap-4 mt-2">
-                             {Array.from({ length: 2 }).map((_, i) => (
-                               <FileUploadPlaceholder key={i} icon={Video} label={`Video ${i + 1}`} />
-                            ))}
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="url-videos">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                            {Array.from({ length: 2 }).map((_, i) => (
-                                <UrlUpload key={i} name={`videoUrl${i + 1}`} control={form.control} label={`Video URL ${i+1}`} />
-                            ))}
-                        </div>
-                    </TabsContent>
-                 </Tabs>
-            </div>
-
-            {/* Publishing Section */}
-            <SectionHeader title="Publishing" description="Select which connected marketplaces to publish this product to." />
-            <FormField
-              control={form.control}
-              name="marketplaces"
-              render={() => (
-                <FormItem>
-                   {isLoadingChannels ? (
-                       <div className="space-y-2">
-                           <Skeleton className="h-8 w-1/2" />
-                           <Skeleton className="h-8 w-1/2" />
-                       </div>
-                   ) : connectedChannels.length > 0 ? (
-                        <div className="space-y-4">
-                        {connectedChannels.map((id) => (
-                            <FormField
-                            key={id}
+                 {/* Publishing Card */}
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Publishing</CardTitle>
+                        <CardDescription>Select which connected marketplaces to publish this product to.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <FormField
                             control={form.control}
                             name="marketplaces"
-                            render={({ field }) => {
-                                return (
-                                <FormItem key={id} className="flex flex-row items-start space-x-3 space-y-0">
-                                    <FormControl>
-                                        <Checkbox
-                                            checked={field.value?.includes(id)}
-                                            onCheckedChange={(checked) => {
-                                            return checked
-                                                ? field.onChange([...(field.value || []), id])
-                                                : field.onChange(
-                                                    field.value?.filter(
-                                                    (value) => value !== id
-                                                    )
+                            render={() => (
+                                <FormItem>
+                                {isLoadingChannels ? (
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-8 w-full" />
+                                        <Skeleton className="h-8 w-full" />
+                                    </div>
+                                ) : connectedChannels.length > 0 ? (
+                                        <div className="space-y-4">
+                                        {connectedChannels.map((id) => (
+                                            <FormField
+                                            key={id}
+                                            control={form.control}
+                                            name="marketplaces"
+                                            render={({ field }) => {
+                                                return (
+                                                <FormItem key={id} className="flex flex-row items-start space-x-3 space-y-0">
+                                                    <FormControl>
+                                                        <Checkbox
+                                                            checked={field.value?.includes(id)}
+                                                            onCheckedChange={(checked) => {
+                                                            return checked
+                                                                ? field.onChange([...(field.value || []), id])
+                                                                : field.onChange(
+                                                                    field.value?.filter(
+                                                                    (value) => value !== id
+                                                                    )
+                                                                )
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal flex items-center gap-2">
+                                                        {platformMeta[id].icon}
+                                                        Publish to {platformMeta[id].name}
+                                                    </FormLabel>
+                                                </FormItem>
                                                 )
                                             }}
-                                        />
-                                    </FormControl>
-                                    <FormLabel className="font-normal flex items-center gap-2">
-                                        {platformMeta[id].icon}
-                                        Publish to {platformMeta[id].name}
-                                    </FormLabel>
+                                            />
+                                        ))}
+                                        <FormMessage />
+                                        </div>
+                                ) : (
+                                        <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-md flex items-center gap-3">
+                                            <XCircle className="h-5 w-5 text-destructive" />
+                                            No marketplaces connected. Please add credentials to your .env file.
+                                        </div>
+                                )}
                                 </FormItem>
-                                )
-                            }}
+                            )}
                             />
-                        ))}
-                        <FormMessage />
-                        </div>
-                   ) : (
-                        <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-md flex items-center gap-3">
-                            <XCircle className="h-5 w-5 text-destructive" />
-                            No marketplaces connected. Please add credentials to your .env file.
-                        </div>
-                   )}
-                </FormItem>
-              )}
-            />
+                    </CardContent>
+                 </Card>
 
-            {/* SEO & Keywords Section */}
-            <SectionHeader title="SEO & Keywords" description="Add keywords to improve discoverability on different channels." />
-            
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <FormField
-                    control={form.control}
-                    name="googleKeywords"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Google Keywords</FormLabel>
-                        <FormControl><Textarea {...field} placeholder="e.g., leather wallet, bifold, mens gift" /></FormControl>
-                        <FormDescription>Comma-separated keywords for Google Search.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="amazonKeywords"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Amazon Search Terms</FormLabel>
-                        <FormControl><Textarea {...field} placeholder="e.g., slim wallet, rfid blocking, genuine leather" /></FormControl>
-                        <FormDescription>Backend keywords for Amazon's A9 algorithm.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="walmartKeywords"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Walmart Keywords</FormLabel>
-                        <FormControl><Textarea {...field} placeholder="e.g., durable wallet, gift for dad, card holder" /></FormControl>
-                         <FormDescription>Keywords for Walmart's search engine.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="ebayKeywords"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>eBay Keywords</FormLabel>
-                        <FormControl><Textarea {...field} placeholder="e.g., new leather wallet, mens accessory, classic bifold" /></FormControl>
-                        <FormDescription>Keywords for eBay search and promoted listings.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="etsyKeywords"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Etsy Tags</FormLabel>
-                        <FormControl><Textarea {...field} placeholder="e.g., handmade wallet, personalized gift, minimalist leather" /></FormControl>
-                        <FormDescription>13 comma-separated tags for Etsy search.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-            
-          </CardContent>
-          <CardFooter className="flex justify-end pt-8">
-            <Button type="submit" disabled={isSubmitting || !!isOptimizing}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Product'}
+                  {/* SEO & Keywords Card */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>SEO & Keywords</CardTitle>
+                        <CardDescription>Add keywords to improve discoverability on different channels.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="googleKeywords"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Google Keywords</FormLabel>
+                                <FormControl><Textarea {...field} placeholder="e.g., leather wallet, bifold, mens gift" /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="amazonKeywords"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Amazon Search Terms</FormLabel>
+                                <FormControl><Textarea {...field} placeholder="e.g., slim wallet, rfid blocking, genuine leather" /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="walmartKeywords"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Walmart Keywords</FormLabel>
+                                <FormControl><Textarea {...field} placeholder="e.g., durable wallet, gift for dad, card holder" /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="ebayKeywords"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>eBay Keywords</FormLabel>
+                                <FormControl><Textarea {...field} placeholder="e.g., new leather wallet, mens accessory, classic bifold" /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="etsyKeywords"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Etsy Tags</FormLabel>
+                                <FormControl><Textarea {...field} placeholder="e.g., handmade wallet, personalized gift, minimalist leather" /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+              </div>
+          </div>
+          
+          <div className="flex justify-end mt-8">
+            <Button type="submit" size="lg" disabled={isSubmitting || !!isOptimizing}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create & Publish Product'}
             </Button>
-          </CardFooter>
-        </Card>
+          </div>
       </form>
     </Form>
   );
