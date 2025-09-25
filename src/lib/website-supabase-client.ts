@@ -177,36 +177,51 @@ export async function getSingleWebsiteProduct(id: string): Promise<ShopifyProduc
 
 export async function getProductBySku(sku: string): Promise<ShopifyProduct | null> {
     const supabase = createSupabaseServerClient('DATA');
-    const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        // We search within the JSONB array of variants
-        .filter('variants', 'cs', `[{"sku":"${sku}"}]`)
-        .limit(1)
-        .single();
     
-    if (error || !data) {
-        console.error(`Error fetching product with SKU ${sku}:`, error);
+    // This is a simplified search. For large datasets, a more optimized approach
+    // like a dedicated search index or a different table structure would be better.
+    const { data: allProducts, error: fetchError } = await supabase
+        .from('products')
+        .select('*');
+
+    if (fetchError) {
+        console.error(`Error fetching all products to search for SKU ${sku}:`, fetchError);
         return null;
     }
 
+    if (!allProducts) {
+        return null;
+    }
+
+    // Find the product that has a variant with the matching SKU
+    const productData = allProducts.find(product =>
+        product.variants && Array.isArray(product.variants) &&
+        product.variants.some((variant: any) => variant && variant.sku === sku)
+    );
+
+    if (!productData) {
+        console.log(`Product with SKU ${sku} not found in the database.`);
+        return null;
+    }
+
+    // Map the found data back to the ShopifyProduct type
     return {
-        id: data.shopify_product_id,
-        admin_graphql_api_id: data.id,
-        handle: data.handle,
-        title: data.title,
-        body_html: data.body_html,
-        vendor: data.vendor,
-        product_type: data.product_type,
-        status: data.status,
-        tags: data.tags,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        published_at: data.published_at,
-        variants: data.variants,
-        options: data.options,
-        images: data.images,
-        image: data.image,
+        id: productData.shopify_product_id,
+        admin_graphql_api_id: productData.id,
+        handle: productData.handle,
+        title: productData.title,
+        body_html: productData.body_html,
+        vendor: productData.vendor,
+        product_type: productData.product_type,
+        status: productData.status,
+        tags: productData.tags,
+        created_at: productData.created_at,
+        updated_at: productData.updated_at,
+        published_at: productData.published_at,
+        variants: productData.variants,
+        options: productData.options,
+        images: productData.images,
+        image: productData.image,
         template_suffix: '',
         published_scope: 'web',
     };
@@ -258,4 +273,3 @@ export async function updateProductMarketplaceId(productId: string, marketplace:
     }
 }
     
-
