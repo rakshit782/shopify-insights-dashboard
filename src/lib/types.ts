@@ -138,6 +138,13 @@ export interface AppSettings {
   faviconUrl: string;
 }
 
+export interface PriceUpdatePayload {
+  id: string; // admin_graphql_api_id
+  shopify_price?: number;
+  amazon_price?: number;
+  walmart_price?: number;
+}
+
 
 // Represents the possible fulfillment statuses from Walmart
 export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';

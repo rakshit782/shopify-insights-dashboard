@@ -23,6 +23,8 @@ import {
   Shirt,
   UserSearch,
   Upload,
+  DollarSign,
+  Boxes,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -45,9 +47,9 @@ export function AppShell({
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
-              <span className="text-lg font-bold tracking-wider text-sidebar-foreground">
-                CAPEL RUGS INC.
-              </span>
+            <span className="text-lg font-bold tracking-wider text-sidebar-foreground">
+              CAPEL RUGS INC.
+            </span>
           </div>
         </SidebarHeader>
 
@@ -108,6 +110,34 @@ export function AppShell({
                   <Shirt className="h-5 w-5" />
                   <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
                     Products
+                  </span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/pricing-manager')}
+                tooltip="Pricing Manager"
+              >
+                <Link href="/pricing-manager">
+                  <DollarSign className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Pricing Manager
+                  </span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/stock-manager')}
+                tooltip="Stock Manager"
+              >
+                <Link href="/stock-manager">
+                  <Boxes className="h-5 w-5" />
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Stock Manager
                   </span>
                 </Link>
               </SidebarMenuButton>
