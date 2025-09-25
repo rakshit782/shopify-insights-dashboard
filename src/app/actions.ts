@@ -2,7 +2,7 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct, getAmazonProductBySku, getWalmartProductBySku, updateAmazonProduct } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct as updateEtsyProductClient, updateWalmartProduct as updateWalmartProductClient, getAmazonProductBySku, getWalmartProductBySku, updateAmazonProduct as updateAmazonProductClient } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct, updateProductMarketplaceId, getProductBySku } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, AppSettings, PriceUpdatePayload, StockUpdatePayload } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
@@ -637,7 +637,21 @@ export async function handleBulkUpdateStock(updates: StockUpdatePayload[]): Prom
 }
     
 
+export async function updateEtsyProduct(payload: any) {
+  return updateEtsyProductClient(payload);
+}
+
+export async function updateWalmartProduct(payload: any) {
+  return updateWalmartProductClient(payload);
+}
+
+export async function updateAmazonProduct(payload: any) {
+  return updateAmazonProductClient(payload);
+}
 
 
     
 
+
+
+    
