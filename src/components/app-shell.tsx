@@ -17,7 +17,7 @@ import {
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List, Database, Settings, Menu, Shirt, UserSearch, Upload } from 'lucide-react';
+import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List, Database, Settings, Menu, Shirt, UserSearch, Upload, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
@@ -25,55 +25,63 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
+import type { AppSettings } from '@/lib/types';
 
 
-const Logo = ({ className }: { className?: string }) => (
+const DefaultLogo = ({ className }: { className?: string }) => (
     <svg
       className={cn('text-foreground', className)}
       width="160"
       height="32"
-      viewBox="0 0 460 80"
+      viewBox="0 0 160 32"
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <g clipPath="url(#clip0)">
-        <path
-          d="M89.15 31.95c0-10.3 3.6-18.4 10.8-24.3 7.2-5.85 16.9-8.75 29.1-8.75 12.25 0 21.9 2.9 29.1 8.75 7.15 5.9 10.75 14 10.75 24.3 0 10.35-3.6 18.45-10.75 24.35-7.2 5.9-16.85 8.8-29.1 8.8-12.2 0-21.9-2.9-29.1-8.8-7.2-5.9-10.8-14-10.8-24.35zm12.3 0c0 7.4 2.45 13.25 7.4 17.55 4.9 4.3 11.5 6.5 19.8 6.5 8.25 0 14.85-2.2 19.8-6.5 4.9-4.3 7.4-10.15 7.4-17.55 0-7.45-2.5-13.3-7.4-17.6-4.95-4.3-11.55-6.45-19.8-6.45-8.3 0-14.9 2.15-19.8 6.45-4.95 4.3-7.4 10.15-7.4 17.6z"
-        ></path>
-        <path
-          d="M174.6 37.55c.5-1.8.75-3.8.75-6 0-7.4-2.5-13.25-7.45-17.55-4.9-4.3-11.5-6.5-19.75-6.5-8.3 0-14.9 2.15-19.8 6.45-4.95 4.3-7.4 10.15-7.4 17.6 0 10.3 3.6 18.4 10.8 24.3 7.2 5.85 16.9 8.75 29.1 8.75 8.5 0 15.7-1.7 21.6-5.1l-3.3-9.5c-4.9 2.6-10.3 3.9-16.2 3.9-6.3 0-11.5-1.5-15.6-4.4-4.1-3-6.1-7.15-6.1-12.5h33.4zM242.4 8.85h12.3V65h-12.3V8.85zM292.1 32c0-9.8 3.5-17.55 10.4-23.25 7-5.7 16.4-8.5 28.3-8.5 11.9 0 21.3 2.85 28.3 8.5 6.9 5.7 10.4 13.45 10.4 23.25 0 9.8-3.5 17.5-10.4 23.2-7 5.7-16.4 8.5-28.3 8.5-11.9 0-21.3-2.8-28.3-8.5-6.9-5.7-10.4-13.4-10.4-23.2zm12.3.05c0 7.05 2.4 12.65 7.1 16.85 4.8 4.2 11.1 6.3 19 6.3s14.2-2.1 19-6.3c4.7-4.2 7.1-9.8 7.1-16.85s-2.4-12.6-7.1-16.8c-4.8-4.2-11.1-6.3-19-6.3s-14.2 2.1-19 6.3c-4.7 4.2-7.1 9.75-7.1 16.8z"
-        ></path>
-        <path d="M259.95 8.85h12.3V65h-12.3V8.85z"></path>
-        <path
-          d="M371.35 65h-13.2L344.2 37.1h-.25v27.9h-11.3V8.85h13.1l13.75 27.25h.25V8.85h11.25V65z"
-        ></path>
-        <path d="M39.6 69.4c-21.6 0-39.6-17.9-39.6-39.6S18 10.2 39.6 10.2s39.6 17.9 39.6 39.6-17.9 29.6-39.6 29.6zm0-75.7C19.9 3.5 3.5 19.9 3.5 39.6s16.4 36.1 36.1 36.1 36.1-16.4 36.1-36.1S59.3 3.5 39.6 3.5z"></path>
-        <path
-          d="M39.6 57.2c-9.9 0-18-8.1-18-18s8.1-18 18-18 18 8.1 18 18-8.1 18-18 18zm0-32.5c-8 0-14.5 6.5-14.5 14.5s6.5 14.5 14.5 14.5 14.5-6.5 14.5-14.5-6.5-14.5-14.5-14.5zM27.2 45.4h-2.1V27.3h10.9c4.35 0 7.45 1.1 9.3 3.3 1.85 2.2 2.8 5.1 2.8 8.7 0 3.9-1.05 6.95-3.15 9.15-2.1 2.2-5.3 3.3-9.55 3.3h-8.2v-6.3zm2.1-8.3h5.9c2.9 0 5-.6 6.3-1.8 1.3-1.2 2-2.9 2-5.1 0-2.2-.7-3.9-2-5.1-1.3-1.2-3.3-1.8-6-1.8h-6.2v13.8z"
-        ></path>
-        <path d="M51.6 45.4h-2.1V27.3h10.8c4.6 0 8 .9 10.2 2.7s3.3 4.5 3.3 8.1c0 2.5-.5 4.6-1.5 6.3s-2.6 3-4.8 3.9l7.7 7.1h-2.8l-7.2-6.8h-3.6v6.8zm2.1-8.7h6.2c3.2 0 5.6-.8 7.2-2.4 1.6-1.6 2.4-3.7 2.4-6.3 0-2.3-.7-4.2-2-5.6-1.3-1.4-3.3-2.1-5.9-2.1h-7.9v16.4z"></path>
-      </g>
-      <defs>
-        <clipPath id="clip0">
-          <path fill="#fff" d="M0 0h460v79.1H0z"></path>
-        </clipPath>
-      </defs>
+      <path
+        d="M39.6 29.8C29.7 29.8 21.8 22 21.8 12.2C21.8 2.4 29.7 -5.4 39.6 -5.4C49.5 -5.4 57.4 2.4 57.4 12.2C57.4 22 49.5 29.8 39.6 29.8ZM39.6 -1.9C31.9 -1.9 25.4 4.5 25.4 12.2C25.4 19.9 31.9 26.3 39.6 26.3C47.3 26.3 53.8 19.9 53.8 12.2C53.8 4.5 47.3 -1.9 39.6 -1.9Z"
+        fill="currentColor"
+      />
+      <path
+        d="M27.2 18.5V4.6H33.1C36.1 4.6 38.5 5.3 40.3 6.7C42.1 8.1 43 10 43 12.3C43 14.6 42.1 16.5 40.3 17.9C38.5 19.3 36.1 20 33.1 20H29.3V18.5H27.2ZM29.3 18H33.1C35.1 18 36.7 17.5 37.9 16.5C39.1 15.5 39.7 14.1 39.7 12.3C39.7 10.5 39.1 9.1 37.9 8.1C36.7 7.1 35.1 6.6 33.1 6.6H29.3V18Z"
+        fill="currentColor"
+      />
+      <path
+        d="M51.6 18.5V4.6H57.6C60.6 4.6 63 5.5 64.8 7.3C66.6 9.1 67.5 11.2 67.5 13.6C67.5 15 67.2 16.2 66.6 17.2C66 18.2 65.2 19 64.2 19.6L68.8 24.6H66.9L62.7 19.8H59V18.5H51.6ZM53.7 16.9H57.8C59.9 16.9 61.5 16.3 62.7 15.1C63.9 13.9 64.5 12.4 64.5 10.6C64.5 8.8 63.9 7.3 62.7 6.1C61.5 4.9 59.9 4.3 57.8 4.3H53.7V16.9Z"
+        transform="translate(-25.5, 0)"
+        fill="currentColor"
+      />
+      <text
+        x="60"
+        y="22"
+        fontFamily="Arial, sans-serif"
+        fontSize="18"
+        fontWeight="bold"
+        fill="currentColor"
+      >
+        Capel Rugs
+      </text>
     </svg>
-  );
+);
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+
+export function AppShell({ children, settings }: { children: React.ReactNode, settings: AppSettings | null }) {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
-  // In a real app, this would come from a context or a server fetch
-  const businessLogo = null; // Placeholder
   const [isAmazonOpen, setIsAmazonOpen] = useState(false);
+  
+  const Logo = () => {
+    if (settings?.logoUrl) {
+      return <Image src={settings.logoUrl} alt="Logo" width={128} height={32} className="h-8 w-auto" unoptimized />;
+    }
+    return <DefaultLogo className="w-auto h-7" />;
+  }
 
   return (
     <>
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center gap-2 p-2">
-            <Logo className="w-auto h-7" />
+            <Logo />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -179,12 +187,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+          <div className="p-3 text-center text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
+              <p>This ERP System is Developed by Rakshit Vaish with <Heart className="inline h-3 w-3 text-red-500" fill="currentColor" /></p>
+          </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
          <header className="md:hidden flex items-center justify-between gap-2 p-4 border-b bg-background sticky top-0 z-10">
             <div className="flex items-center gap-2">
-                <Logo className="w-auto h-7" />
+                <Logo />
             </div>
             <Button variant="ghost" size="icon" onClick={toggleSidebar}>
                <Menu className="h-6 w-6" />

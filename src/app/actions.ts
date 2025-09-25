@@ -4,7 +4,7 @@
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct, getAmazonProductBySku, getWalmartProductBySku } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct, updateProductMarketplaceId } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, SyncSettings } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, AppSettings } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
@@ -56,7 +56,7 @@ export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
     await syncProductsToWebsite([updatedShopifyProduct]);
 
     // 3. Fetch sync settings
-    const settingsResult = await handleGetSyncSettings();
+    const settingsResult = await handleGetSettings();
     if (!settingsResult.success || !settingsResult.settings) {
         console.warn("Could not retrieve sync settings. Skipping external marketplace updates.");
         return { success: true, error: null, product: updatedShopifyProduct };
@@ -407,30 +407,34 @@ export async function handleGetEtsyProducts() {
 
 const settingsFilePath = path.join(process.cwd(), 'src', 'lib', 'settings.json');
 
-export async function handleSaveSyncSettings(settings: SyncSettings): Promise<{ success: boolean; error: string | null; }> {
+export async function handleSaveSettings(settings: AppSettings): Promise<{ success: boolean; error: string | null; }> {
     try {
-        const data = JSON.stringify(settings, null, 2);
+        // Read existing settings to not overwrite other parts of the file
+        const existingSettings = await handleGetSettings();
+        const newSettings = { ...existingSettings.settings, ...settings };
+        
+        const data = JSON.stringify(newSettings, null, 2);
         await fs.writeFile(settingsFilePath, data, 'utf-8');
         return { success: true, error: null };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        console.error('Error saving sync settings:', errorMessage);
+        console.error('Error saving settings:', errorMessage);
         return { success: false, error: `File system operation failed: ${errorMessage}` };
     }
 }
 
-export async function handleGetSyncSettings(): Promise<{ success: boolean; settings: SyncSettings | null; error: string | null; }> {
+export async function handleGetSettings(): Promise<{ success: boolean; settings: AppSettings | null; error: string | null; }> {
     try {
         const data = await fs.readFile(settingsFilePath, 'utf-8');
-        const settings = JSON.parse(data) as SyncSettings;
+        const settings = JSON.parse(data) as AppSettings;
         return { success: true, settings, error: null };
     } catch (e) {
         if (e instanceof Error && 'code' in e && e.code === 'ENOENT') {
             // File doesn't exist, return empty/default settings
-             return { success: true, settings: { marketplaces: [] }, error: null };
+             return { success: true, settings: { marketplaces: [], logoUrl: '', faviconUrl: '' }, error: null };
         }
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        console.error('Error loading sync settings:', errorMessage);
+        console.error('Error loading settings:', errorMessage);
         return { success: false, settings: null, error: `File system operation failed: ${errorMessage}` };
     }
 }

@@ -133,9 +133,11 @@ export interface ShopifyCredentials {
 }
 
 export interface AppSettings {
-    key: string;
-    value: string;
+  marketplaces: MarketplaceSyncSetting[];
+  logoUrl: string;
+  faviconUrl: string;
 }
+
 
 // Represents the possible fulfillment statuses from Walmart
 export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -312,7 +314,7 @@ export interface Profile {
     address?: string;
     phone?: string;
     country?: string;
-    sync_settings?: SyncSettings; // JSONB column for settings
+    sync_settings?: AppSettings; // JSONB column for settings
 }
 
 export interface MarketplaceSyncSetting {
@@ -323,9 +325,5 @@ export interface MarketplaceSyncSetting {
   priceAdjustment: number;
   autoUpdateInventory: boolean;
   defaultInventory: number;
-}
-
-export interface SyncSettings {
-  marketplaces: MarketplaceSyncSetting[];
 }
     

@@ -9,10 +9,10 @@ import * as z from 'zod';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2, CheckCircle, XCircle, Hash } from 'lucide-react';
+import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2, CheckCircle, XCircle, Hash, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { handleGetOrCreateUser, handleGetCredentialStatuses, handleSaveSyncSettings, handleGetSyncSettings } from '@/app/actions';
-import type { User, Profile, SyncSettings } from '@/lib/types';
+import { handleGetOrCreateUser, handleGetCredentialStatuses, handleSaveSettings, handleGetSettings } from '@/app/actions';
+import type { User, Profile, AppSettings, MarketplaceSyncSetting } from '@/lib/types';
 import { Button } from './ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from './ui/form';
 import { Switch } from './ui/switch';
@@ -20,6 +20,7 @@ import { Input } from './ui/input';
 import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
+import { useRouter } from 'next/navigation';
 
 const InfoRow = ({ icon: Icon, label, value, isLoading }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -183,21 +184,26 @@ const marketplaceSyncSchema = z.object({
   defaultInventory: z.coerce.number().int(),
 });
 
-const syncSettingsSchema = z.object({
+const settingsSchema = z.object({
   marketplaces: z.array(marketplaceSyncSchema),
+  logoUrl: z.string().url().optional().or(z.literal('')),
+  faviconUrl: z.string().url().optional().or(z.literal('')),
 });
 
-type SyncSettingsFormValues = z.infer<typeof syncSettingsSchema>;
+type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-function MarketplaceSyncSettings() {
+function GeneralSettings() {
     const { toast } = useToast();
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const form = useForm<SyncSettingsFormValues>({
-        resolver: zodResolver(syncSettingsSchema),
+    const form = useForm<SettingsFormValues>({
+        resolver: zodResolver(settingsSchema),
         defaultValues: {
             marketplaces: [],
+            logoUrl: '',
+            faviconUrl: '',
         },
     });
 
@@ -211,16 +217,16 @@ function MarketplaceSyncSettings() {
             setIsLoading(true);
             const [statusResult, settingsResult] = await Promise.all([
                 handleGetCredentialStatuses(),
-                handleGetSyncSettings()
+                handleGetSettings()
             ]);
 
-            let initialSettings: SyncSettings['marketplaces'] = [];
+            let initialMarketplaceSettings: MarketplaceSyncSetting[] = [];
 
             if (statusResult.success && statusResult.statuses) {
                 const connectedChannels = Object.keys(statusResult.statuses)
                     .filter(key => statusResult.statuses[key] && platformIconMap[key]);
                 
-                initialSettings = connectedChannels.map(key => {
+                initialMarketplaceSettings = connectedChannels.map(key => {
                     const savedSetting = settingsResult.settings?.marketplaces.find(s => s.id === key);
                     if (savedSetting) {
                         return savedSetting;
@@ -238,27 +244,35 @@ function MarketplaceSyncSettings() {
                 });
             }
             
-            // Ensure Shopify is always first if it's connected
-            initialSettings.sort((a, b) => {
+            initialMarketplaceSettings.sort((a, b) => {
                 if (a.id === 'shopify') return -1;
                 if (b.id === 'shopify') return 1;
                 return a.name.localeCompare(b.name);
             });
 
-            replace(initialSettings);
+            replace(initialMarketplaceSettings);
+            
+            if (settingsResult.success && settingsResult.settings) {
+                form.setValue('logoUrl', settingsResult.settings.logoUrl);
+                form.setValue('faviconUrl', settingsResult.settings.faviconUrl);
+            }
+
             setIsLoading(false);
         }
         loadSettings();
-    }, [replace]);
+    }, [replace, form]);
 
-    const onSubmit = async (data: SyncSettingsFormValues) => {
+    const onSubmit = async (data: SettingsFormValues) => {
         setIsSubmitting(true);
-        const result = await handleSaveSyncSettings(data);
+        const result = await handleSaveSettings(data);
         if (result.success) {
             toast({
                 title: 'Settings Saved',
-                description: 'Your marketplace sync settings have been updated.',
+                description: 'Your application settings have been updated.',
             });
+            // Force a hard reload to apply branding changes
+            router.refresh();
+            window.location.reload();
         } else {
              toast({
                 title: 'Save Failed',
@@ -274,107 +288,141 @@ function MarketplaceSyncSettings() {
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <CardHeader>
-                        <CardTitle>Marketplace Sync Settings</CardTitle>
+                        <CardTitle>General Settings</CardTitle>
                         <CardDescription>
-                           Configure how data from Shopify (the source of truth) syncs to other marketplaces.
+                           Configure branding and how data syncs across marketplaces.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                        {isLoading ? (
-                            <div className="space-y-4">
-                                <Skeleton className="h-16 w-full" />
-                                <Skeleton className="h-16 w-full" />
+                    <CardContent className="space-y-8">
+                       {/* Branding Section */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><ImageIcon className="h-5 w-5"/> Branding</h3>
+                            <div className="space-y-4 p-4 border rounded-lg">
+                                <FormField
+                                    control={form.control}
+                                    name="logoUrl"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Logo URL</FormLabel>
+                                            <FormControl><Input placeholder="https://example.com/logo.png" {...field} /></FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                 <FormField
+                                    control={form.control}
+                                    name="faviconUrl"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Favicon URL</FormLabel>
+                                            <FormControl><Input placeholder="https://example.com/favicon.ico" {...field} /></FormControl>
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
-                        ) : fields.length > 0 ? (
-                            fields.map((field, index) => {
-                                const isShopify = field.id === 'shopify';
-                                return (
-                                <div key={field.id}>
-                                    <div className="flex items-center gap-3">
-                                        <Image src={platformIconMap[field.id] || 'https://placehold.co/400'} alt={field.name} width={24} height={24} unoptimized/>
-                                        <h3 className="text-lg font-semibold">{field.name}</h3>
-                                        {isShopify && <Badge variant="outline">Source</Badge>}
+                        </div>
+                        
+                        <Separator />
+
+                        {/* Marketplace Sync Section */}
+                        <div>
+                             <h3 className="text-lg font-semibold mb-4">Marketplace Sync</h3>
+                            <div className="space-y-6">
+                                {isLoading ? (
+                                    <div className="space-y-4">
+                                        <Skeleton className="h-16 w-full" />
+                                        <Skeleton className="h-16 w-full" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 p-4 border rounded-lg">
-                                        <FormField
-                                            control={form.control}
-                                            name={`marketplaces.${index}.syncInventory`}
-                                            render={({ field: formField }) => (
-                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="flex items-center gap-2"><Boxes className="h-4 w-4"/> Sync Inventory</FormLabel>
-                                                    </div>
-                                                    <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                         <FormField
-                                            control={form.control}
-                                            name={`marketplaces.${index}.syncPrice`}
-                                            render={({ field: formField }) => (
-                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="flex items-center gap-2"><ShoppingCart className="h-4 w-4"/> Sync Price</FormLabel>
-                                                    </div>
-                                                    <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`marketplaces.${index}.priceAdjustment`}
-                                            render={({ field: formField }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-xs">Price Adjustment</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <Percent className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                            <Input type="number" disabled={isShopify} {...formField} className="pl-8" />
-                                                        </div>
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`marketplaces.${index}.autoUpdateInventory`}
-                                            render={({ field: formField }) => (
-                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="text-xs">Auto-Update Inv.</FormLabel>
-                                                    </div>
-                                                    <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`marketplaces.${index}.defaultInventory`}
-                                            render={({ field: formField }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-xs">Default Inventory</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <Hash className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                            <Input type="number" disabled={isShopify} {...formField} className="pl-8" />
-                                                        </div>
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    {index < fields.length - 1 && <Separator className="mt-6" />}
-                                </div>
-                                );
-                            })
-                        ) : (
-                            <p className="text-sm text-muted-foreground">No marketplaces are connected. Add credentials in your .env file to configure sync settings.</p>
-                        )}
+                                ) : fields.length > 0 ? (
+                                    fields.map((field, index) => {
+                                        const isShopify = field.id === 'shopify';
+                                        return (
+                                        <div key={field.id}>
+                                            <div className="flex items-center gap-3">
+                                                <Image src={platformIconMap[field.id] || 'https://placehold.co/400'} alt={field.name} width={24} height={24} unoptimized/>
+                                                <h4 className="font-semibold">{field.name}</h4>
+                                                {isShopify && <Badge variant="outline">Source</Badge>}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 p-4 border rounded-lg">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`marketplaces.${index}.syncInventory`}
+                                                    render={({ field: formField }) => (
+                                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                            <div className="space-y-0.5">
+                                                                <FormLabel className="flex items-center gap-2"><Boxes className="h-4 w-4"/> Sync Inventory</FormLabel>
+                                                            </div>
+                                                            <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`marketplaces.${index}.syncPrice`}
+                                                    render={({ field: formField }) => (
+                                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                            <div className="space-y-0.5">
+                                                                <FormLabel className="flex items-center gap-2"><ShoppingCart className="h-4 w-4"/> Sync Price</FormLabel>
+                                                            </div>
+                                                            <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`marketplaces.${index}.priceAdjustment`}
+                                                    render={({ field: formField }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-xs">Price Adjustment</FormLabel>
+                                                            <FormControl>
+                                                                <div className="relative">
+                                                                    <Percent className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                                    <Input type="number" disabled={isShopify} {...formField} className="pl-8" />
+                                                                </div>
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`marketplaces.${index}.autoUpdateInventory`}
+                                                    render={({ field: formField }) => (
+                                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                            <div className="space-y-0.5">
+                                                                <FormLabel className="text-xs">Auto-Update Inv.</FormLabel>
+                                                            </div>
+                                                            <FormControl><Switch disabled={isShopify} checked={formField.value} onCheckedChange={formField.onChange} /></FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`marketplaces.${index}.defaultInventory`}
+                                                    render={({ field: formField }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-xs">Default Inventory</FormLabel>
+                                                            <FormControl>
+                                                                <div className="relative">
+                                                                    <Hash className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                                    <Input type="number" disabled={isShopify} {...formField} className="pl-8" />
+                                                                </div>
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No marketplaces are connected. Add credentials in your .env file to configure sync settings.</p>
+                                )}
+                            </div>
+                        </div>
                     </CardContent>
                     <CardFooter>
-                         <Button type="submit" disabled={isSubmitting || isLoading || fields.length === 0}>
+                         <Button type="submit" disabled={isSubmitting || isLoading}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Sync Settings
+                            Save All Settings
                         </Button>
                     </CardFooter>
                 </form>
@@ -390,11 +438,11 @@ export function SettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Settings
         </h1>
-        <p className="text-muted-foreground">Manage your application settings and synchronization rules.</p>
+        <p className="text-muted-foreground">Manage your application settings, branding, and synchronization rules.</p>
       </div>
       <UserProfileCard />
       <MarketplaceConnectionsCard />
-      <MarketplaceSyncSettings />
+      <GeneralSettings />
     </div>
   );
 }
