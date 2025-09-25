@@ -9,7 +9,7 @@ import * as z from 'zod';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2, CheckCircle, XCircle, Hash, Image as ImageIcon } from 'lucide-react';
+import { Mail, Key, ShoppingCart, Percent, Boxes, Loader2, CheckCircle, XCircle, Hash, Image as ImageIcon, SunMoon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { handleGetOrCreateUser, handleGetCredentialStatuses, handleSaveSettings, handleGetSettings } from '@/app/actions';
 import type { User, Profile, AppSettings, MarketplaceSyncSetting } from '@/lib/types';
@@ -21,6 +21,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 import { useRouter } from 'next/navigation';
+import { ThemeToggle } from './theme-toggle';
 
 const InfoRow = ({ icon: Icon, label, value, isLoading }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -167,6 +168,31 @@ function MarketplaceConnectionsCard() {
                             </div>
                         ))
                     )}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function AppearanceSettings() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>
+                    Customize the look and feel of the application.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <SunMoon className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <p className="text-sm font-medium">Theme</p>
+                             <p className="text-sm text-muted-foreground">Select your preferred color scheme.</p>
+                        </div>
+                    </div>
+                    <ThemeToggle />
                 </div>
             </CardContent>
         </Card>
@@ -413,6 +439,7 @@ export function SettingsPage() {
       </div>
       <UserProfileCard />
       <MarketplaceConnectionsCard />
+      <AppearanceSettings />
       <GeneralSettings />
     </div>
   );
