@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { handleGetWebsiteProducts } from '@/app/actions';
+import { handleGetWebsiteProducts, handleBulkUpdateStock } from '@/app/actions';
 import type { ShopifyProduct } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -98,10 +99,23 @@ export function StockManagerDashboard() {
   }, [fetchProducts]);
 
   const onSubmit = async (data: FormValues) => {
-    toast({ title: 'Bulk stock update started...', description: 'This feature is not yet connected.' });
-    console.log("Bulk stock update data:", data.products);
-    // In a real app, you would call a server action like handleBulkUpdateStock here.
-    // const result = await handleBulkUpdateStock(data.products);
+    toast({ title: 'Bulk stock update started...', description: 'Please wait while we update your listings.' });
+    const result = await handleBulkUpdateStock(data.products);
+    
+    if (result.success) {
+        toast({
+            title: 'Update Successful',
+            description: `${result.updatedCount} stock levels were updated. ${result.errorCount} failed.`
+        });
+        fetchProducts(); // Refresh data
+    } else {
+         toast({
+            title: 'Update Failed',
+            description: result.message,
+            variant: 'destructive'
+        });
+    }
+    form.reset(form.getValues()); // Reset dirty fields state
   };
 
   if (isLoading) {
@@ -118,7 +132,7 @@ export function StockManagerDashboard() {
                             <CardTitle>Manage Stock</CardTitle>
                             <CardDescription>Edit inventory levels and save changes in bulk.</CardDescription>
                         </div>
-                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                        <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
                             {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             Save All Changes
                         </Button>
@@ -160,7 +174,7 @@ export function StockManagerDashboard() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} className="w-28" disabled />
+                                                        <Input type="number" {...field} className="w-28" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -173,7 +187,7 @@ export function StockManagerDashboard() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} className="w-28" disabled />
+                                                        <Input type="number" {...field} className="w-28" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -189,3 +203,5 @@ export function StockManagerDashboard() {
     </Form>
   );
 }
+
+    

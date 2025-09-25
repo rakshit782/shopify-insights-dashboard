@@ -145,6 +145,14 @@ export interface PriceUpdatePayload {
   walmart_price?: number;
 }
 
+export interface StockUpdatePayload {
+  id: string; // admin_graphql_api_id
+  sku?: string | null;
+  shopify_inventory?: number;
+  amazon_inventory?: number;
+  walmart_inventory?: number;
+}
+
 
 // Represents the possible fulfillment statuses from Walmart
 export type WalmartFulfillmentStatus = 'Created' | 'Acknowledged' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -333,4 +341,6 @@ export interface MarketplaceSyncSetting {
   autoUpdateInventory: boolean;
   defaultInventory: number;
 }
+    
+
     

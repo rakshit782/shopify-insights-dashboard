@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -119,6 +120,7 @@ export function PricingManagerDashboard() {
             variant: 'destructive'
         });
     }
+    form.reset(form.getValues()); // Reset dirty fields state
   };
 
   if (isLoading) {
@@ -135,7 +137,7 @@ export function PricingManagerDashboard() {
                             <CardTitle>Manage Prices</CardTitle>
                             <CardDescription>Edit prices and save changes in bulk.</CardDescription>
                         </div>
-                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                        <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
                             {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             Save All Changes
                         </Button>
@@ -177,7 +179,7 @@ export function PricingManagerDashboard() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" step="0.01" {...field} className="w-28" disabled />
+                                                        <Input type="number" step="0.01" {...field} className="w-28" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -190,7 +192,7 @@ export function PricingManagerDashboard() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" step="0.01" {...field} className="w-28" disabled />
+                                                        <Input type="number" step="0.01" {...field} className="w-28" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -206,3 +208,5 @@ export function PricingManagerDashboard() {
     </Form>
   );
 }
+
+    

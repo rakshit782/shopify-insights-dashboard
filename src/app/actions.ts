@@ -2,9 +2,9 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct, getAmazonProductBySku, getWalmartProductBySku } from '@/lib/shopify-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct, getAmazonProductBySku, getWalmartProductBySku, updateAmazonProduct } from '@/lib/shopify-client';
 import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct, updateProductMarketplaceId, getProductBySku } from '@/lib/website-supabase-client';
-import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, AppSettings, PriceUpdatePayload } from '@/lib/types';
+import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, AppSettings, PriceUpdatePayload, StockUpdatePayload } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
 import { DateRange } from 'react-day-picker';
@@ -546,25 +546,33 @@ export async function handleBulkUpdatePrices(updates: PriceUpdatePayload[]): Pro
 
     for (const update of updates) {
         try {
-            // For now, we only handle Shopify price updates.
-            // A full implementation would check which prices have changed and call the respective platform's update function.
-            if (update.shopify_price !== undefined) {
-                const product = await getSingleWebsiteProduct(update.id);
-                if (product && product.variants[0]) {
-                    const variantId = product.variants[0].id;
-                    await updateShopifyProduct({
-                        id: update.id, // GID
-                        variants: [{
-                            id: variantId,
-                            price: update.shopify_price.toString(),
-                        }]
-                    });
-                    updatedCount++;
-                } else {
-                    errorCount++;
-                }
+            const product = await getSingleWebsiteProduct(update.id);
+            if (!product || !product.variants[0]) {
+                 errorCount++;
+                 continue;
             }
-            // Add similar blocks for Amazon, Walmart, etc.
+            const variant = product.variants[0];
+
+            // Shopify Price Update
+            if (update.shopify_price !== undefined) {
+                await updateShopifyProduct({
+                    id: update.id, // GID
+                    variants: [{ id: variant.id, price: update.shopify_price.toString() }]
+                });
+                updatedCount++;
+            }
+
+            // Amazon Price Update
+            if (update.amazon_price !== undefined && variant.sku) {
+                await updateAmazonProduct({ sku: variant.sku, price: update.amazon_price });
+                updatedCount++;
+            }
+
+            // Walmart Price Update
+            if (update.walmart_price !== undefined && variant.sku) {
+                await updateWalmartProduct({ sku: variant.sku, price: update.walmart_price });
+                updatedCount++;
+            }
         } catch (e) {
             console.error(`Failed to update price for product ${update.id}:`, e);
             errorCount++;
@@ -577,5 +585,55 @@ export async function handleBulkUpdatePrices(updates: PriceUpdatePayload[]): Pro
 
     return { success: true, message: 'Bulk price update process completed.', updatedCount, errorCount };
 }
+
+export async function handleBulkUpdateStock(updates: StockUpdatePayload[]): Promise<{ success: boolean; message: string; updatedCount: number; errorCount: number; }> {
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    for (const update of updates) {
+        try {
+            const product = await getSingleWebsiteProduct(update.id);
+             if (!product || !product.variants[0]) {
+                 errorCount++;
+                 continue;
+            }
+            const variant = product.variants[0];
+
+            // Shopify Stock Update
+            if (update.shopify_inventory !== undefined) {
+                await updateShopifyProduct({
+                    id: update.id, // GID
+                    variants: [{ id: variant.id, inventory_quantity: update.shopify_inventory }]
+                });
+                updatedCount++;
+            }
+
+             // Amazon Stock Update
+            if (update.amazon_inventory !== undefined && variant.sku) {
+                await updateAmazonProduct({ sku: variant.sku, inventory: update.amazon_inventory });
+                updatedCount++;
+            }
+
+            // Walmart Stock Update
+            if (update.walmart_inventory !== undefined && variant.sku) {
+                await updateWalmartProduct({ sku: variant.sku, inventory: update.walmart_inventory });
+                updatedCount++;
+            }
+
+        } catch (e) {
+            console.error(`Failed to update stock for product ${update.id}:`, e);
+            errorCount++;
+        }
+    }
+
+    if (errorCount > 0 && updatedCount === 0) {
+        return { success: false, message: 'All stock updates failed.', updatedCount, errorCount };
+    }
+
+    return { success: true, message: 'Bulk stock update process completed.', updatedCount, errorCount };
+}
     
 
+
+
+    
