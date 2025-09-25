@@ -40,6 +40,8 @@ const ConnectButton = ({ product, platform, onConnected }: { product: ShopifyPro
     const isConnected = !!(platform === 'amazon' ? product.amazon_asin : product.walmart_id);
     
     const handleConnect = async () => {
+        if (isConnected) return; // Don't do anything if already connected
+        
         if (!product.variants?.[0]?.sku) {
             toast({
                 title: 'Missing SKU',
@@ -72,20 +74,21 @@ const ConnectButton = ({ product, platform, onConnected }: { product: ShopifyPro
             <Tooltip>
                 <TooltipTrigger asChild>
                     <div className="flex items-center justify-center">
-                        {isConnected ? (
+                        {isLoading ? (
+                             <Loader2 className="h-4 w-4 animate-spin" /> 
+                        ) : isConnected ? (
                              <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
                         ) : (
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleConnect} disabled={isLoading}>
-                                {isLoading 
-                                    ? <Loader2 className="h-3 w-3 animate-spin" /> 
-                                    : <div className="h-2.5 w-2.5 rounded-full bg-red-500 hover:ring-2 hover:ring-red-300 transition-all" />
-                                }
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleConnect}>
+                                <div className="h-2.5 w-2.5 rounded-full bg-red-500 hover:ring-2 hover:ring-red-300 transition-all" />
                            </Button>
                         )}
                     </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>{platform}: {isConnected ? 'Connected' : 'Click to fetch ID'}</p>
+                    {isLoading ? <p>Checking...</p> : 
+                     isConnected ? <p>{platform}: Connected</p> : <p>{platform}: Not Connected. Click to check.</p>
+                    }
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
@@ -413,7 +416,7 @@ export function ProductTable({
                             <Link href={`/products/${product.id}/edit`}>Edit Product</Link>
                          </DropdownMenuItem>
                          {connectedChannels.map(channel => {
-                            if (channel === 'shopify') return null;
+                            if (channel === 'shopify') return null; // Can't create on the source
                             const isConnected = channel === 'amazon' ? product.amazon_asin : product.walmart_id;
                             if (!isConnected) {
                                 return (
@@ -444,5 +447,3 @@ export function ProductTable({
     </>
   );
 }
-
-    

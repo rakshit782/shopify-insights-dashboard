@@ -836,14 +836,57 @@ export async function getAmazonProductBySku(sku: string): Promise<string | null>
 }
 
 export async function getWalmartProductBySku(sku: string): Promise<string | null> {
-    // This is a mock. A real implementation would call the Walmart Marketplace API.
-    console.log(`(MOCK) Searching for Walmart product with SKU: ${sku}`);
-    await new Promise(res => setTimeout(res, 250)); // Simulate network latency
-    if (sku.includes('WAL')) {
-        const mockWalmartId = sku.replace(/\D/g, '').padStart(9, '0');
-        console.log(`(MOCK) Found Walmart ID: ${mockWalmartId}`);
-        return mockWalmartId;
+    const logs: string[] = [];
+    console.log(`Searching for Walmart product with SKU: ${sku}`);
+    try {
+        const config = getWalmartConfig(logs);
+        if (!config) {
+            throw new Error("Walmart credentials not configured.");
+        }
+        const accessToken = await getWalmartAccessToken(config.clientId, config.clientSecret, logs);
+        if (!accessToken) {
+            throw new Error("Could not retrieve Walmart access token.");
+        }
+
+        const url = `https://marketplace.walmartapis.com/v3/items/${sku}`;
+        const correlationId = randomUUID();
+
+        const response = await fetch(url, {
+            headers: {
+                'WM_SVC.NAME': 'Walmart Marketplace',
+                'WM_QOS.CORRELATION_ID': correlationId,
+                'Accept': 'application/json',
+                'WM_SEC.ACCESS_TOKEN': accessToken,
+            }
+        });
+
+        if (response.ok) {
+            const data: any = await response.json();
+            // Assuming the Walmart Product ID is 'wpid' in the payload.
+            // Adjust if the actual key is different.
+            const walmartId = data?.payload?.wpid; 
+            if (walmartId) {
+                console.log(`Found Walmart ID: ${walmartId} for SKU: ${sku}`);
+                return walmartId;
+            } else {
+                 console.log(`SKU ${sku} found on Walmart, but no 'wpid' in payload.`);
+                 // If it exists but we can't get an ID, we can still confirm existence.
+                 // Returning the SKU itself as a confirmation.
+                 return sku;
+            }
+        } else if (response.status === 404) {
+            console.log(`SKU ${sku} not found on Walmart.`);
+            return null;
+        } else {
+            const errorBody = await response.text();
+            console.error(`Error fetching Walmart product by SKU ${sku}: ${response.status} - ${errorBody}`);
+            return null;
+        }
+
+    } catch (e) {
+        if (e instanceof Error) {
+            console.error(`Exception in getWalmartProductBySku for SKU ${sku}: ${e.message}`);
+        }
+        return null;
     }
-    console.log(`(MOCK) SKU not found on Walmart.`);
-    return null;
 }
