@@ -232,7 +232,7 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                      <>
+                                      <div>
                                         <div className="relative aspect-square w-full border rounded-md overflow-hidden">
                                           {field.value ? (
                                               <Image src={field.value} alt={`Product image ${index + 1}`} layout="fill" objectFit="cover" />
@@ -246,7 +246,7 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
                                           <LinkIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                           <Input {...field} placeholder="Image URL" className="pl-8 text-xs" />
                                         </div>
-                                      </>
+                                      </div>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
