@@ -184,7 +184,6 @@ export function AppShell({
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-
         <SidebarFooter>
           <div className="p-3 text-center text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
             <div>
