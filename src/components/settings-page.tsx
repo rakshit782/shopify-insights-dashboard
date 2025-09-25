@@ -290,39 +290,10 @@ function GeneralSettings() {
                     <CardHeader>
                         <CardTitle>General Settings</CardTitle>
                         <CardDescription>
-                           Configure branding and how data syncs across marketplaces.
+                           Configure how data syncs across marketplaces.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-8">
-                       {/* Branding Section */}
-                        <div>
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><ImageIcon className="h-5 w-5"/> Branding</h3>
-                            <div className="space-y-4 p-4 border rounded-lg">
-                                <FormField
-                                    control={form.control}
-                                    name="logoUrl"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Logo URL</FormLabel>
-                                            <FormControl><Input placeholder="https://example.com/logo.png" {...field} /></FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                                 <FormField
-                                    control={form.control}
-                                    name="faviconUrl"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Favicon URL</FormLabel>
-                                            <FormControl><Input placeholder="https://example.com/favicon.ico" {...field} /></FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </div>
-                        
-                        <Separator />
-
                         {/* Marketplace Sync Section */}
                         <div>
                              <h3 className="text-lg font-semibold mb-4">Marketplace Sync</h3>
