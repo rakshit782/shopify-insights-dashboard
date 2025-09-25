@@ -1,3 +1,31 @@
 {
-  "marketplaces": []
+  "marketplaces": [
+    {
+      "id": "shopify",
+      "name": "Shopify",
+      "syncInventory": false,
+      "syncPrice": false,
+      "priceAdjustment": 0,
+      "autoUpdateInventory": false,
+      "defaultInventory": 10
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "syncInventory": false,
+      "syncPrice": false,
+      "priceAdjustment": 0,
+      "autoUpdateInventory": false,
+      "defaultInventory": 10
+    },
+    {
+      "id": "walmart",
+      "name": "Walmart",
+      "syncInventory": false,
+      "syncPrice": false,
+      "priceAdjustment": 0,
+      "autoUpdateInventory": false,
+      "defaultInventory": 10
+    }
+  ]
 }

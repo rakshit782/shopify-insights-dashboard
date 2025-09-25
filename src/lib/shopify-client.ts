@@ -821,3 +821,29 @@ export async function updateWalmartProduct(payload: { sku?: string; price?: numb
     console.log('--- Walmart update simulation complete. ---');
     return { success: true };
 }
+
+export async function getAmazonProductBySku(sku: string): Promise<string | null> {
+    // This is a mock. A real implementation would call the Amazon SP-API.
+    console.log(`(MOCK) Searching for Amazon product with SKU: ${sku}`);
+    await new Promise(res => setTimeout(res, 250)); // Simulate network latency
+    if (sku.includes('AMZ')) {
+        const mockAsin = `B0${sku.replace(/\D/g, '').padStart(8, 'A')}`;
+        console.log(`(MOCK) Found ASIN: ${mockAsin}`);
+        return mockAsin;
+    }
+    console.log(`(MOCK) SKU not found on Amazon.`);
+    return null;
+}
+
+export async function getWalmartProductBySku(sku: string): Promise<string | null> {
+    // This is a mock. A real implementation would call the Walmart Marketplace API.
+    console.log(`(MOCK) Searching for Walmart product with SKU: ${sku}`);
+    await new Promise(res => setTimeout(res, 250)); // Simulate network latency
+    if (sku.includes('WAL')) {
+        const mockWalmartId = sku.replace(/\D/g, '').padStart(9, '0');
+        console.log(`(MOCK) Found Walmart ID: ${mockWalmartId}`);
+        return mockWalmartId;
+    }
+    console.log(`(MOCK) SKU not found on Walmart.`);
+    return null;
+}

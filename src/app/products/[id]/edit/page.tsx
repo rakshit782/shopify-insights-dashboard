@@ -53,21 +53,7 @@ function EditProductSkeleton() {
 }
 
 export default async function EditProductPage({ params }: { params: { id: string }}) {
-  const productId = Number(params.id);
-
-  if (isNaN(productId)) {
-    return (
-        <div className="flex h-screen items-center justify-center">
-            <Alert variant="destructive" className="max-w-md">
-                <Terminal className="h-4 w-4" />
-                <AlertTitle>Invalid Product ID</AlertTitle>
-                <AlertDescription>
-                The product ID in the URL is not a valid number.
-                </AlertDescription>
-            </Alert>
-        </div>
-    );
-  }
+  const productId = params.id;
 
   const { product, error } = await handleGetProduct(productId);
   
@@ -75,9 +61,9 @@ export default async function EditProductPage({ params }: { params: { id: string
     <div className="p-4 sm:p-6 lg:p-8">
        <div className="max-w-4xl mx-auto mb-6">
          <Button asChild variant="outline" size="sm">
-            <Link href="/cataloging-manager">
+            <Link href="/products">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Cataloging Manager
+                Back to Products
             </Link>
          </Button>
        </div>

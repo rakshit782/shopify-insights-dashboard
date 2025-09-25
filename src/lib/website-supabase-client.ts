@@ -115,6 +115,8 @@ export async function getWebsiteProducts(): Promise<{ rawProducts: ShopifyProduc
             template_suffix: '',
             published_scope: 'web', 
             linked_to_platforms: item.linked_to_platforms || ['shopify'],
+            amazon_asin: item.amazon_asin,
+            walmart_id: item.walmart_id,
         }
     });
 
@@ -171,5 +173,50 @@ export async function getSingleWebsiteProduct(id: string): Promise<ShopifyProduc
         template_suffix: '',
         published_scope: 'web', 
     };
+}
+
+export async function updateProductMarketplaceId(productId: string, marketplace: 'amazon' | 'walmart' | string, marketplaceId: string) {
+    const supabase = createSupabaseServerClient('DATA');
+    const updateData: { [key: string]: any } = {
+        last_synced: new Date().toISOString()
+    };
+    
+    const idColumn = `${marketplace}_id`;
+    if (marketplace === 'amazon') {
+      updateData.amazon_asin = marketplaceId;
+    } else if (marketplace === 'walmart') {
+      updateData.walmart_id = marketplaceId;
+    } else {
+      updateData[idColumn] = marketplaceId;
+    }
+
+    // Add the marketplace to the linked_to_platforms array
+    const { data: currentProduct, error: fetchError } = await supabase
+        .from('products')
+        .select('linked_to_platforms')
+        .eq('id', productId)
+        .single();
+
+    if (fetchError) {
+        console.error(`Error fetching product to update linked platforms: ${fetchError.message}`);
+        // Continue anyway, just won't update the array
+    }
+
+    const currentPlatforms = currentProduct?.linked_to_platforms || [];
+    if (!currentPlatforms.includes(marketplace)) {
+        updateData.linked_to_platforms = [...currentPlatforms, marketplace];
+    }
+
+    const { error } = await supabase
+        .from('products')
+        .update(updateData)
+        .eq('id', productId);
+
+    if (error) {
+        console.error(`Error updating product ${productId} with ${marketplace} ID:`, error);
+        throw new Error(`Failed to update database for ${marketplace}: ${error.message}`);
+    } else {
+        console.log(`Successfully linked product ${productId} to ${marketplace} with ID ${marketplaceId}`);
+    }
 }
     

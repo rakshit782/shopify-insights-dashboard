@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -15,11 +16,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MoreHorizontal, RefreshCw, UploadCloud, Loader2, Link2, CircleDot, ArrowUpDown, Filter } from 'lucide-react';
+import { MoreHorizontal, RefreshCw, UploadCloud, Loader2, Zap, ArrowUpDown, Filter, Wand } from 'lucide-react';
 import type { ShopifyProduct } from '@/lib/types';
 import { PaginationControls } from './pagination-controls';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from './ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
+import { handleFetchAndLinkMarketplaceId, handleBulkFetchAndLinkMarketplaceIds } from '@/app/actions';
 
 const platformIcons: { [key: string]: string } = {
   shopify: '/shopify.svg',
@@ -30,23 +33,59 @@ const platformIcons: { [key: string]: string } = {
 };
 
 
-const StatusIndicator = ({ isConnected, platform, onConnect }: { isConnected: boolean; platform: string; onConnect: () => void; }) => {
+const ConnectButton = ({ product, platform, onConnected }: { product: ShopifyProduct; platform: 'amazon' | 'walmart'; onConnected: () => void }) => {
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const isConnected = !!(platform === 'amazon' ? product.amazon_asin : product.walmart_id);
+    
+    const handleConnect = async () => {
+        if (!product.variants?.[0]?.sku) {
+            toast({
+                title: 'Missing SKU',
+                description: 'This product must have a SKU to be linked.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        const result = await handleFetchAndLinkMarketplaceId(product.admin_graphql_api_id, product.variants[0].sku, platform);
+        if (result.success) {
+            toast({
+                title: 'Connection Successful',
+                description: `Found and linked to ${platform} ID: ${result.marketplaceId}`
+            });
+            onConnected(); // Callback to refresh data
+        } else {
+            toast({
+                title: 'Connection Failed',
+                description: result.error,
+                variant: 'destructive'
+            });
+        }
+        setIsLoading(false);
+    }
+
     return (
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <div className="flex items-center justify-center">
                         {isConnected ? (
-                            <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                             <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
                         ) : (
-                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onConnect}>
-                             <div className="h-2.5 w-2.5 rounded-full bg-red-500 hover:ring-2 hover:ring-red-300 transition-all" />
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleConnect} disabled={isLoading}>
+                                {isLoading 
+                                    ? <Loader2 className="h-3 w-3 animate-spin" /> 
+                                    : <div className="h-2.5 w-2.5 rounded-full bg-red-500 hover:ring-2 hover:ring-red-300 transition-all" />
+                                }
                            </Button>
                         )}
                     </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>{platform}: {isConnected ? 'Connected' : 'Click to push product'}</p>
+                    <p>{platform}: {isConnected ? 'Connected' : 'Click to fetch ID'}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
@@ -62,7 +101,7 @@ export function ProductTable({
     isLoading,
     onPushToDb,
     isPushingToDb,
-    onProductCreate,
+    onProductCreate
 }: { 
     products: ShopifyProduct[], 
     platform: string, 
@@ -71,7 +110,7 @@ export function ProductTable({
     isLoading: boolean,
     onPushToDb?: () => void,
     isPushingToDb?: boolean,
-    onProductCreate: (productId: string, platform: string) => void;
+    onProductCreate: (productId: string, platform: string) => void,
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(10);
@@ -81,6 +120,8 @@ export function ProductTable({
       amazon: 'all',
       walmart: 'all'
   });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { toast } = useToast();
 
   const sortedAndFilteredProducts = useMemo(() => {
     let filtered = [...products];
@@ -111,6 +152,9 @@ export function ProductTable({
             aValue = a[sortConfig.key as keyof ShopifyProduct];
             bValue = b[sortConfig.key as keyof ShopifyProduct];
         }
+        
+        if(aValue === null || aValue === undefined) aValue = '';
+        if(bValue === null || bValue === undefined) bValue = '';
 
         if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
@@ -154,10 +198,42 @@ export function ProductTable({
       setCurrentPage(1);
   }
 
+  const handleSyncConnections = async (marketplace: 'amazon' | 'walmart') => {
+    setIsSyncing(true);
+    toast({
+        title: `Syncing with ${marketplace}...`,
+        description: 'Attempting to find and link products. This may take a moment.'
+    });
+
+    const productsToSync = sortedAndFilteredProducts
+        .filter(p => !(marketplace === 'amazon' ? p.amazon_asin : p.walmart_id) && p.variants?.[0]?.sku)
+        .map(p => ({ productId: p.admin_graphql_api_id, sku: p.variants[0].sku }));
+
+    if (productsToSync.length === 0) {
+        toast({ title: 'Nothing to Sync', description: `All visible products are already linked to ${marketplace} or have no SKU.`});
+        setIsSyncing(false);
+        return;
+    }
+
+    const result = await handleBulkFetchAndLinkMarketplaceIds(productsToSync, marketplace);
+
+    if (result.success) {
+        toast({
+            title: 'Sync Complete',
+            description: `Successfully linked ${result.linkedCount} new product(s) on ${marketplace}.`
+        });
+        onRefresh();
+    } else {
+        toast({ title: 'Sync Failed', variant: 'destructive'});
+    }
+
+    setIsSyncing(false);
+  }
+
   if (products.length === 0 && !isLoading) {
     return (
        <Card className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
-            <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
+            <Wand className="h-12 w-12 text-muted-foreground mb-4" />
             <CardTitle>No Products Found</CardTitle>
             <CardDescription className="mt-2 max-w-md">
                 There are no products to display for this marketplace at the moment.
@@ -202,19 +278,36 @@ export function ProductTable({
                             <DropdownMenuCheckboxItem checked={filters.status === 'draft'} onCheckedChange={() => handleFilterChange('status', 'draft')}>Draft</DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem checked={filters.status === 'archived'} onCheckedChange={() => handleFilterChange('status', 'archived')}>Archived</DropdownMenuCheckboxItem>
                             
-                            <DropdownMenuLabel>Amazon</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem checked={filters.amazon === 'all'} onCheckedChange={() => handleFilterChange('amazon', 'all')}>All</DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem checked={filters.amazon === 'yes'} onCheckedChange={() => handleFilterChange('amazon', 'yes')}>Available</DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem checked={filters.amazon === 'no'} onCheckedChange={() => handleFilterChange('amazon', 'no')}>Not Available</DropdownMenuCheckboxItem>
+                            {connectedChannels.includes('amazon') && <>
+                                <DropdownMenuLabel>Amazon</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem checked={filters.amazon === 'all'} onCheckedChange={() => handleFilterChange('amazon', 'all')}>All</DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem checked={filters.amazon === 'yes'} onCheckedChange={() => handleFilterChange('amazon', 'yes')}>Connected</DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem checked={filters.amazon === 'no'} onCheckedChange={() => handleFilterChange('amazon', 'no')}>Not Connected</DropdownMenuCheckboxItem>
+                            </>}
 
-                            <DropdownMenuLabel>Walmart</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem checked={filters.walmart === 'all'} onCheckedChange={() => handleFilterChange('walmart', 'all')}>All</DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem checked={filters.walmart === 'yes'} onCheckedChange={() => handleFilterChange('walmart', 'yes')}>Available</DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem checked={filters.walmart === 'no'} onCheckedChange={() => handleFilterChange('walmart', 'no')}>Not Available</DropdownMenuCheckboxItem>
+                             {connectedChannels.includes('walmart') && <>
+                                <DropdownMenuLabel>Walmart</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem checked={filters.walmart === 'all'} onCheckedChange={() => handleFilterChange('walmart', 'all')}>All</DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem checked={filters.walmart === 'yes'} onCheckedChange={() => handleFilterChange('walmart', 'yes')}>Connected</DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem checked={filters.walmart === 'no'} onCheckedChange={() => handleFilterChange('walmart', 'no')}>Not Connected</DropdownMenuCheckboxItem>
+                             </>}
                         </DropdownMenuContent>
                     </DropdownMenu>
+
+                    {connectedChannels.includes('amazon') && (
+                      <Button variant="outline" size="sm" onClick={() => handleSyncConnections('amazon')} disabled={isSyncing}>
+                          {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                          Sync with Amazon
+                      </Button>
+                    )}
+                    {connectedChannels.includes('walmart') && (
+                      <Button variant="outline" size="sm" onClick={() => handleSyncConnections('walmart')} disabled={isSyncing}>
+                          {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                          Sync with Walmart
+                      </Button>
+                    )}
 
                     {onPushToDb && (
                          <Button variant="outline" size="sm" onClick={onPushToDb} disabled={isLoading || isPushingToDb}>
@@ -293,11 +386,13 @@ export function ProductTable({
                   <TableCell>${product.variants?.[0]?.price ?? 'N/A'}</TableCell>
                   {connectedChannels.map(channel => (
                      <TableCell key={channel} className="text-center">
-                       <StatusIndicator 
-                         isConnected={product.linked_to_platforms?.includes(channel) ?? false}
-                         platform={channel}
-                         onConnect={() => onProductCreate(product.id, channel)}
-                       />
+                       {channel === 'amazon' || channel === 'walmart' ? (
+                          <ConnectButton product={product} platform={channel} onConnected={onRefresh} />
+                       ) : (
+                          <div className="flex items-center justify-center">
+                              <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                          </div>
+                       )}
                      </TableCell>
                   ))}
                   <TableCell>
@@ -312,7 +407,18 @@ export function ProductTable({
                          <DropdownMenuItem asChild>
                             <Link href={`/products/${product.id}/edit`}>Edit Product</Link>
                          </DropdownMenuItem>
-                         {/* More actions can be added here */}
+                         {connectedChannels.map(channel => {
+                            if (channel === 'shopify') return null;
+                            const isConnected = channel === 'amazon' ? product.amazon_asin : product.walmart_id;
+                            if (!isConnected) {
+                                return (
+                                    <DropdownMenuItem key={channel} onClick={() => onProductCreate(product.admin_graphql_api_id, channel)}>
+                                        Create on {channel.charAt(0).toUpperCase() + channel.slice(1)}
+                                    </DropdownMenuItem>
+                                )
+                            }
+                            return null;
+                         })}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -333,4 +439,6 @@ export function ProductTable({
     </>
   );
 }
+
+
 

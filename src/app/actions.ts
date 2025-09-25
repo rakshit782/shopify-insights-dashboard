@@ -2,8 +2,8 @@
 
 'use server';
 
-import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct } from '@/lib/shopify-client';
-import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct } from '@/lib/website-supabase-client';
+import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct, getAmazonProductBySku, getWalmartProductBySku } from '@/lib/shopify-client';
+import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct, updateProductMarketplaceId } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, SyncSettings } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
@@ -435,6 +435,56 @@ export async function handleGetSyncSettings(): Promise<{ success: boolean; setti
     }
 }
 
+export async function handleFetchAndLinkMarketplaceId(productId: string, sku: string, marketplace: 'amazon' | 'walmart') {
+    console.log(`Fetching ID for SKU ${sku} on ${marketplace}`);
+    try {
+        let marketplaceId: string | null = null;
+        if (marketplace === 'amazon') {
+            marketplaceId = await getAmazonProductBySku(sku);
+        } else if (marketplace === 'walmart') {
+            marketplaceId = await getWalmartProductBySku(sku);
+        }
+
+        if (marketplaceId) {
+            await updateProductMarketplaceId(productId, marketplace, marketplaceId);
+            return { success: true, marketplaceId, error: null };
+        } else {
+            return { success: false, error: `SKU not found on ${marketplace}.` };
+        }
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error(`Failed to fetch and link for ${sku} on ${marketplace}:`, errorMessage);
+        return { success: false, error: errorMessage };
+    }
+}
+
+export async function handleBulkFetchAndLinkMarketplaceIds(productSkus: { productId: string, sku: string }[], marketplace: 'amazon' | 'walmart') {
+    console.log(`Bulk fetching IDs for ${productSkus.length} SKUs on ${marketplace}`);
+    let linkedCount = 0;
+    let errors: string[] = [];
+
+    const lookupFn = marketplace === 'amazon' ? getAmazonProductBySku : getWalmartProductBySku;
+
+    for (const { productId, sku } of productSkus) {
+        try {
+            const marketplaceId = await lookupFn(sku);
+            if (marketplaceId) {
+                await updateProductMarketplaceId(productId, marketplace, marketplaceId);
+                linkedCount++;
+            }
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : `Unknown error for SKU ${sku}`;
+            errors.push(errorMessage);
+        }
+    }
+
+    if (errors.length > 0) {
+        console.error('Errors during bulk link:', errors);
+    }
+
+    return { success: true, linkedCount };
+}
+
 export async function handleCreateProductOnPlatform(productId: string, platform: string): Promise<{ success: boolean; error: string | null }> {
     console.log(`Received request to create product ${productId} on platform ${platform}`);
 
@@ -453,8 +503,11 @@ export async function handleCreateProductOnPlatform(productId: string, platform:
         
         // After successfully creating, you might want to update your local DB
         // to store the new external ID. For now, we just log it.
-        const newExternalId = `${platform.toUpperCase()}_${product.id.substring(0, 5)}_${Date.now()}`;
+        const newExternalId = `${platform.toUpperCase()}_${String(product.id).substring(0, 5)}_${Date.now()}`;
         console.log(`Product created on ${platform} with new ID: ${newExternalId}`);
+
+        // Update the database with the new linkage
+        await updateProductMarketplaceId(product.admin_graphql_api_id, platform as 'amazon' | 'walmart', newExternalId);
 
         return { success: true, error: null };
 
