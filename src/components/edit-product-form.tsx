@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Trash2, Wand2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Trash2, Wand2, Image as ImageIcon, Link as LinkIcon, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,11 +38,14 @@ interface EditProductFormProps {
 }
 
 const variantSchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]).optional(), // number for existing, string for new, undefined for creation
+  title: z.string().min(1, "Variant title is required"),
   price: z.coerce.number().positive('Price must be a positive number.'),
   sku: z.string().optional(),
   inventory_quantity: z.coerce.number().int('Inventory must be a whole number.'),
+  _destroy: z.boolean().optional(),
 });
+
 
 const imageSchema = z.object({
   id: z.number().nullable(),
@@ -78,6 +81,7 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
       tags: product.tags || '',
       variants: product.variants.map(v => ({
         id: v.id,
+        title: v.title,
         price: parseFloat(v.price),
         sku: v.sku || '',
         inventory_quantity: v.inventory_quantity || 0,
@@ -87,10 +91,11 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
     },
   });
 
-  const { fields } = useFieldArray({
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
     control: form.control,
     name: 'variants'
   });
+
 
    const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
     control: form.control,
@@ -131,6 +136,18 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
     setIsOptimizing(false);
   };
 
+  const markVariantForRemoval = (index: number) => {
+    const variantId = form.getValues(`variants.${index}.id`);
+    if (typeof variantId === 'number') {
+        // It's an existing variant, mark it for destruction
+        form.setValue(`variants.${index}._destroy`, true);
+    } else {
+        // It's a newly added variant that hasn't been saved yet, just remove it from the form
+        removeVariant(index);
+    }
+  };
+
+
   const onSubmit = async (values: ProductFormValues) => {
     setIsSubmitting(true);
     
@@ -142,10 +159,12 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
         product_type: values.product_type,
         tags: values.tags,
         variants: values.variants.map(v => ({
-            id: v.id,
+            id: typeof v.id === 'number' ? v.id : undefined, // Only send ID for existing variants
+            title: v.title,
             price: v.price.toString(),
             sku: v.sku,
             inventory_quantity: v.inventory_quantity,
+             _destroy: v._destroy
         })) as ShopifyVariantUpdate[],
         images: values.images.map(img => ({ id: img.id || undefined, src: img.src })).filter(img => img.src),
     };
@@ -173,6 +192,8 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
 
     setIsSubmitting(false);
   };
+
+  const visibleVariants = variantFields.filter((_, index) => !form.watch(`variants.${index}._destroy`));
 
   return (
     <Card className="max-w-4xl mx-auto border-none shadow-none">
@@ -235,7 +256,7 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
                                       <div>
                                         <div className="relative aspect-square w-full border rounded-md overflow-hidden">
                                           {field.value ? (
-                                              <Image src={field.value} alt={`Product image ${index + 1}`} layout="fill" objectFit="cover" />
+                                              <Image src={field.value} alt={`Product image ${index + 1}`} fill objectFit="cover" />
                                           ) : (
                                               <div className="w-full h-full bg-muted flex items-center justify-center">
                                                 <ImageIcon className="h-8 w-8 text-muted-foreground" />
@@ -267,22 +288,44 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
             
             {/* Variants Section */}
             <div>
-              <h3 className="text-lg font-medium mb-4">Variants</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">Variants</h3>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => appendVariant({ id: `new_${new Date().getTime()}`, title: 'New Variant', price: 0, inventory_quantity: 0, sku: '' })}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Variant
+                    </Button>
+                </div>
               <Card>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Variant</TableHead>
+                      <TableHead>Variant Title</TableHead>
                       <TableHead className="w-[150px]">Price</TableHead>
                       <TableHead className="w-[180px]">SKU</TableHead>
                       <TableHead className="w-[120px]">Inventory</TableHead>
+                      <TableHead className="w-[80px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fields.map((field, index) => (
+                   {variantFields.map((field, index) => (
+                    form.watch(`variants.${index}._destroy`) ? null : (
                       <TableRow key={field.id}>
-                        <TableCell className="font-medium">
-                          {product.variants[index].title}
+                         <TableCell>
+                          <FormField
+                            control={form.control}
+                            name={`variants.${index}.title`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </TableCell>
                         <TableCell>
                           <FormField
@@ -290,9 +333,7 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
                             name={`variants.${index}.price`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormControl>
-                                  <Input type="number" step="0.01" {...field} />
-                                </FormControl>
+                                <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -304,9 +345,7 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
                             name={`variants.${index}.sku`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
+                                <FormControl><Input {...field} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -318,16 +357,20 @@ export function EditProductForm({ product, onSuccess, connectedChannels }: EditP
                             name={`variants.${index}.inventory_quantity`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormControl>
-                                  <Input type="number" {...field} />
-                                </FormControl>
+                                <FormControl><Input type="number" {...field} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
                         </TableCell>
+                        <TableCell>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => markVariantForRemoval(index)} disabled={visibleVariants.length <= 1}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </TableCell>
                       </TableRow>
-                    ))}
+                    )
+                   ))}
                   </TableBody>
                 </Table>
               </Card>

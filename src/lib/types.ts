@@ -109,11 +109,14 @@ export interface ShopifyProductCreation {
 }
 
 export interface ShopifyVariantUpdate {
-  id: number;
+  id?: number; // Should not exist for new variants
+  title?: string;
   price?: string;
   sku?: string;
   inventory_quantity?: number;
+  _destroy?: boolean; // For removing variants
 }
+
 
 export interface ShopifyImageUpdate {
   id?: number; // Only include for existing images
