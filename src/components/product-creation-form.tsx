@@ -61,17 +61,6 @@ const platformMeta: { [key: string]: { name: string; icon: React.ReactNode } } =
     'wayfair': { name: 'Wayfair', icon: <Image src="/wayfair.svg" alt="Wayfair" width={20} height={20} unoptimized /> },
 };
 
-
-function FileUploadPlaceholder({ icon: Icon, label }: { icon: React.FC<any>; label: string }) {
-    return (
-        <div className="relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
-            <Icon className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium text-center">{label}</span>
-            <Input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-        </div>
-    );
-}
-
 function UrlUpload({ name, control, label }: { name: any; control: any, label: string; }) {
     return (
         <FormField
@@ -303,56 +292,26 @@ export function ProductCreationForm() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Media</CardTitle>
-                        <CardDescription>Upload images and videos for your product.</CardDescription>
+                        <CardDescription>Add direct URLs for your product images and videos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <Tabs defaultValue="upload-images">
-                            <div className="flex items-center justify-between">
-                                <FormLabel>Images (up to 7)</FormLabel>
-                                <TabsList>
-                                    <TabsTrigger value="upload-images">Upload</TabsTrigger>
-                                    <TabsTrigger value="url-images">URL</TabsTrigger>
-                                </TabsList>
+                         <div>
+                            <FormLabel>Image URLs (up to 7)</FormLabel>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                                {Array.from({ length: 7 }).map((_, i) => (
+                                <UrlUpload key={i} name={`imageUrl${i + 1}`} control={form.control} label={`Image URL ${i + 1}`} />
+                                ))}
                             </div>
-                            <TabsContent value="upload-images">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mt-2">
-                                    {Array.from({ length: 7 }).map((_, i) => (
-                                    <FileUploadPlaceholder key={i} icon={ImageIcon} label={`Image ${i + 1}`} />
-                                    ))}
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="url-images">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                                    {Array.from({ length: 7 }).map((_, i) => (
-                                    <UrlUpload key={i} name={`imageUrl${i + 1}`} control={form.control} label={`Image URL ${i + 1}`} />
-                                    ))}
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-
-                         <Tabs defaultValue="upload-videos">
-                            <div className="flex items-center justify-between">
-                                <FormLabel>Videos (up to 2)</FormLabel>
-                                <TabsList>
-                                    <TabsTrigger value="upload-videos">Upload</TabsTrigger>
-                                    <TabsTrigger value="url-videos">URL</TabsTrigger>
-                                </TabsList>
+                        </div>
+                        <Separator />
+                        <div>
+                            <FormLabel>Video URLs (up to 2)</FormLabel>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                {Array.from({ length: 2 }).map((_, i) => (
+                                    <UrlUpload key={i} name={`videoUrl${i + 1}`} control={form.control} label={`Video URL ${i+1}`} />
+                                ))}
                             </div>
-                            <TabsContent value="upload-videos">
-                                <div className="grid grid-cols-2 gap-4 mt-2">
-                                    {Array.from({ length: 2 }).map((_, i) => (
-                                    <FileUploadPlaceholder key={i} icon={Video} label={`Video ${i + 1}`} />
-                                    ))}
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="url-videos">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                                    {Array.from({ length: 2 }).map((_, i) => (
-                                        <UrlUpload key={i} name={`videoUrl${i + 1}`} control={form.control} label={`Video URL ${i+1}`} />
-                                    ))}
-                                </div>
-                            </TabsContent>
-                        </Tabs>
+                        </div>
                     </CardContent>
                 </Card>
               </div>
@@ -516,3 +475,5 @@ export function ProductCreationForm() {
     </Form>
   );
 }
+
+    
