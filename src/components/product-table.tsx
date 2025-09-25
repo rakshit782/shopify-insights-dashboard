@@ -97,8 +97,8 @@ export function ProductTable({
   }
 
   // Mock ID generation
-  const getMockAsin = (productId: string) => `B0${productId.substring(0, 8).toUpperCase()}`;
-  const getMockWalmartId = (productId: string) => productId.substring(0, 12);
+  const getMockAsin = (productId: string | number) => `B0${String(productId).substring(0, 8).toUpperCase()}`;
+  const getMockWalmartId = (productId: string | number) => String(productId).substring(0, 12);
 
 
   if (products.length === 0) {
