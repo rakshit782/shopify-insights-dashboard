@@ -139,11 +139,7 @@ export function AppShell({ children, settings }: { children: React.ReactNode, se
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
+             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/settings'}
@@ -156,6 +152,8 @@ export function AppShell({ children, settings }: { children: React.ReactNode, se
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
           <div className="p-3 text-center text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
             <div>
               This ERP System is Developed by{' '}
