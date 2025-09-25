@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface EditProductFormProps {
   product: ShopifyProduct;
+  onSuccess?: () => void; // Add onSuccess callback
 }
 
 const variantSchema = z.object({
@@ -42,7 +43,7 @@ const formSchema = z.object({
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-export function EditProductForm({ product }: EditProductFormProps) {
+export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,8 +130,12 @@ export function EditProductForm({ product }: EditProductFormProps) {
         title: 'Product Updated',
         description: `"${result.product?.title}" has been successfully updated and synced to other marketplaces.`,
       });
-      router.push('/cataloging-manager'); // Redirect to product list after successful update
-      router.refresh(); // Force a refresh of the page data
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/products');
+        router.refresh();
+      }
     } else {
       toast({
         title: 'Update Failed',
@@ -143,14 +148,14 @@ export function EditProductForm({ product }: EditProductFormProps) {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="max-w-4xl mx-auto border-none shadow-none">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <CardTitle>Edit Product</CardTitle>
-                <CardDescription>Update the details for "{product.title}". Changes will be saved to Shopify and your website.</CardDescription>
+                <CardDescription>Update the details for "{product.title}".</CardDescription>
               </div>
               <Button type="button" variant="outline" onClick={onOptimize} disabled={isOptimizing} className="w-full sm:w-auto">
                 {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}

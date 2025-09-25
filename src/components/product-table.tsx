@@ -23,6 +23,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { handleFetchAndLinkMarketplaceId, handleBulkFetchAndLinkMarketplaceIds } from '@/app/actions';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { EditProductForm } from './edit-product-form';
+import { ScrollArea } from './ui/scroll-area';
 
 const platformIcons: { [key: string]: string } = {
   shopify: '/shopify.svg',
@@ -125,6 +128,8 @@ export function ProductTable({
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
+  const [editingProduct, setEditingProduct] = useState<ShopifyProduct | null>(null);
+
 
   const sortedAndFilteredProducts = useMemo(() => {
     let filtered = [...products];
@@ -199,6 +204,11 @@ export function ProductTable({
   const handleFilterChange = (filterType: keyof typeof filters, value: string) => {
       setFilters(prev => ({...prev, [filterType]: value}));
       setCurrentPage(1);
+  }
+
+  const handleEditSuccess = () => {
+    setEditingProduct(null);
+    onRefresh();
   }
 
   const handleSyncConnections = async (marketplace: 'amazon' | 'walmart') => {
@@ -362,7 +372,11 @@ export function ProductTable({
               {currentProducts.map(product => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.title}</TableCell>
-                  <TableCell>{product.variants?.[0]?.sku || 'N/A'}</TableCell>
+                  <TableCell>
+                    <button onClick={() => setEditingProduct(product)} className="text-primary hover:underline cursor-pointer">
+                      {product.variants?.[0]?.sku || 'N/A'}
+                    </button>
+                  </TableCell>
                   <TableCell>
                     {product.amazon_asin ? (
                       <a 
@@ -413,7 +427,10 @@ export function ProductTable({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                          <DropdownMenuItem asChild>
-                            <Link href={`/products/${product.id}/edit`}>Edit Product</Link>
+                            <Link href={`/products/${product.id}/edit`}>Edit Page</Link>
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setEditingProduct(product)}>
+                            Edit in Dialog
                          </DropdownMenuItem>
                          {connectedChannels.map(channel => {
                             if (channel === 'shopify') return null; // Can't create on the source
@@ -444,6 +461,15 @@ export function ProductTable({
          onPageSizeChange={handlePageSizeChange}
          className="mt-4"
       />
+      <Dialog open={!!editingProduct} onOpenChange={(isOpen) => !isOpen && setEditingProduct(null)}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+            <ScrollArea className="h-full">
+                {editingProduct && (
+                    <EditProductForm product={editingProduct} onSuccess={handleEditSuccess} />
+                )}
+            </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
