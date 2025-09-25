@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -9,150 +8,182 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
   SidebarInset,
   SidebarFooter,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
+  useSidebar, // ← import from the same module
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, ListTodo, ShieldCheck, Users, Package, LineChart, ChevronDown, ChevronRight, List, Database, Settings, Menu, Shirt, UserSearch, Upload, Heart } from 'lucide-react';
+import {
+  LineChart,
+  ListTodo,
+  Users,
+  Package,
+  Settings,
+  Menu,
+  Shirt,
+  UserSearch,
+  Upload,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
-import { useSidebar } from './ui/sidebar';
 import type { AppSettings } from '@/lib/types';
 
+const defaultLogoSrc = "https://storage.googleapis.com/temp-assets-studio-81078.appspot.com/capel-rugs-logo.png";
 
-const DefaultLogo = ({ className }: { className?: string }) => (
-    <Image src="https://storage.googleapis.com/temp-assets-studio-81078.appspot.com/capel-rugs-logo.png" alt="Capel Rugs" width={128} height={32} className={cn("h-8 w-auto", className)} unoptimized />
-);
-
-
-export function AppShell({ children, settings }: { children: React.ReactNode, settings: AppSettings | null }) {
+export function AppShell({
+  children,
+  settings,
+}: {
+  children: React.ReactNode;
+  settings: AppSettings | null;
+}) {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
-  const [isAmazonOpen, setIsAmazonOpen] = useState(false);
-  
-  const Logo = () => {
-    if (settings?.logoUrl) {
-      return <Image src={settings.logoUrl} alt="Logo" width={128} height={32} className="h-8 w-auto" unoptimized />;
-    }
-    return <DefaultLogo className="w-auto h-7" />;
-  }
+
+  const logoSrc = settings?.logoUrl || defaultLogoSrc;
 
   return (
     <>
       <Sidebar>
         <SidebarHeader>
-           <div className="flex items-center gap-2 p-2">
-            <Logo />
+          <div className="flex items-center gap-2 p-2">
+            <Image
+              src={logoSrc}
+              alt="Logo"
+              width={128}
+              height={32}
+              className="h-8 w-auto"
+              unoptimized
+            />
           </div>
         </SidebarHeader>
+
         <SidebarContent>
           <SidebarMenu>
-             <SidebarMenuItem>
+            <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith('/analytics')}
-                tooltip={{ children: 'Analytics' }}
+                tooltip="Analytics"
               >
                 <Link href="/analytics">
                   <LineChart className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Analytics</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Analytics
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith('/cataloging-manager')}
-                tooltip={{ children: 'Cataloging Manager' }}
+                tooltip="Cataloging Manager"
               >
                 <Link href="/cataloging-manager">
                   <ListTodo className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Cataloging Manager</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Cataloging Manager
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith('/bulk-operations')}
-                tooltip={{ children: 'Bulk Operations' }}
+                tooltip="Bulk Operations"
               >
                 <Link href="/bulk-operations">
                   <Upload className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Bulk Operations</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Bulk Operations
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith('/products')}
-                tooltip={{ children: 'Products' }}
+                tooltip="Products"
               >
                 <Link href="/products">
                   <Shirt className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Products</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Products
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith('/orders')}
-                tooltip={{ children: 'Orders' }}
+                tooltip="Orders"
               >
                 <Link href="/orders">
                   <Package className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Orders</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Orders
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith('/customers')}
-                tooltip={{ children: 'Customers' }}
+                tooltip="Customers"
               >
                 <Link href="/customers">
                   <UserSearch className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Customers</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Customers
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === '/competitors'}
-                tooltip={{ children: 'Competitors' }}
+                isActive={pathname.startsWith('/competitors')}
+                tooltip="Competitors"
               >
                 <Link href="/competitors">
                   <Users className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Competitors</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Competitors
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === '/settings'}
-                tooltip={{ children: 'Settings' }}
+                isActive={pathname.startsWith('/settings')}
+                tooltip="Settings"
               >
                 <Link href="/settings">
                   <Settings className="h-5 w-5" />
-                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">Settings</span>
+                  <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 transition-all duration-200">
+                    Settings
+                  </span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
+
         <SidebarFooter>
           <div className="p-3 text-center text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
             <div>
@@ -184,16 +215,26 @@ export function AppShell({ children, settings }: { children: React.ReactNode, se
           </div>
         </SidebarFooter>
       </Sidebar>
+
       <SidebarInset>
-         <header className="md:hidden flex items-center justify-between gap-2 p-4 border-b bg-background sticky top-0 z-10">
-            <div className="flex items-center gap-2">
-                <Logo />
-            </div>
-            <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-               <Menu className="h-6 w-6" />
-               <span className="sr-only">Toggle Menu</span>
-            </Button>
-         </header>
+        {/* Mobile header */}
+        <header className="md:hidden flex items-center justify-between gap-2 p-4 border-b bg-background sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+            <Image
+              src={logoSrc}
+              alt="Logo"
+              width={128}
+              height={32}
+              className="h-8 w-auto"
+              unoptimized
+            />
+          </div>
+          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </header>
+
         {children}
       </SidebarInset>
     </>
