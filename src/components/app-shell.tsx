@@ -30,8 +30,6 @@ import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import type { AppSettings } from '@/lib/types';
 
-const defaultLogoSrc = "https://storage.googleapis.com/temp-assets-studio-81078.appspot.com/capel-rugs-logo.png";
-
 export function AppShell({
   children,
   settings,
@@ -42,21 +40,14 @@ export function AppShell({
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
 
-  const logoSrc = settings?.logoUrl || defaultLogoSrc;
-
   return (
     <>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
-            <Image
-              src={logoSrc}
-              alt="Logo"
-              width={128}
-              height={32}
-              className="h-8 w-auto"
-              unoptimized
-            />
+             <span className="text-xl font-bold tracking-wider text-sidebar-foreground">
+              CAPEL RUGS
+            </span>
           </div>
         </SidebarHeader>
 
@@ -220,14 +211,9 @@ export function AppShell({
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between gap-2 p-4 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center gap-2">
-            <Image
-              src={logoSrc}
-              alt="Logo"
-              width={128}
-              height={32}
-              className="h-8 w-auto"
-              unoptimized
-            />
+            <span className="text-lg font-bold tracking-wider">
+              CAPEL RUGS
+            </span>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleSidebar}>
             <Menu className="h-6 w-6" />
