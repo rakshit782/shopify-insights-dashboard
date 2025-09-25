@@ -109,7 +109,11 @@ export async function handleUpdateProduct(productData: ShopifyProductUpdate) {
                     await updateWalmartProduct(externalUpdatePayload);
                     console.log(`Successfully triggered update for SKU ${variant.sku} on Walmart.`);
                     break;
-                // Add cases for other marketplaces like 'amazon', 'ebay'
+                case 'amazon':
+                    await updateAmazonProduct(externalUpdatePayload);
+                    console.log(`Successfully triggered update for SKU ${variant.sku} on Amazon.`);
+                    break;
+                // Add cases for other marketplaces like 'ebay'
                 default:
                     console.log(`Update function for ${marketPlaceSetting.id} is not implemented.`);
             }
@@ -491,8 +495,7 @@ export async function handleBulkFetchAndLinkMarketplaceIds(productSkus: { produc
                 await updateProductMarketplaceId(productId, marketplace, marketplaceId);
                 linkedCount++;
             } else {
-                // This case is not an error, just a failed lookup. 
-                // We could log it if needed, but it's not an exception.
+                errors.push(`SKU ${sku} not found on ${marketplace}.`);
             }
         } catch (e) {
             const errorMessage = e instanceof Error ? `SKU ${sku}: ${e.message}` : `Unknown error for SKU ${sku}`;

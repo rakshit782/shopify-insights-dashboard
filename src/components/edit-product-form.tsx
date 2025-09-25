@@ -7,22 +7,32 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Trash2, Wand2 } from 'lucide-react';
+import { Loader2, Trash2, Wand2, Image as ImageIcon, Link as LinkIcon, Checkbox } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { handleUpdateProduct, handleOptimizeListing } from '@/app/actions';
 import type { ShopifyProduct, ShopifyProductUpdate, ShopifyVariantUpdate } from '@/lib/types';
 import { RichTextEditor } from './rich-text-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from './ui/separator';
+import Image from 'next/image';
+
+const platformIcons: { [key: string]: string } = {
+  shopify: '/shopify.svg',
+  amazon: '/amazon.svg',
+  walmart: '/walmart.svg',
+  etsy: '/etsy.svg',
+  ebay: '/ebay.svg',
+};
 
 interface EditProductFormProps {
   product: ShopifyProduct;
-  onSuccess?: () => void; // Add onSuccess callback
+  onSuccess?: () => void;
+  connectedChannels: string[];
 }
 
 const variantSchema = z.object({
@@ -32,6 +42,11 @@ const variantSchema = z.object({
   inventory_quantity: z.coerce.number().int('Inventory must be a whole number.'),
 });
 
+const imageSchema = z.object({
+  id: z.number().nullable(),
+  src: z.string().url('Must be a valid URL.').or(z.literal('')),
+});
+
 const formSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   body_html: z.string().min(10, 'Description must be at least 10 characters long.'),
@@ -39,11 +54,13 @@ const formSchema = z.object({
   product_type: z.string().min(2, 'Product type is required.'),
   tags: z.string().optional(),
   variants: z.array(variantSchema),
+  images: z.array(imageSchema),
+  marketplaces: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
+export function EditProductForm({ product, onSuccess, connectedChannels }: EditProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,13 +79,20 @@ export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
         price: parseFloat(v.price),
         sku: v.sku || '',
         inventory_quantity: v.inventory_quantity || 0,
-      }))
+      })),
+      images: product.images.map(img => ({ id: img.id, src: img.src })),
+      marketplaces: product.linked_to_platforms || ['shopify'],
     },
   });
 
   const { fields } = useFieldArray({
     control: form.control,
     name: 'variants'
+  });
+
+   const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
+    control: form.control,
+    name: 'images'
   });
 
   const onOptimize = async () => {
@@ -117,10 +141,11 @@ export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
         tags: values.tags,
         variants: values.variants.map(v => ({
             id: v.id,
-            price: v.price.toString(), // Convert back to string for Shopify API
+            price: v.price.toString(),
             sku: v.sku,
             inventory_quantity: v.inventory_quantity,
         })) as ShopifyVariantUpdate[],
+        images: values.images.map(img => ({ id: img.id || undefined, src: img.src })).filter(img => img.src),
     };
 
     const result = await handleUpdateProduct(productData);
@@ -128,7 +153,7 @@ export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
     if (result.success) {
       toast({
         title: 'Product Updated',
-        description: `"${result.product?.title}" has been successfully updated and synced to other marketplaces.`,
+        description: `"${result.product?.title}" has been successfully updated and synced.`,
       });
       if (onSuccess) {
         onSuccess();
@@ -190,6 +215,53 @@ export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
                 </FormItem>
               )}
             />
+
+             {/* Images Section */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Images</h3>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {imageFields.map((field, index) => (
+                      <div key={field.id} className="relative group">
+                          <FormField
+                            control={form.control}
+                            name={`images.${index}.src`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                      <>
+                                        <div className="relative aspect-square w-full border rounded-md overflow-hidden">
+                                          {field.value ? (
+                                              <Image src={field.value} alt={`Product image ${index + 1}`} layout="fill" objectFit="cover" />
+                                          ) : (
+                                              <div className="w-full h-full bg-muted flex items-center justify-center">
+                                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                              </div>
+                                          )}
+                                        </div>
+                                        <div className="relative mt-2">
+                                          <LinkIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                          <Input {...field} placeholder="Image URL" className="pl-8 text-xs" />
+                                        </div>
+                                      </>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeImage(index)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => appendImage({ id: null, src: '' })}>
+                    Add Image
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
             
             {/* Variants Section */}
             <div>
@@ -300,6 +372,60 @@ export function EditProductForm({ product, onSuccess }: EditProductFormProps) {
                 </FormItem>
               )}
             />
+            {/* Publishing Section */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Publishing</h3>
+              <Card>
+                 <CardContent className="pt-6">
+                    <FormField
+                      control={form.control}
+                      name="marketplaces"
+                      render={() => (
+                          <FormItem>
+                            <div className="mb-4">
+                              <FormLabel className="text-base">Marketplaces</FormLabel>
+                              <FormDescription>Select where this product should be listed.</FormDescription>
+                            </div>
+                            <div className="space-y-3">
+                              {connectedChannels.map((id) => (
+                                <FormField
+                                  key={id}
+                                  control={form.control}
+                                  name="marketplaces"
+                                  render={({ field }) => {
+                                    const isShopify = id === 'shopify';
+                                    return (
+                                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={isShopify || field.value?.includes(id)}
+                                            disabled={isShopify}
+                                            onCheckedChange={(checked) => {
+                                              return checked
+                                                ? field.onChange([...(field.value || []), id])
+                                                : field.onChange(field.value?.filter((value) => value !== id))
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <FormLabel className="font-normal flex items-center gap-2">
+                                          <Image src={platformIcons[id]} alt={id} width={16} height={16} unoptimized />
+                                          {id.charAt(0).toUpperCase() + id.slice(1)}
+                                        </FormLabel>
+                                      </FormItem>
+                                    )
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                      )}
+                    />
+                 </CardContent>
+              </Card>
+            </div>
+
+
           </CardContent>
           <CardFooter className="flex justify-end pt-6">
             <Button type="submit" disabled={isSubmitting}>

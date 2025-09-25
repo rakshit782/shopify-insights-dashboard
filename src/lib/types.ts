@@ -2,8 +2,8 @@
 
 // This corresponds to the raw product object from the Shopify Admin API
 export interface ShopifyProduct {
-  id: string; // Changed to string to be consistently admin_graphql_api_id
-  admin_graphql_api_id: string;
+  id: string; // This is the numeric ID, but received as a string in some contexts
+  admin_graphql_api_id: string; // This is the GID, e.g., "gid://shopify/Product/12345"
   title: string;
   body_html: string;
   vendor: string;
@@ -115,15 +115,23 @@ export interface ShopifyVariantUpdate {
   inventory_quantity?: number;
 }
 
+export interface ShopifyImageUpdate {
+  id?: number; // Only include for existing images
+  src?: string;
+  // Note: Shopify doesn't reliably support changing an image's position via the Product API's images array directly.
+  // This is better handled in the UI or by deleting and re-adding images if order is critical.
+}
+
 
 export interface ShopifyProductUpdate {
-  id: string; // Use string for GID
+  id: string; // Use numeric string ID for REST API
   title?: string;
   body_html?: string;
   vendor?: string;
   product_type?: string;
   tags?: string;
   variants?: ShopifyVariantUpdate[];
+  images?: ShopifyImageUpdate[];
 }
 
 export interface ShopifyCredentials {

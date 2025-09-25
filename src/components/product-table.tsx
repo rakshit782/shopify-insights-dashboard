@@ -22,8 +22,8 @@ import { PaginationControls } from './pagination-controls';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from './ui/dropdown-menu';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import { handleFetchAndLinkMarketplaceId, handleBulkFetchAndLinkMarketplaceIds } from '@/app/actions';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { handleFetchAndLinkMarketplaceId, handleBulkFetchAndLinkMarketplaceIds, handleCreateProductOnPlatform } from '@/app/actions';
+import { Dialog, DialogContent } from './ui/dialog';
 import { EditProductForm } from './edit-product-form';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -43,7 +43,7 @@ const ConnectButton = ({ product, platform, onConnected }: { product: ShopifyPro
     const isConnected = !!(platform === 'amazon' ? product.amazon_asin : product.walmart_id);
     
     const handleConnect = async () => {
-        if (isConnected) return; // Don't do anything if already connected
+        if (isConnected || isLoading) return; 
         
         if (!product.variants?.[0]?.sku) {
             toast({
@@ -230,21 +230,14 @@ export function ProductTable({
 
     const result = await handleBulkFetchAndLinkMarketplaceIds(productsToSync, marketplace);
 
-    if (result.success) {
-        let description = `Successfully linked ${result.linkedCount} new product(s) on ${marketplace}.`;
-        if (result.errors && result.errors.length > 0) {
-            description += ` ${result.errors.length} lookups failed.`;
-        }
-        toast({
-            title: 'Sync Complete',
-            description: description,
-            variant: result.errors && result.errors.length > 0 ? 'default' : 'default', // could be 'destructive' if all fail
-        });
+    toast({
+        title: 'Sync Complete',
+        description: `Successfully linked ${result.linkedCount} new product(s). ${result.errors.length} lookups failed.`,
+    });
+    
+    if (result.linkedCount > 0) {
         onRefresh();
-    } else {
-        toast({ title: 'Sync Failed', description: 'An unexpected error occurred during the bulk sync.', variant: 'destructive'});
     }
-
     setIsSyncing(false);
   }
 
@@ -351,20 +344,23 @@ export function ProductTable({
                 <TableHead>Status</TableHead>
                 <SortableHeader sortKey="inventory">Inventory</SortableHeader>
                 <SortableHeader sortKey="price">Price</SortableHeader>
-                {connectedChannels.map(channel => (
-                  <TableHead key={channel} className="text-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Image src={platformIcons[channel]} alt={channel} width={18} height={18} className="mx-auto" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                           <p className="capitalize">{channel}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
-                ))}
+                {connectedChannels.map(channel => {
+                  if (channel === 'shopify') return null;
+                  return (
+                    <TableHead key={channel} className="text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Image src={platformIcons[channel]} alt={channel} width={18} height={18} className="mx-auto" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="capitalize">{channel}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
+                  )
+                })}
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
@@ -406,17 +402,20 @@ export function ProductTable({
                   </TableCell>
                   <TableCell>{product.variants?.[0]?.inventory_quantity ?? 'N/A'}</TableCell>
                   <TableCell>${product.variants?.[0]?.price ?? 'N/A'}</TableCell>
-                  {connectedChannels.map(channel => (
-                     <TableCell key={channel} className="text-center">
-                       {channel === 'amazon' || channel === 'walmart' ? (
-                          <ConnectButton product={product} platform={channel as 'amazon' | 'walmart'} onConnected={onRefresh} />
-                       ) : (
-                          <div className="flex items-center justify-center">
-                              <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                          </div>
-                       )}
-                     </TableCell>
-                  ))}
+                  {connectedChannels.map(channel => {
+                     if (channel === 'shopify') return null;
+                     return (
+                       <TableCell key={channel} className="text-center">
+                         {(channel === 'amazon' || channel === 'walmart') ? (
+                            <ConnectButton product={product} platform={channel as 'amazon' | 'walmart'} onConnected={onRefresh} />
+                         ) : (
+                            <div className="flex items-center justify-center">
+                                <div className="h-2.5 w-2.5 rounded-full bg-gray-400" title="Not Implemented" />
+                            </div>
+                         )}
+                       </TableCell>
+                     )
+                  })}
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -434,8 +433,8 @@ export function ProductTable({
                          </DropdownMenuItem>
                          {connectedChannels.map(channel => {
                             if (channel === 'shopify') return null; // Can't create on the source
-                            const isConnected = channel === 'amazon' ? product.amazon_asin : product.walmart_id;
-                            if (!isConnected) {
+                            const isConnected = (channel === 'amazon' && product.amazon_asin) || (channel === 'walmart' && product.walmart_id);
+                            if (!isConnected && (channel === 'amazon' || channel === 'walmart')) {
                                 return (
                                     <DropdownMenuItem key={channel} onClick={() => onProductCreate(product.admin_graphql_api_id, channel)}>
                                         Create on {channel.charAt(0).toUpperCase() + channel.slice(1)}
@@ -465,7 +464,7 @@ export function ProductTable({
         <DialogContent className="max-w-4xl h-[90vh]">
             <ScrollArea className="h-full">
                 {editingProduct && (
-                    <EditProductForm product={editingProduct} onSuccess={handleEditSuccess} />
+                    <EditProductForm product={editingProduct} onSuccess={handleEditSuccess} connectedChannels={connectedChannels} />
                 )}
             </ScrollArea>
         </DialogContent>
