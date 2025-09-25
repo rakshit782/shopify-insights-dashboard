@@ -218,13 +218,18 @@ export function ProductTable({
     const result = await handleBulkFetchAndLinkMarketplaceIds(productsToSync, marketplace);
 
     if (result.success) {
+        let description = `Successfully linked ${result.linkedCount} new product(s) on ${marketplace}.`;
+        if (result.errors && result.errors.length > 0) {
+            description += ` ${result.errors.length} lookups failed.`;
+        }
         toast({
             title: 'Sync Complete',
-            description: `Successfully linked ${result.linkedCount} new product(s) on ${marketplace}.`
+            description: description,
+            variant: result.errors && result.errors.length > 0 ? 'default' : 'default', // could be 'destructive' if all fail
         });
         onRefresh();
     } else {
-        toast({ title: 'Sync Failed', variant: 'destructive'});
+        toast({ title: 'Sync Failed', description: 'An unexpected error occurred during the bulk sync.', variant: 'destructive'});
     }
 
     setIsSyncing(false);
@@ -387,7 +392,7 @@ export function ProductTable({
                   {connectedChannels.map(channel => (
                      <TableCell key={channel} className="text-center">
                        {channel === 'amazon' || channel === 'walmart' ? (
-                          <ConnectButton product={product} platform={channel} onConnected={onRefresh} />
+                          <ConnectButton product={product} platform={channel as 'amazon' | 'walmart'} onConnected={onRefresh} />
                        ) : (
                           <div className="flex items-center justify-center">
                               <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
@@ -440,5 +445,4 @@ export function ProductTable({
   );
 }
 
-
-
+    

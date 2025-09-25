@@ -458,10 +458,10 @@ export async function handleFetchAndLinkMarketplaceId(productId: string, sku: st
     }
 }
 
-export async function handleBulkFetchAndLinkMarketplaceIds(productSkus: { productId: string, sku: string }[], marketplace: 'amazon' | 'walmart') {
+export async function handleBulkFetchAndLinkMarketplaceIds(productSkus: { productId: string, sku: string }[], marketplace: 'amazon' | 'walmart'): Promise<{ success: boolean, linkedCount: number, errors: string[] }> {
     console.log(`Bulk fetching IDs for ${productSkus.length} SKUs on ${marketplace}`);
     let linkedCount = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     const lookupFn = marketplace === 'amazon' ? getAmazonProductBySku : getWalmartProductBySku;
 
@@ -471,9 +471,12 @@ export async function handleBulkFetchAndLinkMarketplaceIds(productSkus: { produc
             if (marketplaceId) {
                 await updateProductMarketplaceId(productId, marketplace, marketplaceId);
                 linkedCount++;
+            } else {
+                // This case is not an error, just a failed lookup. 
+                // We could log it if needed, but it's not an exception.
             }
         } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : `Unknown error for SKU ${sku}`;
+            const errorMessage = e instanceof Error ? `SKU ${sku}: ${e.message}` : `Unknown error for SKU ${sku}`;
             errors.push(errorMessage);
         }
     }
@@ -482,7 +485,7 @@ export async function handleBulkFetchAndLinkMarketplaceIds(productSkus: { produc
         console.error('Errors during bulk link:', errors);
     }
 
-    return { success: true, linkedCount };
+    return { success: true, linkedCount, errors };
 }
 
 export async function handleCreateProductOnPlatform(productId: string, platform: string): Promise<{ success: boolean; error: string | null }> {
@@ -517,3 +520,5 @@ export async function handleCreateProductOnPlatform(productId: string, platform:
         return { success: false, error: errorMessage };
     }
 }
+
+    
