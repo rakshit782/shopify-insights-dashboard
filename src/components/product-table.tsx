@@ -96,6 +96,11 @@ export function ProductTable({
       setCurrentPage(1); // Reset to first page
   }
 
+  // Mock ID generation
+  const getMockAsin = (productId: string) => `B0${productId.substring(0, 8).toUpperCase()}`;
+  const getMockWalmartId = (productId: string) => productId.substring(0, 12);
+
+
   if (products.length === 0) {
     return (
        <Card className="flex flex-col items-center justify-center text-center p-8 min-h-[40vh]">
@@ -166,8 +171,12 @@ export function ProductTable({
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.title}</TableCell>
                   <TableCell>{product.variants?.[0]?.sku || 'N/A'}</TableCell>
-                  <TableCell>N/A</TableCell>
-                  <TableCell>N/A</TableCell>
+                  <TableCell>
+                    {product.linked_to_platforms?.includes('amazon') ? getMockAsin(product.id) : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {product.linked_to_platforms?.includes('walmart') ? getMockWalmartId(product.id) : 'N/A'}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={getStatusVariant(product.status)}>{product.status}</Badge>
                   </TableCell>
