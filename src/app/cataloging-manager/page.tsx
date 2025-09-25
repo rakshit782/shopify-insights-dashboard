@@ -1,5 +1,7 @@
 
 import { ProductCreationForm } from '@/components/product-creation-form';
+import { ProductSearchAndEdit } from '@/components/product-search-edit';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function CatalogingManagerPage() {
     return (
@@ -10,7 +12,18 @@ export default function CatalogingManagerPage() {
                     Create and manage your master product catalog from a single place.
                 </p>
             </div>
-            <ProductCreationForm />
+            <Tabs defaultValue="create">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="create">Create New Product</TabsTrigger>
+                    <TabsTrigger value="edit">Search & Edit</TabsTrigger>
+                </TabsList>
+                <TabsContent value="create">
+                    <ProductCreationForm />
+                </TabsContent>
+                <TabsContent value="edit">
+                    <ProductSearchAndEdit />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

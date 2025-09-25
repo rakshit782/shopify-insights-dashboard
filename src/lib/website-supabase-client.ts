@@ -175,6 +175,44 @@ export async function getSingleWebsiteProduct(id: string): Promise<ShopifyProduc
     };
 }
 
+export async function getProductBySku(sku: string): Promise<ShopifyProduct | null> {
+    const supabase = createSupabaseServerClient('DATA');
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        // We search within the JSONB array of variants
+        .filter('variants', 'cs', `[{"sku":"${sku}"}]`)
+        .limit(1)
+        .single();
+    
+    if (error || !data) {
+        console.error(`Error fetching product with SKU ${sku}:`, error);
+        return null;
+    }
+
+    return {
+        id: data.shopify_product_id,
+        admin_graphql_api_id: data.id,
+        handle: data.handle,
+        title: data.title,
+        body_html: data.body_html,
+        vendor: data.vendor,
+        product_type: data.product_type,
+        status: data.status,
+        tags: data.tags,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        published_at: data.published_at,
+        variants: data.variants,
+        options: data.options,
+        images: data.images,
+        image: data.image,
+        template_suffix: '',
+        published_scope: 'web',
+    };
+}
+
+
 export async function updateProductMarketplaceId(productId: string, marketplace: 'amazon' | 'walmart' | string, marketplaceId: string) {
     const supabase = createSupabaseServerClient('DATA');
     const updateData: { [key: string]: any } = {
@@ -220,3 +258,4 @@ export async function updateProductMarketplaceId(productId: string, marketplace:
     }
 }
     
+

@@ -3,7 +3,7 @@
 'use server';
 
 import { getShopifyProducts, createShopifyProduct, updateShopifyProduct, getShopifyProduct, getCredentialStatuses, getShopifyOrders, getWalmartOrders, getAmazonOrders, getPlatformProductCounts, getEtsyProducts, updateEtsyProduct, updateWalmartProduct, getAmazonProductBySku, getWalmartProductBySku } from '@/lib/shopify-client';
-import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct, updateProductMarketplaceId } from '@/lib/website-supabase-client';
+import { syncProductsToWebsite, getWebsiteProducts, getWebsiteProductCount, getSingleWebsiteProduct, updateProductMarketplaceId, getProductBySku } from '@/lib/website-supabase-client';
 import type { ShopifyProductCreation, ShopifyProduct, ShopifyProductUpdate, ShopifyOrder, Agency, User, Profile, AppSettings, PriceUpdatePayload } from '@/lib/types';
 import { optimizeListing, type OptimizeListingInput } from '@/ai/flows/optimize-listing-flow';
 import { optimizeContent, type OptimizeContentInput } from '@/ai/flows/optimize-content-flow';
@@ -142,6 +142,21 @@ export async function handleGetProduct(id: string) {
     return { product: null, error: `Failed to retrieve product: ${errorMessage}` };
   }
 }
+
+export async function handleGetProductBySku(sku: string): Promise<{ product: ShopifyProduct | null, error: string | null }> {
+    try {
+        const product = await getProductBySku(sku);
+        if (!product) {
+            return { product: null, error: `Product with SKU ${sku} not found in the local database.` };
+        }
+        return { product, error: null };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+        console.error('Get product by SKU failed:', errorMessage);
+        return { product: null, error: `Failed to retrieve product by SKU: ${errorMessage}` };
+    }
+}
+
 
 export async function handleGetCredentialStatuses(): Promise<{ success: boolean; statuses: Record<string, boolean>; error: string | null; }> {
     try {
@@ -563,3 +578,4 @@ export async function handleBulkUpdatePrices(updates: PriceUpdatePayload[]): Pro
     return { success: true, message: 'Bulk price update process completed.', updatedCount, errorCount };
 }
     
+
